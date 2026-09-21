@@ -1,0 +1,1304 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0E1929">
+<meta name="application-name" content="Sign-In Board">
+<meta name="apple-mobile-web-app-title" content="Sign-In">
+<title>Oyster Sign-In Board</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230E1929'/%3E%3Cpath d='M36 6 16 36h14l-4 22 22-32H34z' fill='%236FA6F2'/%3E%3C/svg%3E">
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Barlow:wght@400;500;600;700&family=Roboto+Mono:wght@400;500;700&display=swap">
+<style>
+/* Oyster Sign-In Board — Pioneer Electric Group. A mounted jobsite kiosk.
+   Deliberately single-theme (navy + gray, Pioneer's colours): it runs on a tablet on the
+   gang box at 5:45 AM and must not flip to a light ground because someone's OS says so.
+   Every colour is painted explicitly so the page holds on any host background. */
+:root{
+  --ground:#0E1929;      /* deep navy */
+  --surface:#162640;
+  --surface-2:#20334F;
+  --edge:#31476A;
+  --ink:#F3F5F8;
+  --muted:#9AA9BE;       /* steel gray */
+  --accent:#6FA6F2;      /* Pioneer blue, lit for a dark ground */
+  --accent-ink:#0E1929;
+  --live:#5FD37A;        /* on site — semantic, not brand */
+  --live-dim:#173A2C;
+  --done:#6E7E97;
+  --alert:#F0684A;
+  --alert-dim:#3A2320;
+  --r:10px;
+  --pad:clamp(14px,2.2vw,26px);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:Barlow,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-size:17px;line-height:1.45;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;
+  -webkit-user-select:none;user-select:none;min-height:100vh}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+button:disabled{cursor:not-allowed}
+.mono{font-family:"Roboto Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.hd{font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;font-weight:600;letter-spacing:.01em}
+.eyebrow{font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;text-transform:uppercase;letter-spacing:.12em;font-size:12px;color:var(--muted);font-weight:500}
+
+.wrap{padding-inline:var(--pad);padding-block:var(--pad) 0;max-width:1500px;margin:0 auto}
+
+/* ---------- header rail ---------- */
+.rail{display:flex;align-items:center;gap:clamp(12px,2vw,28px);flex-wrap:wrap;border:1px solid var(--edge);
+  border-top:3px solid var(--accent);border-radius:var(--r);background:var(--surface);padding:14px clamp(14px,2vw,22px)}
+.job{display:flex;flex-direction:column;gap:2px;min-width:0}
+.job b{font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;font-weight:600;font-size:clamp(19px,2.4vw,26px);letter-spacing:.02em;line-height:1.1}
+.job span{font-size:13px;color:var(--muted);letter-spacing:.04em}
+.clock{margin-left:auto;display:flex;align-items:baseline;gap:10px}
+.clock .t{font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;font-weight:600;font-size:clamp(34px,5.6vw,58px);color:var(--ink);line-height:.95;font-variant-numeric:tabular-nums}
+.clock .d{font-size:13px;color:var(--muted);letter-spacing:.05em;white-space:nowrap}
+.railbtns{display:flex;gap:8px;align-items:center}
+.chip{border:1px solid var(--edge);border-radius:999px;background:var(--surface-2);padding:9px 15px;font-size:14px;font-weight:600;
+  letter-spacing:.03em;color:var(--ink);display:inline-flex;align-items:center;gap:7px;min-height:44px}
+.chip[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--live);flex:none}
+.dot.warn{background:var(--accent)}.dot.bad{background:var(--alert)}
+
+/* ---------- offline banner ---------- */
+.offline{margin-top:12px;padding:14px 18px;border-radius:var(--r);background:var(--alert-dim);border:2px solid var(--alert);color:#FFDCD2;font-size:17px;font-weight:600;display:flex;gap:12px;align-items:center}
+.offline .dot{width:14px;height:14px;background:var(--alert)}
+.findbtn{border:1px dashed var(--edge);border-radius:var(--r);background:transparent;padding:18px 22px;min-height:70px;color:var(--accent);font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;font-size:clamp(18px,2.2vw,24px);letter-spacing:.03em;display:flex;align-items:center;justify-content:center;gap:12px;width:100%;margin-top:clamp(12px,1.6vw,18px)}
+.findbtn:hover{border-color:var(--accent)}
+.tile.away{background:#121F33;border-color:#28395A}
+.tile.away::before{background:var(--done)}
+.tile.away .nm{color:#C9D3E3}.tile.away .cta{color:var(--accent)}.tile.away .times{color:var(--muted)}
+.tile.away .badge{color:var(--done);border-color:#28395A}
+.segs{display:flex;flex-direction:column;gap:8px}
+.seg{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end}
+.seg .rm{border:1px solid var(--edge);border-radius:9px;min-height:56px;min-width:56px;color:var(--alert);font-size:20px}
+.bi{display:block;font-size:.72em;opacity:.75;letter-spacing:.06em;font-weight:500}
+.rrow .tm small{display:block;font-size:11px;color:var(--muted);font-family:Barlow,sans-serif}
+.sendbar{background:#1B2F4E;border-color:var(--accent);color:#DCE7F7}
+.sendbar b{color:#fff}
+.sendbar .tag{color:var(--accent);border-color:var(--accent)}
+.sendbar button{margin-left:auto;border:1px solid var(--accent);border-radius:999px;background:var(--accent);color:var(--accent-ink);padding:10px 20px;min-height:46px;font-weight:700;font-size:15px}
+.sendbar.late{border-color:var(--alert)}.sendbar.late .tag{color:var(--alert);border-color:var(--alert)}
+/* ---------- strips ---------- */
+.bar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:12px;padding:10px 16px;border-radius:var(--r);
+  background:var(--surface);border:1px solid var(--edge);font-size:14px;color:var(--muted)}
+.bar strong{color:var(--ink);font-weight:600}
+.bar .sep{width:1px;height:16px;background:var(--edge)}
+.back{border:1px solid var(--edge);border-radius:999px;padding:8px 16px 8px 12px;min-height:44px;font-weight:600;font-size:15px;color:var(--ink);display:inline-flex;gap:8px;align-items:center}
+.undo{margin-left:auto;border:1px solid var(--accent);color:var(--accent);background:#1B2F4E;border-radius:999px;padding:8px 18px;min-height:44px;font-weight:700;font-size:14px;letter-spacing:.04em}
+.missed{margin-top:12px;padding:12px 16px;border-radius:var(--r);background:var(--alert-dim);border:1px solid var(--alert);color:#F6CFC4;font-size:15px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.missed b{color:#FFDCD2;font-weight:700}
+.missed .tag{font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;text-transform:uppercase;letter-spacing:.1em;font-size:12px;border:1px solid var(--alert);border-radius:999px;padding:3px 9px;color:var(--alert)}
+
+/* ---------- agency chooser ---------- */
+.agencies{display:grid;gap:clamp(12px,1.6vw,18px);grid-template-columns:repeat(auto-fit,minmax(300px,1fr));margin-top:clamp(12px,1.6vw,18px)}
+.agency{position:relative;display:flex;flex-direction:column;gap:10px;text-align:left;background:var(--surface);border:1px solid var(--edge);
+  border-radius:var(--r);padding:clamp(22px,3vw,34px) clamp(20px,2.6vw,30px);min-height:clamp(200px,30vh,280px);transition:transform .12s ease}
+.agency::before{content:"";position:absolute;left:0;top:0;bottom:0;width:8px;border-radius:var(--r) 0 0 var(--r);background:var(--accent)}
+.agency:active{transform:scale(.985)}
+.agency .ag{font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;font-weight:700;font-size:clamp(44px,6.5vw,72px);line-height:1;letter-spacing:.02em}
+.agency .cnt{font-size:16px;color:var(--muted)}
+.agency .cnt b{color:var(--live);font-weight:700;font-size:20px}
+.agency .arrow{margin-top:auto;font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;text-transform:uppercase;letter-spacing:.09em;font-size:17px;color:var(--accent)}
+
+/* ---------- crew grid ---------- */
+.crew{display:grid;gap:clamp(12px,1.6vw,18px);grid-template-columns:repeat(auto-fit,minmax(430px,1fr));margin-top:clamp(12px,1.6vw,18px)}
+.crew.small{max-width:1010px}
+.tile{position:relative;display:flex;flex-direction:column;gap:12px;text-align:left;background:var(--surface);border:1px solid var(--edge);border-radius:var(--r);
+  padding:clamp(16px,2vw,24px) clamp(16px,2vw,24px) clamp(16px,2vw,22px) clamp(22px,2.4vw,30px);min-height:clamp(170px,22vh,220px);transition:transform .12s ease}
+.tile::before{content:"";position:absolute;left:0;top:0;bottom:0;width:7px;border-radius:var(--r) 0 0 var(--r);background:var(--edge)}
+.tile:active{transform:scale(.985)}
+.tile .nm{font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;font-weight:600;font-size:clamp(24px,3.1vw,36px);line-height:1.04;letter-spacing:.01em;text-wrap:balance;padding-right:110px}
+.tile .sub{font-size:13px;color:var(--muted);letter-spacing:.05em;margin-top:-6px}
+.tile .state{margin-top:auto;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.tile .cta{font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;text-transform:uppercase;letter-spacing:.08em;font-weight:500;font-size:clamp(15px,1.7vw,19px);color:var(--muted);display:inline-flex;align-items:center;gap:8px}
+.tile .cta .g{font-size:1.15em;line-height:1}
+.tile .cta>span:not(.g){display:flex;flex-direction:column;line-height:1.15}
+.tile .cta .bi{font-size:.7em;letter-spacing:.05em;text-transform:none;opacity:.8}
+.tile .times{font-size:clamp(15px,1.8vw,19px);letter-spacing:.02em;color:var(--ink)}
+.tile .times i{font-style:normal;color:var(--muted);padding:0 6px}
+.tile .code{font-size:13px;color:var(--muted);letter-spacing:.03em}
+.tile.out .cta{color:var(--accent)}
+.tile.in{background:linear-gradient(180deg,var(--live-dim),var(--surface) 62%);border-color:#2F6B4A}
+.tile.in::before{background:var(--live)}
+.tile.in .cta{color:var(--live)}
+.tile.done{background:#121F33;border-color:#28395A}
+.tile.done::before{background:var(--done)}
+.tile.done .nm{color:#B9C4D6}.tile.done .cta{color:var(--done)}.tile.done .times{color:var(--muted)}
+.tile.walk{border-style:dashed}
+.tile.addw{align-items:center;justify-content:center;text-align:center;border-style:dashed;background:transparent}
+.tile.addw::before{display:none}
+.tile.addw .nm{padding:0;color:var(--accent);font-size:clamp(22px,2.6vw,30px)}
+.tile.addw .sub{color:var(--muted)}
+.badge{position:absolute;top:14px;right:14px;font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;text-transform:uppercase;letter-spacing:.09em;font-weight:600;font-size:12px;
+  padding:5px 11px;border-radius:999px;border:1px solid var(--edge);color:var(--muted)}
+.tile.in .badge{color:var(--accent-ink);background:var(--live);border-color:var(--live)}
+.tile.done .badge{color:var(--done);border-color:#28395A}
+.tile.walk .badge{color:var(--accent);border-color:var(--accent)}
+
+/* ---------- office strip ---------- */
+.office{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;line-height:1.5;margin-top:clamp(14px,2vw,20px);
+  padding:14px 4px calc(var(--pad) + 6px);border-top:1px solid var(--edge);font-size:13px;color:var(--muted);letter-spacing:.03em}
+.office button{border:1px solid var(--edge);border-radius:8px;padding:10px 16px;min-height:44px;color:var(--muted);font-size:14px;font-weight:600}
+.office button:hover{color:var(--ink);border-color:var(--muted)}
+
+/* ---------- overlays ---------- */
+.veil{position:fixed;inset:0;z-index:40;background:rgba(6,11,20,.9);display:flex;align-items:center;justify-content:center;padding:20px;
+  -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.veil[hidden]{display:none!important}
+.sheet{width:min(760px,100%);max-height:94vh;overflow:auto;background:var(--surface);border:1px solid var(--edge);border-top:4px solid var(--accent);
+  border-radius:14px;padding:clamp(20px,3vw,32px);display:flex;flex-direction:column;gap:18px}
+.sheet.wide{width:min(1040px,100%)}
+.sheet .foot{position:sticky;bottom:calc(-1*clamp(20px,3vw,32px) - 2px);background:var(--surface);padding-top:10px;padding-bottom:clamp(20px,3vw,32px);margin-top:-6px;margin-bottom:calc(-1*clamp(20px,3vw,32px));display:flex;flex-direction:column;gap:10px;box-shadow:0 -14px 14px -10px rgba(6,11,20,.9)}
+.sigwrap{display:flex;flex-direction:column;gap:8px}
+.sigtop{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.sigtop>span{font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;text-transform:uppercase;letter-spacing:.11em;font-size:12px;color:var(--muted);font-weight:500}
+.sigtop .linkish{padding:2px 0;min-height:0;align-self:baseline}
+.sigpad{display:block;width:100%;height:150px;background:#F4F6FA;border:2px dashed #7B8AA3;border-radius:10px;touch-action:none;cursor:crosshair;-webkit-user-select:none;user-select:none}
+.sigpad.inked{border-style:solid;border-color:var(--live)}
+.sigattest{font-size:16px;color:var(--ink);line-height:1.35}
+.sigview{display:inline-block;width:150px;height:60px;background:#F4F6FA;border-radius:6px;vertical-align:middle}
+.sigrow{display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--muted)}
+.sigrow b{color:var(--ink);font-weight:600}
+.sigrow .nosig{color:var(--alert);font-weight:600}
+.sheet .kicker{font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;text-transform:uppercase;letter-spacing:.13em;font-weight:500;font-size:14px;color:var(--accent);margin:0}
+.sheet .kicker.green{color:var(--live)}
+.sheet h2{margin:0;font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;font-weight:700;font-size:clamp(34px,5.4vw,52px);line-height:1;letter-spacing:.01em;text-wrap:balance}
+.sheet h2.md{font-size:clamp(26px,3.6vw,34px)}
+.stamp{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;background:var(--surface-2);border:1px solid var(--edge);border-radius:var(--r);padding:16px 18px}
+.stamp .big{font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;font-weight:600;font-size:clamp(32px,5vw,46px);line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
+.stamp .note{font-size:14px;color:var(--muted)}
+.warnband{background:var(--alert-dim);border:1px solid var(--alert);border-radius:var(--r);padding:16px 18px;color:#FFDCD2;font-size:17px;line-height:1.4}
+.warnband b{display:block;font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;text-transform:uppercase;letter-spacing:.1em;font-size:13px;color:var(--alert);margin-bottom:5px;font-weight:600}
+.field{display:flex;flex-direction:column;gap:9px}
+.field>span{font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;text-transform:uppercase;letter-spacing:.11em;font-size:12px;color:var(--muted);font-weight:500}
+.finput{width:100%;background:var(--surface-2);color:var(--ink);border:1px solid var(--edge);border-radius:9px;padding:14px 15px;font:inherit;font-size:17px;min-height:56px;-webkit-user-select:text;user-select:text}
+.finput::placeholder{color:#6B7C97}
+input[type=time].finput{font-family:"Roboto Mono",monospace;font-size:20px}
+textarea.finput{min-height:84px;resize:vertical}
+.err{color:var(--alert);font-size:14px;font-weight:600;min-height:18px}
+.ok{color:var(--live);font-size:14px;font-weight:600;min-height:18px}
+.two{display:grid;gap:10px;grid-template-columns:1fr 1fr}
+.acts{display:flex;gap:12px;flex-wrap:wrap}
+.acts button{flex:1 1 210px;min-height:78px;border-radius:10px;font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;text-transform:uppercase;letter-spacing:.09em;font-weight:600;font-size:clamp(17px,2.1vw,21px)}
+.acts.tight button{min-height:58px;font-size:16px}
+.go{background:var(--live);color:var(--accent-ink)}
+.go.blue{background:var(--accent);color:var(--accent-ink)}
+.no{background:var(--surface-2);border:1px solid var(--edge);color:var(--muted);flex:0 1 160px}
+.no.wide{flex:1 1 210px}
+.acts button.dis,button.dis{background:var(--surface-2);border:1px solid var(--edge);color:var(--muted);opacity:1}
+.nostore{margin-top:12px;padding:16px 18px;border-radius:var(--r);background:var(--alert-dim);border:2px solid var(--alert);color:#FFDCD2}
+.nostore b{display:block;font-family:Oswald,"Arial Narrow",Arial,sans-serif;text-transform:uppercase;letter-spacing:.06em;font-size:19px;line-height:1.25}
+.nostore span{display:block;font-weight:500;font-size:15px;line-height:1.45;margin-top:7px;color:#FFD3C6}
+.linkish{align-self:flex-start;color:var(--muted);font-size:15px;text-decoration:underline;text-underline-offset:4px;padding:8px 0;min-height:44px}
+.linkish.red{color:var(--alert)}
+.timeout{height:3px;border-radius:2px;background:var(--edge);overflow:hidden}
+.timeout i{display:block;height:100%;background:var(--muted);width:100%}
+
+/* cost-code picker */
+.picks{display:grid;gap:9px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.pick{border:1px solid var(--edge);border-radius:9px;background:var(--surface-2);padding:13px 15px;text-align:left;min-height:64px;display:flex;gap:12px;align-items:center}
+.pick .box{width:26px;height:26px;border-radius:6px;border:2px solid var(--muted);flex:none;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--accent-ink)}
+.pick[aria-pressed="true"]{border-color:var(--accent);background:#1B2F4E}
+.pick[aria-pressed="true"] .box{background:var(--accent);border-color:var(--accent)}
+.pick .cd{font-family:"Roboto Mono",monospace;font-weight:700;font-size:17px;letter-spacing:.02em;flex:none;min-width:64px}
+.pick .lb{display:flex;flex-direction:column;gap:1px;min-width:0}
+.pick .lb b{font-weight:600;font-size:15px;line-height:1.2}
+.pick .lb span{font-size:12px;color:var(--muted);line-height:1.2}
+.pick .tag{margin-left:auto;font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;text-transform:uppercase;letter-spacing:.09em;font-size:11px;color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:2px 8px;flex:none}
+.codelist{display:flex;flex-direction:column;gap:7px;max-height:38vh;overflow:auto;border:1px solid var(--edge);border-radius:9px;padding:8px;background:#122038}
+.codelist .pick{min-height:58px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;min-height:34px}
+.chips span{font-family:"Roboto Mono",monospace;font-weight:700;font-size:15px;background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:6px 13px}
+.chips i{font-style:normal;color:var(--muted);font-size:14px;align-self:center}
+
+/* agency picker (forms) */
+.agpick{display:flex;gap:9px;flex-wrap:wrap}
+.agpick button{border:1px solid var(--edge);border-radius:9px;background:var(--surface-2);padding:12px 18px;min-height:54px;font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;font-weight:600;font-size:18px;letter-spacing:.03em}
+.agpick button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);background:#1B2F4E}
+.agpick.col{flex-direction:column;align-items:stretch}
+.agpick.col button{text-align:left;font-size:16px;text-transform:none;letter-spacing:0;font-family:Barlow,"Helvetica Neue",Arial,sans-serif}
+
+/* suggestions */
+.sugg{display:flex;flex-direction:column;gap:7px}
+.sugg button{border:1px solid var(--edge);border-radius:9px;background:var(--surface-2);padding:13px 16px;min-height:58px;text-align:left;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.sugg button b{font-size:18px}
+.sugg button span{font-size:13px;color:var(--muted)}
+
+/* ---------- confirmation flash ---------- */
+.flash{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:20px;background:#0B1F17}
+.flash[hidden]{display:none!important}
+.flash.outk{background:#0F1B2D}
+.flashin{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;max-width:760px;width:100%}
+.tick{font-size:clamp(64px,13vw,120px);line-height:1;color:var(--live)}
+.flash.outk .tick{color:var(--accent)}
+.flash h3{margin:0;font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;font-weight:700;font-size:clamp(34px,6.4vw,62px);line-height:1.02;letter-spacing:.01em;color:var(--ink);text-wrap:balance}
+.flash .verb{font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;text-transform:uppercase;letter-spacing:.16em;font-weight:600;font-size:clamp(16px,2.4vw,22px);color:var(--live)}
+.flash.outk .verb{color:var(--accent)}
+.flash .at{font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;font-weight:600;font-size:clamp(36px,7vw,68px);line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
+.flash .sub{color:var(--muted);font-size:16px}
+.flash .codesum{font-family:"Roboto Mono",monospace;font-size:18px;color:var(--muted)}
+.flash .undobig{margin-top:8px;border:2px solid var(--muted);color:var(--ink);border-radius:10px;padding:16px 34px;min-height:64px;font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;text-transform:uppercase;letter-spacing:.1em;font-weight:600;font-size:18px}
+.ring{width:min(420px,80%);height:4px;border-radius:3px;background:#1E3A2F;overflow:hidden;margin-top:6px}
+.flash.outk .ring{background:#1F3455}
+.ring i{display:block;height:100%;background:var(--live);width:100%;transform-origin:left center;animation:drain 7s linear forwards}
+.flash.outk .ring i{background:var(--accent)}
+@keyframes drain{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+
+/* ---------- office: pin + crew + review ---------- */
+.pinwrap{width:min(430px,100%);background:var(--surface);border:1px solid var(--edge);border-top:4px solid var(--accent);border-radius:14px;padding:clamp(20px,3vw,30px);display:flex;flex-direction:column;gap:16px;text-align:center}
+.pinwrap h2{margin:0;font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;font-weight:600;font-size:26px}
+.pinwrap p{margin:0;color:var(--muted);font-size:15px;min-height:22px}
+.pinwrap p.bad{color:var(--alert);font-weight:600}
+.pips{display:flex;gap:14px;justify-content:center;margin:4px 0 2px}
+.pips i{width:16px;height:16px;border-radius:50%;border:2px solid var(--edge);display:block}
+.pips i.on{background:var(--accent);border-color:var(--accent)}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.pad button{min-height:66px;border:1px solid var(--edge);border-radius:10px;background:var(--surface-2);font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;font-size:26px;font-weight:500;font-variant-numeric:tabular-nums}
+.pad button.sm{font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.pad button:active{background:var(--edge)}
+
+.sect{display:flex;flex-direction:column;gap:9px}
+.sect+.sect{margin-top:16px}
+.sect>h3{margin:0;font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;text-transform:uppercase;letter-spacing:.12em;font-size:12px;color:var(--muted);font-weight:500;display:flex;justify-content:space-between;align-items:center}
+.row{display:flex;align-items:center;gap:14px;width:100%;text-align:left;border:1px solid var(--edge);border-radius:9px;background:var(--surface-2);padding:13px 16px;min-height:62px}
+.row .who{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
+.row .who b{font-size:18px;font-weight:600;line-height:1.2}
+.row .who span{font-size:13px;color:var(--muted)}
+.row .tagc{font-family:"Roboto Mono",monospace;font-size:15px;font-weight:700;color:var(--accent);border:1px solid var(--edge);border-radius:7px;padding:5px 10px;flex:none}
+.row.off{opacity:.55}.row.off .tagc{color:var(--muted)}
+.row.pend{border-style:dashed;border-color:var(--accent)}
+.addbtn{border:1px dashed var(--edge);border-radius:9px;padding:15px;min-height:60px;color:var(--muted);font-weight:600;font-size:15px;letter-spacing:.03em;width:100%}
+.addbtn:hover{color:var(--accent);border-color:var(--accent)}
+.stat{font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;text-transform:uppercase;letter-spacing:.09em;font-size:11px;border:1px solid var(--edge);border-radius:999px;padding:3px 9px;color:var(--muted);white-space:nowrap}
+.stat.in{color:var(--live);border-color:var(--live)}.stat.ok{color:var(--accent-ink);background:var(--live);border-color:var(--live)}
+.stat.ed{color:var(--accent);border-color:var(--accent)}.stat.bad{color:var(--alert);border-color:var(--alert)}
+.stat.void{color:var(--muted);text-decoration:line-through}
+.daynav{display:flex;align-items:center;gap:10px;justify-content:space-between}
+.daynav button{border:1px solid var(--edge);border-radius:9px;background:var(--surface-2);min-height:52px;padding:0 18px;font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;font-size:20px}
+.daynav .dl{font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;font-weight:600;font-size:clamp(18px,2.4vw,24px);text-align:center;flex:1}
+.rrow{display:grid;grid-template-columns:minmax(150px,1.6fr) 74px 74px minmax(90px,1.2fr) auto;gap:10px;align-items:center;width:100%;text-align:left;
+  border:1px solid var(--edge);border-radius:9px;background:var(--surface-2);padding:11px 14px;min-height:60px}
+.rrow.void{opacity:.45}
+.rrow .who b{display:block;font-size:16px;font-weight:600;line-height:1.15}
+.rrow .who span{font-size:12px;color:var(--muted)}
+.rrow .tm{font-family:"Roboto Mono",monospace;font-size:16px;font-variant-numeric:tabular-nums}
+.rrow .tm.miss{color:var(--alert);font-weight:700}
+.rrow .cds{font-family:"Roboto Mono",monospace;font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rrow .sts{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+.rhead{display:grid;grid-template-columns:minmax(150px,1.6fr) 74px 74px minmax(90px,1.2fr) auto;gap:10px;padding:0 14px;font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;text-transform:uppercase;letter-spacing:.1em;font-size:11px;color:var(--muted)}
+.audit{font-size:13px;color:var(--muted);background:#122038;border:1px solid var(--edge);border-radius:9px;padding:10px 14px;line-height:1.5}
+.audit b{color:var(--ink)}
+.empty{padding:34px 18px;text-align:center;color:var(--muted);font-size:15px}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media (max-width:640px){
+  .clock{margin-left:0;width:100%}.crew{grid-template-columns:1fr}.acts button{flex:1 1 100%}.undo{margin-left:0;width:100%;justify-content:center}
+  .two{grid-template-columns:1fr}
+  .rrow,.rhead{grid-template-columns:1fr 64px 64px}.rrow .cds,.rhead .h4{display:none}.rrow .sts{grid-column:1/-1;justify-content:flex-start}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="rail">
+    <div class="job"><b id="jobName">Oyster · 25-013</b><span id="jobSub">Pioneer Electric Group — NewCold, Hagerstown MD</span></div>
+    <div class="clock"><span class="t" id="clock">--:--</span><span class="d" id="today">—</span></div>
+    <div class="railbtns">
+      <button class="chip" id="lang" aria-pressed="false" title="English / Español">EN</button>
+      <span class="chip" id="sync"><span class="dot" id="syncDot"></span><span id="syncTxt">Synced</span></span>
+    </div>
+  </header>
+
+  <div class="bar" id="statusBar">
+    <button class="back" id="backBtn" hidden>‹ <span id="backLbl">All crews</span></button>
+    <span><strong id="onCount">0</strong> <span id="onLbl">on site</span></span>
+    <span class="sep"></span>
+    <span><strong id="doneCount">0</strong> <span id="doneLbl">signed out</span></span>
+    <span class="sep"></span>
+    <span id="hint">Tap your company.</span>
+    <button class="undo" id="undoChip" hidden>Undo</button>
+  </div>
+
+  <div class="offline" id="offlineBar" hidden><span class="dot"></span><span id="offlineTxt"></span></div>
+  <div class="nostore" id="storeBar" hidden></div>
+  <div class="missed sendbar" id="sendBar" hidden></div>
+  <input type="file" id="restoreFile" accept=".json,application/json" hidden>
+  <div class="missed" id="missed" hidden></div>
+
+  <main id="main"><div class="empty" id="loadingNote">Loading…</div></main>
+
+  <footer class="office">
+    <span id="footNote">Times come from this device's clock. One tap in, one tap out — the office works out the hours.</span>
+    <span style="display:flex;gap:8px"><button id="openCrew">Crew</button><button id="openReview">Review</button></span>
+  </footer>
+</div>
+
+<div class="veil" id="veil" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+<div class="flash" id="flash" hidden><div class="flashin" id="flashIn"></div></div>
+<div class="veil" id="pinVeil" hidden>
+  <div class="pinwrap" role="dialog" aria-modal="true">
+    <h2 id="pinTitle">Office only</h2><p id="pinMsg">Enter your 4-digit code</p>
+    <div class="pips" id="pips"><i></i><i></i><i></i><i></i></div><div class="pad" id="pad"></div>
+  </div>
+</div>
+<div class="veil" id="crewVeil" hidden><div class="sheet wide" id="crewSheet" role="dialog" aria-modal="true"></div></div>
+<div class="veil" id="revVeil" hidden><div class="sheet wide" id="revSheet" role="dialog" aria-modal="true"></div></div>
+
+<script>
+"use strict";
+/* =====================================================================
+   STRINGS
+   ===================================================================== */
+var T={
+en:{ onsite:"on site", signedout:"signed out", tapCo:"Tap your company.", tapIn:"Tap your name to sign in.",
+  allIn:"Everyone is on site.", allCrews:"All crews", ofOn:"of", onSiteNow:"on site now",
+  tapToIn:"Tap to sign in", tapToOut:"Tap to sign out", tapBack:"Tap to sign back in", outSince:"Out since",
+  bIn:"On site", bOut:"Out", bWalk:"Not on list", findName:"Find my name",
+  notOnList:"Not on the list?", notOnListSub:"Tap here to sign in anyway",
+  signingIn:"Signing in", signingOut:"Signing out", backOn:"Signing back in", earlier:"Earlier today",
+  confirmIn:"Sign in", confirmOut:"Sign out", cancel:"Cancel", notMe:"Not me",
+  addNote:"Add a note", notePh:"Anything the office should know",
+  onSiteFor:"on site", started:"Signed in at", thisBlock:"this time",
+  quickTitle:"That was quick", quickBody:"You signed in $ ago. Sign out already?", stayIn:"No — stay signed in", yesOut:"Yes, sign out",
+  okIn:"Signed in", okOut:"Signed out", okBack:"Back on site",
+  undo:"Undo", undoThis:"Undo — that wasn't me", undoLast:"Undo:", autoClose:"This goes back to the board on its own.",
+  missedTag:"Fix me", missedOut:"never signed out on", missedFix:"Tell the office — do not sign in until it is sorted.",
+  codeOut:"What did you work on today?", codeOutSub:"Pick one. It covers your whole day.", usual:"Usual", lastTime:"Last time", today_:"Today",
+  findCode:"Find a code", codeFirst:"Pick a cost code to sign out.", chosen:"Cost code:",
+  signHere:"Sign here with your finger", attestIn:"I am signing in now.", attestOut:"I confirm these times are correct.", clearSig:"Clear",
+  signFirst:"Sign above to continue.", codeAndSign:"Pick a cost code, then sign.",
+  noStoreT:"This copy cannot save — do not sign anyone in on it",
+  noStoreB:"The browser is blocking storage for this page. That happens when the file is opened straight out of OneDrive or SharePoint instead of from the device. Anything entered here is lost the moment the page reloads or you press Back.",
+  noStoreF:"Fix: save the file to this device and open that copy — in OneDrive choose Download, then open it from your Downloads folder.",
+  noStoreS:"Cannot save on this page.", signedLbl:"Signed", unsigned:"Unsigned", editedAfterSign:"Changed after signing",
+  sigIn:"Signed in", sigOut:"Signed out", noSig:"no signature", blockN:"Block", sigs:"Signatures",
+  walkTitle:"Find your name", walkSub:"Type your first and last name. If you see it below, tap it.", yourName:"First and last name", company:"Company",
+  signAsNew:"I'm not on the list — sign me in", nameNeeded:"Type your first AND last name.", isThatYou:"Is this you?", other:"Other",
+  offlineMsg:"Not connected. Sign-ins are saved on this device and will sync when the connection comes back.",
+  crew:"Crew", review:"Review", office:"Office only", pinSub:"Enter your 4-digit code", pinNew:"Set a 4-digit code for this board",
+  pinAgain:"Enter it again", pinBad:"Wrong code", pinNoMatch:"Those did not match",
+  crewTitle:"Crew list", onCrew:"On the crew", offCrew:"Removed", pending:"Not on the list yet — signed in as walk-ons",
+  addWorker:"+ Add someone", fName:"Name", fTrade:"Trade or role (optional)", fAgency:"Company", fCode:"Usual cost code (optional)", none:"None",
+  fPay:"Pay type", hourly:"Hourly — needs a cost code at sign-out", salaried:"Salaried — attendance only, no cost code, no hours billed",
+  attOnly:"attendance only", noCodeNeeded:"No cost code needed — salaried, attendance only. Just confirm.",
+  loadCrew:"Add the built-in Oyster crew list", loadCrewSub:"$ names from the office roster are not on this tablet yet", loadedCrew:"Added $ names to the crew",
+  save:"Save", remove:"Remove from crew", restore:"Put back on the crew", addToCrew:"Add to crew", dismiss:"Dismiss",
+  codesTitle:"Cost codes", addCode:"+ Add a cost code", codeNum:"Code", codeEn:"Description (English)", codeEs:"Descripción (Español)",
+  sups:"Supervisors", addSup:"+ Add a supervisor", supName:"Name", supPin:"4-digit code", changeMy:"Change my code",
+  dupName:"That name is already on the crew.", codeNeeded:"A cost code is 3 to 5 digits, like 1023 or 1022-01.", pinNeeded:"A code is exactly 4 digits.",
+  saveFailed:"Could not save — check the connection and try again.", noOne:"Nobody on the crew yet.", close:"Close",
+  revTitle:"Review", noPunch:"Nobody signed in this day.", stillOn:"on site", approveAll:"Approve all complete", approved:"Approved",
+  approve:"Approve", unapprove:"Unapprove", edited:"Edited", walkOn:"Walk-on", missing:"No sign-out", voided:"Voided", voidIt:"Void this punch",
+  unvoid:"Restore", inTime:"In", outTime:"Out", codesLbl:"Cost code", addPunch:"+ Add a missing sign-in", who:"Who", by:"by",
+  blocks:"blocks", addBlock:"+ Add another in/out", timesBad:"Each block needs an In time, and Out must be after In.",
+  origWas:"Originally", exportCsv:"Export this week (CSV)", lockedNote:"Approved — unapprove to edit.", toReview:"to review",
+  thName:"Name", thIn:"In", thOut:"Out", thCodes:"Code",
+  synced:"Synced", waiting:"waiting to sync", offline:"Saved on this device",
+  foot:"Times come from this device's clock. Tap in when you arrive, out when you leave — as many times as you need. The office works out the hours.",
+  noRoster:"No crew list yet. The office needs to add the crew before anyone can sign in.",
+  mins:"min", hrs:"h", under1:"less than a minute", pickWorker:"Pick who",
+  local:"Saved on this tablet", sendOffice:"Send to office", lastSent:"Last sent to office", neverSent:"Never sent", daysAgo:"days ago",
+  unsent:"days of sign-ins not sent yet", sentOk:"Sent. The office will find it.", shareFail:"Could not open the share menu. The file was downloaded instead — attach it to an email.",
+  restoreFile:"Restore from a sent file", restored:"Restored", jobTitle:"This job", jobNum:"Job number", jobNm:"Job name", jobSub:"Line under the name",
+  officeEmail:"Office email (where the sign-ins go)", sendTitle:"Send to office", sendWhat:"$1 sign-ins across $2 days · two files:", sendTo:"Goes to:",
+  optShare:"Share…", optShareSub:"Opens this device's share menu — pick Mail, OneDrive or Teams", optEmail:"Email it", optEmailSub:"Saves the two files, then opens an email to the office with the hours already in it — attach the files and send",
+  optSave:"Just save the files", optSaveSub:"Saves both files on this device. You attach or move them yourself",
+  shareClosed:"Nothing was sent — the share menu was closed.", didItGo:"Did it go through?", yesSent:"Yes — mark as sent", notYet:"Not yet",
+  emailOpened:"An email to $ has been opened. Attach the two files from your Downloads folder, then send. The hours are also in the body of the email as a backup.",
+  savedTwo:"Two files saved to this device's Downloads folder. Attach them to an email to $, or move them into OneDrive → Timesheets → Sign-in board.",
+  noShare:"This device has no share menu — use Email it.", emailBodyHead:"Sign-ins from the tablet. The two attached files are the record; the hours below are a copy.", attachThese:"Attach these two files:" },
+es:{ onsite:"en obra", signedout:"salieron", tapCo:"Toque su compañía.", tapIn:"Toque su nombre para entrar.",
+  allIn:"Todos están en obra.", allCrews:"Todas las cuadrillas", ofOn:"de", onSiteNow:"en obra ahora",
+  tapToIn:"Toque para entrar", tapToOut:"Toque para salir", tapBack:"Toque para volver a entrar", outSince:"Salió a las",
+  bIn:"En obra", bOut:"Fuera", bWalk:"No en lista", findName:"Buscar mi nombre",
+  notOnList:"¿No está en la lista?", notOnListSub:"Toque aquí para entrar de todos modos",
+  signingIn:"Entrada", signingOut:"Salida", backOn:"Volviendo a entrar", earlier:"Hoy más temprano",
+  confirmIn:"Entrar", confirmOut:"Salir", cancel:"Cancelar", notMe:"No soy yo",
+  addNote:"Agregar nota", notePh:"Algo que la oficina deba saber",
+  onSiteFor:"en obra", started:"Entró a las", thisBlock:"esta vez",
+  quickTitle:"Muy pronto", quickBody:"Entró hace $. ¿Ya va a salir?", stayIn:"No — sigo en obra", yesOut:"Sí, salir",
+  okIn:"Entrada registrada", okOut:"Salida registrada", okBack:"De vuelta en obra",
+  undo:"Deshacer", undoThis:"Deshacer — no era yo", undoLast:"Deshacer:", autoClose:"Esta pantalla se cierra sola.",
+  missedTag:"Corregir", missedOut:"no marcó salida el", missedFix:"Avise a la oficina antes de entrar.",
+  codeOut:"¿En qué trabajó hoy?", codeOutSub:"Elija uno. Cubre todo su día.", usual:"Habitual", lastTime:"La última vez", today_:"Hoy",
+  findCode:"Buscar código", codeFirst:"Elija un código para salir.", chosen:"Código:",
+  signHere:"Firme aquí con el dedo", attestIn:"Registro mi entrada ahora.", attestOut:"Confirmo que estas horas son correctas.", clearSig:"Borrar",
+  signFirst:"Firme arriba para continuar.", codeAndSign:"Elija el código de costo y luego firme.",
+  noStoreT:"Esta copia no puede guardar — no registre a nadie aquí",
+  noStoreB:"El navegador está bloqueando el almacenamiento de esta página. Ocurre cuando el archivo se abre directamente desde OneDrive o SharePoint en vez del dispositivo. Todo lo que se registre aquí se pierde al recargar o al volver atrás.",
+  noStoreF:"Solución: guarde el archivo en este dispositivo y abra esa copia — en OneDrive elija Descargar y ábralo desde la carpeta de descargas.",
+  noStoreS:"No se puede guardar en esta página.", signedLbl:"Firmado", unsigned:"Sin firma", editedAfterSign:"Cambiado después de firmar",
+  sigIn:"Firma de entrada", sigOut:"Firma de salida", noSig:"sin firma", blockN:"Bloque", sigs:"Firmas",
+  walkTitle:"Busque su nombre", walkSub:"Escriba su nombre y apellido. Si lo ve abajo, tóquelo.", yourName:"Nombre y apellido", company:"Compañía",
+  signAsNew:"No estoy en la lista — regístreme", nameNeeded:"Escriba su nombre Y apellido.", isThatYou:"¿Es usted?", other:"Otra",
+  offlineMsg:"Sin conexión. Las entradas se guardan en este equipo y se sincronizan cuando vuelva la conexión.",
+  crew:"Personal", review:"Revisar", office:"Solo oficina", pinSub:"Ingrese su código de 4 dígitos", pinNew:"Cree un código de 4 dígitos para este tablero",
+  pinAgain:"Ingréselo otra vez", pinBad:"Código incorrecto", pinNoMatch:"No coinciden",
+  crewTitle:"Lista de personal", onCrew:"En el personal", offCrew:"Retirados", pending:"Aún no en la lista — entraron sin registro",
+  addWorker:"Agregar persona", fName:"Nombre", fTrade:"Oficio o puesto (opcional)", fAgency:"Compañía", fCode:"Código habitual (opcional)", none:"Ninguno",
+  fPay:"Tipo de pago", hourly:"Por hora — necesita código de costo al salir", salaried:"Asalariado — solo asistencia, sin código, sin horas facturadas",
+  attOnly:"solo asistencia", noCodeNeeded:"No necesita código de costo — asalariado, solo asistencia. Solo confirme.",
+  loadCrew:"Agregar la lista de personal de Oyster incluida", loadCrewSub:"$ nombres de la lista de la oficina aún no están en esta tableta", loadedCrew:"Se agregaron $ nombres al personal",
+  save:"Guardar", remove:"Quitar del personal", restore:"Regresar al personal", addToCrew:"Agregar al personal", dismiss:"Descartar",
+  codesTitle:"Códigos de costo", addCode:"Agregar código", codeNum:"Código", codeEn:"Description (English)", codeEs:"Descripción (Español)",
+  sups:"Supervisores", addSup:"Agregar supervisor", supName:"Nombre", supPin:"Código de 4 dígitos", changeMy:"Cambiar mi código",
+  dupName:"Ese nombre ya está en el personal.", codeNeeded:"El código es de 3 a 5 dígitos, como 1023 o 1022-01.", pinNeeded:"El código es de 4 dígitos.",
+  saveFailed:"No se pudo guardar — revise la conexión e intente de nuevo.", noOne:"Todavía no hay personal.", close:"Cerrar",
+  revTitle:"Revisar", noPunch:"Nadie entró ese día.", stillOn:"en obra", approveAll:"Aprobar todo lo completo", approved:"Aprobado",
+  approve:"Aprobar", unapprove:"Quitar aprobación", edited:"Editado", walkOn:"Sin registro", missing:"Sin salida", voided:"Anulado", voidIt:"Anular este registro",
+  unvoid:"Restaurar", inTime:"Entrada", outTime:"Salida", codesLbl:"Código de costo", addPunch:"Agregar entrada faltante", who:"Quién", by:"por",
+  blocks:"bloques", addBlock:"Agregar otra entrada/salida", timesBad:"Cada bloque necesita Entrada, y la Salida debe ser después.",
+  origWas:"Original", exportCsv:"Exportar la semana (CSV)", lockedNote:"Aprobado — quite la aprobación para editar.", toReview:"por revisar",
+  thName:"Nombre", thIn:"Entrada", thOut:"Salida", thCodes:"Código",
+  synced:"Sincronizado", waiting:"por sincronizar", offline:"Guardado en este equipo",
+  foot:"Las horas vienen del reloj de este equipo. Toque al llegar, toque al salir — las veces que necesite. La oficina calcula las horas.",
+  noRoster:"Todavía no hay lista de personal. La oficina debe agregar al equipo.",
+  mins:"min", hrs:"h", under1:"menos de un minuto", pickWorker:"Elija quién",
+  local:"Guardado en esta tableta", sendOffice:"Enviar a la oficina", lastSent:"Último envío a la oficina", neverSent:"Nunca enviado", daysAgo:"días",
+  unsent:"días de registros sin enviar", sentOk:"Enviado. La oficina lo encontrará.", shareFail:"No se pudo abrir el menú de compartir. Se descargó el archivo — adjúntelo a un correo.",
+  restoreFile:"Restaurar desde un archivo enviado", restored:"Restaurado", jobTitle:"Esta obra", jobNum:"Número de obra", jobNm:"Nombre de la obra", jobSub:"Línea bajo el nombre",
+  officeEmail:"Correo de la oficina (a dónde van los registros)", sendTitle:"Enviar a la oficina", sendWhat:"$1 registros en $2 días · dos archivos:", sendTo:"Va a:",
+  optShare:"Compartir…", optShareSub:"Abre el menú de compartir de este equipo — elija Mail, OneDrive o Teams", optEmail:"Enviar por correo", optEmailSub:"Guarda los dos archivos y abre un correo a la oficina con las horas ya incluidas — adjunte los archivos y envíe",
+  optSave:"Solo guardar los archivos", optSaveSub:"Guarda ambos archivos en este equipo. Usted los adjunta o los mueve",
+  shareClosed:"No se envió nada — se cerró el menú de compartir.", didItGo:"¿Se envió?", yesSent:"Sí — marcar como enviado", notYet:"Todavía no",
+  emailOpened:"Se abrió un correo a $. Adjunte los dos archivos de la carpeta Descargas y envíe. Las horas también van en el cuerpo del correo como respaldo.",
+  savedTwo:"Dos archivos guardados en Descargas. Adjúntelos a un correo a $, o muévalos a OneDrive → Timesheets → Sign-in board.",
+  noShare:"Este equipo no tiene menú de compartir — use Enviar por correo.", emailBodyHead:"Registros de la tableta. Los dos archivos adjuntos son el registro; las horas abajo son una copia.", attachThese:"Adjunte estos dos archivos:" }
+};
+/* Both languages, always, everywhere a worker looks. No toggle to get stuck on. */
+var lang="en";
+function te(k){ return T.en[k]||k; }
+function ts(k){ return T.es[k]||T.en[k]||k; }
+function t(k){ var a=te(k), b=ts(k); return a===b ? a : a+" · "+b; }
+function paintStore(){
+  var b=document.getElementById("storeBar"); if(!b) return;
+  if(CLOUD||STORE_OK){ b.hidden=true; return; }
+  b.hidden=false; b.textContent="";
+  b.appendChild(el("b",null,t("noStoreT")));
+  b.appendChild(el("span",null,t("noStoreB")));
+  b.appendChild(el("span",null,t("noStoreF")));
+}
+function otherLang(){ return "es"; }
+function bi(k){ return t(k); }
+function biBtn(k){ var b=el("span",null,te(k)); var o=ts(k); if(o&&o!==te(k)) b.appendChild(el("span","bi",o)); return b; }
+function biSpan(k){ return biBtn(k); }
+
+/* =====================================================================
+   STATE
+   ===================================================================== */
+var LS={ get:function(k,d){ try{ var v=localStorage.getItem("peg."+k); return v?JSON.parse(v):d; }catch(e){ return d; } },
+         set:function(k,v){ try{ localStorage.setItem("peg."+k, JSON.stringify(v)); STORE_OK=true; }catch(e){ if(STORE_OK){ STORE_OK=false; paintStore(); } } } };
+
+/* Can this context actually keep anything?  A page served out of the OneDrive / SharePoint
+   preview runs in a sandbox on a throwaway origin: localStorage throws, every write is
+   swallowed by the catch above, the board looks like it is recording and loses the lot on
+   reload or Back.  Isaac hit exactly that on 9/21.  Test it once, out loud, at boot. */
+var STORE_OK=(function(){ try{ localStorage.setItem("peg.__probe","1");
+    var v=localStorage.getItem("peg.__probe"); localStorage.removeItem("peg.__probe"); return v==="1"; }catch(e){ return false; } })();
+var QUICK_OUT_MIN=10, SHEET_TIMEOUT=30000, HOME_TIMEOUT=45000, FLASH_MS=7000, UNDO_MS=120000, OFFLINE_AFTER=12000;
+var AG_PREF=["PEG","KNP","ABG"];
+var CLOUD=!!(window.claude&&claude.use);          /* on claude.ai → shared database; anywhere else → this tablet is the record */
+var db=null, SUP=null, T0=Date.now();
+var DEFAULT_CODES=[["1000","General Labor for Projects","Mano de obra general"],["1001","Temporary Power","Energía temporal"],["1006","Material Handler","Manejo de materiales"],["1008","Non Productive Time","Tiempo no productivo"],["1009","Supervision ON SITE","Supervisión en obra"],["1010","Travel Labor","Tiempo de viaje"],["1011","Underground Electrical","Eléctrico subterráneo"],["1012","Site Lighting Conduit","Conduit de alumbrado exterior"],["1013","Underground Distribution","Distribución subterránea"],["1014","Underground Branch","Ramales subterráneos"],["1015","UG (Utility) Data/Comm.","Datos/comunicaciones subterráneos"],["1018-01","Feeder Cable Terminations","Terminaciones de cable alimentador"],["1022","Branch Conduit (Rough In)","Conduit de ramales (rough-in)"],["1022-01","Branch Lighting Conduit Raceway","Canalización de conduit para iluminación"],["1022-02","Branch Lighting Conduit","Conduit de iluminación"],["1023","Branch Cabling","Cableado de ramales"],["1023-01","Branch Lighting Cabling","Cableado de iluminación"],["1024","Devices (Trim)","Dispositivos (acabado)"],["1025","Equipment Operator","Operador de equipo"],["1027","Light Fixture Trim","Instalación de luminarias"],["1030","Mechanical Rough/Trim","Mecánico (rough/acabado)"],["1032","Panelboards (Mount, Cover)","Tableros (montaje, tapas)"],["1032-01","ATS Mounting/Install","Montaje de ATS (transferencia automática)"],["1037","Grounding (Service, Bldg etc.)","Puesta a tierra (servicio, edificio, etc.)"],["1042","OH Feeder Conduit","Conduit alimentador aéreo"],["1043","OH Feeder Cabling","Cableado alimentador aéreo"],["1044","Utility Feeder Conduit/Cabling","Conduit/cableado alimentador de servicio"],["1045","LV Conduit/Cabling","Conduit/cableado de baja tensión"],["1046","Cable Tray Installation","Instalación de charola portacables"],["1093","Clean Up (General)","Limpieza (general)"]];
+/* The Oyster crew as of WE 9/5/26 (from the scanned time sheets). A fresh tablet starts with this list; the office edits it from the Crew screen. */
+var DEFAULT_ROSTER=[{"id":"diaz","name":"Gerson Antonio Diaz","agency":"PEG","trade":"Electrician","defaultCode":"1023","job":"25-013","sortOrder":1,"active":true},{"id":"miller","name":"Scott Miller","agency":"PEG","trade":"Electrician","defaultCode":"1023","job":"25-013","sortOrder":2,"active":true},{"id":"heber","name":"Heber Rodriguez","agency":"PEG","trade":"Electrician","defaultCode":"1023","job":"25-013","sortOrder":3,"active":true},{"id":"vilchez","name":"Isaac Vilchez","agency":"PEG","trade":"Site supervision","defaultCode":"1009","job":"25-013","sortOrder":4,"active":true},{"id":"jakehaught","name":"Jake Haught","agency":"PEG","trade":"Salaried","defaultCode":"","job":"25-013","sortOrder":5,"active":true,"noHours":true},{"id":"ericshelton","name":"Eric Shelton","agency":"PEG","trade":"Salaried","defaultCode":"","job":"25-013","sortOrder":6,"active":true,"noHours":true},{"id":"isaacyu","name":"Isaac Yu","agency":"PEG","trade":"Salaried","defaultCode":"","job":"25-013","sortOrder":7,"active":true,"noHours":true},{"id":"octaviocerda","name":"Octavio Cerda","agency":"KNP","trade":"","defaultCode":"1022","job":"25-013","sortOrder":8,"active":true},{"id":"deysirocha","name":"Deysi Rocha","agency":"KNP","trade":"","defaultCode":"1022","job":"25-013","sortOrder":9,"active":true},{"id":"luisangelmarquez","name":"Luis Angel Marquez","agency":"KNP","trade":"","defaultCode":"1023","job":"25-013","sortOrder":10,"active":true},{"id":"salomeguzman","name":"Salome Guzman","agency":"KNP","trade":"","defaultCode":"1023","job":"25-013","sortOrder":11,"active":true},{"id":"williamavalos","name":"William Avalos","agency":"KNP","trade":"","defaultCode":"1023","job":"25-013","sortOrder":12,"active":true},{"id":"oscarvanegas","name":"Oscar Vanegas","agency":"KNP","trade":"","defaultCode":"1022","job":"25-013","sortOrder":13,"active":true},{"id":"corinavelazquez","name":"Corina Velazquez","agency":"KNP","trade":"","defaultCode":"1022","job":"25-013","sortOrder":14,"active":true},{"id":"carlosrodriguez","name":"Carlos Rodriguez","agency":"KNP","trade":"","defaultCode":"1044","job":"25-013","sortOrder":15,"active":true},{"id":"hectorquinones","name":"Hector Quinones","agency":"KNP","trade":"","defaultCode":"1044","job":"25-013","sortOrder":16,"active":true},{"id":"jaironlopez","name":"Jairon Lopez","agency":"KNP","trade":"","defaultCode":"1044","job":"25-013","sortOrder":17,"active":true},{"id":"abelardogarcia","name":"Abelardo Garcia","agency":"ABG","trade":"","defaultCode":"1044","job":"25-013","sortOrder":18,"active":true},{"id":"alejandroortiz","name":"Alejandro Ortiz","agency":"ABG","trade":"","defaultCode":"1022","job":"25-013","sortOrder":19,"active":true},{"id":"willblascoriano","name":"Willblas Coriano","agency":"ABG","trade":"","defaultCode":"1022","job":"25-013","sortOrder":20,"active":true},{"id":"angelmiguelsantiago","name":"Angel Miguel Santiago","agency":"ABG","trade":"","defaultCode":"1023","job":"25-013","sortOrder":21,"active":true},{"id":"dannytorres","name":"Danny Torres","agency":"ABG","trade":"","defaultCode":"1023","job":"25-013","sortOrder":22,"active":true},{"id":"darvinveliz","name":"Darvin Veliz","agency":"ABG","trade":"","defaultCode":"1023","job":"25-013","sortOrder":23,"active":true},{"id":"darwinhernandez","name":"Darwin Hernandez","agency":"ABG","trade":"","defaultCode":"1022","job":"25-013","sortOrder":24,"active":true},{"id":"ronielrodriguez","name":"Roniel Rodriguez","agency":"ABG","trade":"","defaultCode":"1022","job":"25-013","sortOrder":25,"active":true},{"id":"geovannyrosario","name":"Geovanny Rosario","agency":"ABG","trade":"","defaultCode":"1044","job":"25-013","sortOrder":26,"active":true},{"id":"jesusfigueroa","name":"Jesus Figueroa","agency":"ABG","trade":"","defaultCode":"1023","job":"25-013","sortOrder":27,"active":true},{"id":"joseluisaponte","name":"Jose Luis Aponte","agency":"ABG","trade":"","defaultCode":"1023","job":"25-013","sortOrder":28,"active":true},{"id":"marlonperez","name":"Marlon Perez","agency":"ABG","trade":"","defaultCode":"1044","job":"25-013","sortOrder":29,"active":true},{"id":"brigidolongaria","name":"Brigido Longaria","agency":"ABG","trade":"","defaultCode":"1044","job":"25-013","sortOrder":30,"active":true},{"id":"davidvillarrealjr","name":"David Villarreal, Jr","agency":"ABG","trade":"","defaultCode":"1022","job":"25-013","sortOrder":31,"active":true},{"id":"osmannavarijo","name":"Osman Navarijo","agency":"ABG","trade":"","defaultCode":"1022","job":"25-013","sortOrder":32,"active":true},{"id":"edgarveliz","name":"Edgar Veliz","agency":"ABG","trade":"","defaultCode":"1022","job":"25-013","sortOrder":33,"active":true},{"id":"rafaellopez","name":"Rafael Lopez","agency":"ABG","trade":"","defaultCode":"1022","job":"25-013","sortOrder":34,"active":true}];
+var roster=LS.get("roster",[]), walkons=LS.get("walkons",[]), codes=LS.get("codes",[]);
+if(!CLOUD&&!codes.length){ codes=DEFAULT_CODES.map(function(c){ return {code:c[0],label:c[1],labelEs:c[2]}; }); LS.set("codes",codes); }
+if(!CLOUD&&!roster.length){ roster=DEFAULT_ROSTER.map(function(w){ return Object.assign({},w); }); LS.set("roster",roster); }
+var LAST_SENT=LS.get("lastSent",null);
+var punches=LS.get("cacheToday",{}), recent=LS.get("recent",[]), stale=[];
+var queue=LS.get("queue",[]);
+var JOB=LS.get("job",{code:"25-013",name:"Oyster",sub:"Pioneer Electric Group — NewCold, Hagerstown MD"});
+function officeEmail(){ return (JOB.officeEmail||"isaac@pioneerelectricgrp.com").trim(); }
+var SEC=LS.get("sec",null);
+var view={agency:null};
+var lastAct=null, sheetTimer=null, flashTimer=null, undoTimer=null, homeTimer=null, draft=null;
+
+/* =====================================================================
+   HELPERS
+   ===================================================================== */
+function two(n){ return (n<10?"0":"")+n; }
+function ymd(d){ return d.getFullYear()+"-"+two(d.getMonth()+1)+"-"+two(d.getDate()); }
+function hhmm(d){ return two(d.getHours())+":"+two(d.getMinutes()); }
+function clockFace(d){ var h=d.getHours()%12; if(h===0)h=12; return h+":"+two(d.getMinutes())+" "+(d.getHours()<12?"AM":"PM"); }
+function pretty(hm){ if(!hm) return ""; var p=hm.split(":"),h=+p[0],m=p[1],ap=h<12?"a":"p"; h=h%12; if(h===0)h=12; return h+":"+m+ap; }
+function offsetStr(d){ var o=-d.getTimezoneOffset(),s=o<0?"-":"+"; o=Math.abs(o); return s+two(Math.floor(o/60))+":"+two(o%60); }
+function iso(d){ return ymd(d)+"T"+hhmm(d)+":"+two(d.getSeconds())+offsetStr(d); }
+function isoAt(date,hm){ return date+"T"+hm+":00"+offsetStr(new Date()); }
+function toMin(hm){ var p=hm.split(":"); return +p[0]*60 + +p[1]; }
+function minsBetween(a,b){ var m=toMin(b)-toMin(a); return m<0?m+1440:m; }
+function spanText(m,l){ var f=l==="es"?ts:l==="en"?te:t; return m<1?f("under1"):m<60?m+" "+f("mins"):Math.floor(m/60)+f("hrs")+" "+two(m%60)+f("mins"); }
+/* one sentence per language, so numbers and words stay together: "Signed in at 6:02a · 9h 30min on site this time  ·  Entró a las 6:02a · 9h 30min en obra esta vez" */
+function biSentence(fn){ return fn(te,"en")+"   ·   "+fn(ts,"es"); }
+function today(){ return ymd(new Date()); }
+function keyFor(id,date){ return (date||today())+"__"+id; }
+function dayName(d){ var p=d.split("-"),dt=new Date(+p[0],+p[1]-1,+p[2]), o={weekday:"long",month:"short",day:"numeric"}; return dt.toLocaleDateString("en-US",o)+" · "+dt.toLocaleDateString("es-US",o); }
+function shiftDay(d,n){ var p=d.split("-"),dt=new Date(+p[0],+p[1]-1,+p[2]); dt.setDate(dt.getDate()+n); return ymd(dt); }
+function foldName(n){ return String(n||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/\s+/g," ").trim(); }
+function slugBase(name){ return foldName(name).replace(/[^a-z0-9]+/g,"").slice(0,26)||"worker"; }
+function el(tag,cls,text){ var e=document.createElement(tag); if(cls) e.className=cls; if(text!==undefined) e.textContent=text; return e; }
+function codeObj(c){ for(var i=0;i<codes.length;i++) if(codes[i].code===c) return codes[i]; return null; }
+function codeLabel(c,l){ var o=codeObj(c); if(!o) return ""; l=l||lang; return (l==="es"?(o.labelEs||o.label):(o.label||o.labelEs))||""; }
+function codeOf(p){ return p ? (p.code || (p.codes&&p.codes[0]) || "") : ""; }
+function livePunch(p){ return p&&!p.voided ? p : null; }
+
+/* ---- a day is a list of in/out blocks ---- */
+function segs(p){ if(!p) return []; if(p.segments&&p.segments.length) return p.segments; return p.inLocal ? [{in:p.inLocal,inAt:p.inAt,out:p.outLocal||null,outAt:p.outAt||null}] : []; }
+function isOpen(p){ var s=segs(p); return s.length>0 && !s[s.length-1].out; }
+function withSegs(rec,list){ rec.segments=list; rec.inLocal=list.length?list[0].in:null; rec.inAt=list.length?list[0].inAt:null; var l=list[list.length-1]; rec.outLocal=l&&l.out?l.out:null; rec.outAt=l&&l.outAt?l.outAt:null; return rec; }
+function segText(p){ return segs(p).map(function(s){ return pretty(s.in)+"→"+(s.out?pretty(s.out):"…"); }).join("  "); }
+function onSiteMins(p){ return segs(p).reduce(function(m,s){ return m+(s.out?minsBetween(s.in,s.out):0); },0); }
+
+function allWorkers(){
+  var out=roster.filter(function(w){ return w.active!==false; }).map(function(w){ return Object.assign({},w); });
+  walkons.forEach(function(w){ if(!roster.some(function(r){ return r.id===w.id; })) out.push(Object.assign({walkOn:true},w)); });
+  return out;
+}
+function agencies(){
+  var set={}; allWorkers().forEach(function(w){ set[(w.agency||"PEG").toUpperCase()]=1; });
+  var list=Object.keys(set);
+  list.sort(function(a,b){ var ia=AG_PREF.indexOf(a),ib=AG_PREF.indexOf(b); if(ia<0)ia=99; if(ib<0)ib=99; return ia-ib||a.localeCompare(b); });
+  return list;
+}
+function lastCodeFor(workerId){
+  var best=null; recent.forEach(function(p){ if(p.workerId===workerId&&!p.voided&&codeOf(p)&&(!best||p.date>best.date)) best=p; });
+  return best?codeOf(best):"";
+}
+function pendingReview(){ return recent.filter(function(p){ return !p.voided&&!p.approved&&!isOpen(p)&&segs(p).length; }).length; }
+
+/* =====================================================================
+   WRITES
+   ===================================================================== */
+function flush(){
+  if(!db||!queue.length) return;
+  var pending=queue.slice(); queue=[]; LS.set("queue",queue); paintSync();
+  pending.forEach(function(w){ var op=w.del?db.doc(w.path).delete():db.doc(w.path).set(w.data); op.catch(function(){ queue.push(w); LS.set("queue",queue); paintSync(); }); });
+}
+function savePunch(id,data){
+  if(data===null) delete punches[id]; else punches[id]=data;
+  LS.set("cacheToday",punches); LS.set("cache."+today(),punches);
+  var job=data===null?{path:"punches/"+id,del:true}:{path:"punches/"+id,data:data};
+  if(!CLOUD){ rebuildRecent(); paintSync(); return; }
+  if(db){ var op=data===null?db.doc(job.path).delete():db.doc(job.path).set(data); op.catch(function(){ queue.push(job); LS.set("queue",queue); paintSync(); }); }
+  else { queue.push(job); LS.set("queue",queue); }
+  paintSync();
+}
+function localWrite(path,data){
+  var seg=path.split("/"), col=seg[0], id=seg[1];
+  function upd(list,key,ldb){ var i=-1; list.forEach(function(x,j){ if(x[key]===id) i=j; }); if(data===null){ if(i>=0) list.splice(i,1); } else { var rec=Object.assign({},data); rec[key]=id; if(i>=0) list[i]=rec; else list.push(rec); } LS.set(ldb,list); }
+  if(col==="roster"){ upd(roster,"id","roster"); roster.sort(function(a,b){ return (a.sortOrder||0)-(b.sortOrder||0)||String(a.name).localeCompare(String(b.name)); }); }
+  else if(col==="walkons") upd(walkons,"id","walkons");
+  else if(col==="codes"){ upd(codes,"code","codes"); codes.sort(function(a,b){ return String(a.code)<String(b.code)?-1:1; }); }
+  else if(col==="config"&&id==="security"){ SEC=data; LS.set("sec",SEC); }
+  else if(col==="config"&&id==="job"){ JOB=data; LS.set("job",JOB); }
+  else if(col==="punches"){ var day=id.split("__")[0], c=LS.get("cache."+day,{}); if(data===null) delete c[id]; else c[id]=data; LS.set("cache."+day,c); if(day===today()){ punches=c; LS.set("cacheToday",punches); } rebuildRecent(); }
+  paint(); refreshOffice();
+}
+function writeDoc(path,data,done){ if(!CLOUD){ localWrite(path,data); done&&done(null); return; } if(!db){ done&&done("offline"); return; } db.doc(path).set(data).then(function(){ done&&done(null); }).catch(function(){ done&&done("failed"); }); }
+function deleteDoc(path,done){ if(!CLOUD){ localWrite(path,null); done&&done(null); return; } if(!db){ done&&done("offline"); return; } db.doc(path).delete().then(function(){ done&&done(null); }).catch(function(){ done&&done("failed"); }); }
+function allDays(){ var out=[]; try{ for(var i=0;i<localStorage.length;i++){ var k=localStorage.key(i); if(k&&k.indexOf("peg.cache.")===0&&k!=="peg.cacheToday") out.push(k.slice(10)); } }catch(e){} return out.sort(); }
+function allPunches(){ var out=[]; allDays().forEach(function(d){ var c=LS.get("cache."+d,{}); Object.keys(c).forEach(function(k){ out.push(Object.assign({_id:k},c[k])); }); }); return out; }
+function rebuildRecent(){
+  if(CLOUD) return;
+  var all=allPunches(), td=today(); recent=all.filter(function(p){ return p.date>=shiftDay(td,-45); });
+  stale=all.filter(function(p){ return p.date<td&&isOpen(p)&&!p.voided; }).sort(function(a,b){ return a.date<b.date?1:-1; }).slice(0,6);
+  allDays().filter(function(d){ return d<shiftDay(td,-60); }).forEach(function(d){ var c=LS.get("cache."+d,{}), keep={}; Object.keys(c).forEach(function(k){ if(!c[k].sentAt) keep[k]=c[k]; }); if(Object.keys(keep).length) LS.set("cache."+d,keep); else { try{ localStorage.removeItem("peg.cache."+d); }catch(e){} } });
+}
+
+/* =====================================================================
+   BOARD
+   ===================================================================== */
+function unsentDays(){ var n=0; allDays().forEach(function(d){ var c=LS.get("cache."+d,{}); if(Object.keys(c).some(function(k){ return !c[k].sentAt&&!isOpen(c[k]); })) n++; }); return n; }
+function paintSend(){
+  var bar=document.getElementById("sendBar"); if(CLOUD){ bar.hidden=true; return; }
+  var n=unsentDays(), days=LAST_SENT?Math.floor((Date.now()-new Date(LAST_SENT).getTime())/86400000):null, late=n&&(days===null||days>=2);
+  bar.textContent=""; bar.hidden=false; bar.className="missed sendbar"+(late?" late":"");
+  bar.appendChild(el("span","tag",t("sendOffice")));
+  var s=el("span"); s.appendChild(el("b",null,t("lastSent")+": ")); s.appendChild(document.createTextNode(LAST_SENT?(dayName(LAST_SENT.slice(0,10))+(days>0?" · "+days+" "+t("daysAgo"):"")):t("neverSent"))); bar.appendChild(s);
+  if(n) bar.appendChild(el("span",null," · "+n+" "+t("unsent")));
+  var b=el("button"); b.appendChild(biBtn("sendOffice")); b.addEventListener("click",function(){ openPin("check",sendToOffice); }); bar.appendChild(b);
+}
+function paintSync(){
+  var dot=document.getElementById("syncDot"),txt=document.getElementById("syncTxt"),bar=document.getElementById("offlineBar");
+  paintSend();
+  if(!CLOUD){
+    if(!STORE_OK){ dot.className="dot bad"; txt.textContent=t("noStoreS"); bar.hidden=true; paintStore(); return; }
+    dot.className="dot"; txt.textContent=t("local"); bar.hidden=true; return;
+  }
+  if(!db){ dot.className="dot bad"; txt.textContent=t("offline"); }
+  else if(queue.length){ dot.className="dot warn"; txt.textContent=queue.length+" "+t("waiting"); }
+  else { dot.className="dot"; txt.textContent=t("synced"); }
+  var off = !db && (Date.now()-T0)>OFFLINE_AFTER;
+  bar.hidden=!off; if(off) document.getElementById("offlineTxt").textContent=t("offlineMsg");
+}
+function paintClock(){ var d=new Date(), o={weekday:"long",month:"short",day:"numeric"}; document.getElementById("clock").textContent=clockFace(d);
+  document.getElementById("today").textContent=d.toLocaleDateString("en-US",o)+" · "+d.toLocaleDateString("es-US",o); }
+function paintMissed(){
+  var box=document.getElementById("missed"); box.textContent="";
+  if(!stale.length){ box.hidden=true; return; }
+  box.hidden=false; box.appendChild(el("span","tag",t("missedTag")));
+  stale.slice(0,3).forEach(function(p){ var last=pretty(segs(p)[segs(p).length-1].in), pd=p.date.split("-"), dt=new Date(+pd[0],+pd[1]-1,+pd[2]), o={weekday:"long",month:"short",day:"numeric"};
+    var s=el("span"); s.appendChild(el("b",null,p.name));
+    s.appendChild(document.createTextNode(" "+te("missedOut")+" "+dt.toLocaleDateString("en-US",o)+" ("+te("started")+" "+last+").  ·  "+ts("missedOut")+" "+dt.toLocaleDateString("es-US",o)+" ("+ts("started")+" "+last+")."));
+    box.appendChild(s); });
+  box.appendChild(el("span",null,te("missedFix")+"  ·  "+ts("missedFix")));
+}
+function paintUndo(){ var c=document.getElementById("undoChip"); if(lastAct&&Date.now()-lastAct.at<UNDO_MS){ c.hidden=false; c.textContent=t("undoLast")+" "+lastAct.label; } else c.hidden=true; }
+function armHome(){ clearTimeout(homeTimer); if(view.agency&&agencies().length>1) homeTimer=setTimeout(function(){ view.agency=null; paint(); },HOME_TIMEOUT); }
+function setCounts(on,done,hint){ document.getElementById("onCount").textContent=String(on); document.getElementById("doneCount").textContent=String(done); document.getElementById("hint").textContent=hint; }
+
+function paint(){
+  document.getElementById("jobName").textContent=JOB.name+" · "+JOB.code;
+  document.getElementById("jobSub").textContent=JOB.sub;
+  document.getElementById("onLbl").textContent=t("onsite"); document.getElementById("doneLbl").textContent=t("signedout");
+  document.getElementById("footNote").textContent=t("foot");
+  document.getElementById("openCrew").textContent=t("crew");
+  var pr=pendingReview(); document.getElementById("openReview").textContent=t("review")+(pr?" ("+pr+" "+t("toReview")+")":"");
+  document.getElementById("backLbl").textContent=t("allCrews");
+
+  var main=document.getElementById("main"); main.textContent="";
+  var ags=agencies(), workers=allWorkers(), back=document.getElementById("backBtn");
+  if(!workers.length){ main.appendChild(el("div","empty",t("noRoster"))); back.hidden=true; setCounts(0,0,t("tapIn")); paintMissed(); paintUndo(); paintSync(); return; }
+  if(ags.length===1){ view.agency=ags[0]; view.auto=true; }
+  else if(view.auto){ view.agency=null; view.auto=false; }      /* a second company appeared — hand the choice back */
+
+  if(!view.agency){
+    back.hidden=true; var grid=el("div","agencies"), onAll=0, doneAll=0;
+    ags.forEach(function(a){
+      var ws=workers.filter(function(w){ return (w.agency||"PEG").toUpperCase()===a; }), on=0, done=0;
+      ws.forEach(function(w){ var p=livePunch(punches[keyFor(w.id)]); if(p&&segs(p).length) (isOpen(p)?on++:done++); });
+      onAll+=on; doneAll+=done;
+      var b=el("button","agency"); b.appendChild(el("span","ag",a));
+      var c=el("span","cnt"); c.appendChild(el("b",null,String(on))); c.appendChild(document.createTextNode(" "+te("ofOn")+" "+ws.length+" "+te("onSiteNow")+"  ·  "+on+" "+ts("ofOn")+" "+ws.length+" "+ts("onSiteNow"))); b.appendChild(c);
+      b.appendChild(el("span","arrow",t("tapIn")+" →"));
+      b.addEventListener("click",function(){ view.agency=a; view.auto=false; paint(); armHome(); }); grid.appendChild(b);
+    });
+    main.appendChild(grid);
+    var fb=el("button","findbtn"); fb.appendChild(el("span",null,"🔍")); fb.appendChild(biBtn("findName")); fb.addEventListener("click",function(){ openWalk(null); }); main.appendChild(fb);
+    setCounts(onAll,doneAll,t("tapCo")); paintMissed(); paintUndo(); paintSync(); return;
+  }
+
+  back.hidden=ags.length<=1;
+  var list=workers.filter(function(w){ return (w.agency||"PEG").toUpperCase()===view.agency; });
+  var crew=el("div","crew"+(list.length<=3?" small":"")), on=0, done=0;
+  list.forEach(function(w){
+    var p=livePunch(punches[keyFor(w.id)]), ss=segs(p);
+    var state=!ss.length?"out":(isOpen(p)?"in":"away");
+    if(state==="in") on++; if(state==="away") done++;
+    var b=el("button","tile "+state+(w.walkOn?" walk":"")); b.setAttribute("data-id",w.id);
+    b.appendChild(el("span","badge", state==="in"?t("bIn"):(w.walkOn?t("bWalk"):t("bOut"))));
+    b.appendChild(el("span","nm",w.name));
+    b.appendChild(el("span","sub",(w.trade||w.agency||"")+(w.noHours?" · "+t("attOnly"):"")+(w.walkOn?" · "+t("bWalk"):"")));
+    var st=el("span","state"), left=el("span");
+    if(ss.length){
+      left.appendChild(el("span","times mono",segText(p)));
+      if(codeOf(p)){ left.appendChild(el("br")); left.appendChild(el("span","code",codeOf(p)+" "+codeLabel(codeOf(p)))); }
+    }
+    var right=el("span","cta"); right.appendChild(el("span","g",state==="in"?"←":"→"));
+    right.appendChild(biBtn(state==="in"?"tapToOut":state==="away"?"tapBack":"tapToIn"));
+    st.appendChild(left); st.appendChild(right); b.appendChild(st);
+    b.addEventListener("click",function(){ openSheet(w); }); crew.appendChild(b);
+  });
+  var add=el("button","tile addw"); add.appendChild(el("span","nm",t("notOnList"))); add.appendChild(el("span","sub",t("notOnListSub")));
+  add.addEventListener("click",function(){ openWalk(view.agency); }); crew.appendChild(add);
+  main.appendChild(crew);
+  setCounts(on,done,(on===list.length&&list.length)?t("allIn"):t("tapIn"));
+  paintMissed(); paintUndo(); paintSync();
+}
+
+/* =====================================================================
+   SIGNATURE — finger on glass. Stored as strokes in a 400×160 box (a few hundred bytes),
+   drawn back as SVG in Review and carried in the export. Required at every sign-in and sign-out.
+   ===================================================================== */
+var SIG_W=400, SIG_H=160, SIG_MIN_INK=40;
+function inkLength(strokes){ var L=0; strokes.forEach(function(s){ for(var i=2;i<s.length;i+=2) L+=Math.hypot(s[i]-s[i-2],s[i+1]-s[i-1]); }); return L; }
+function sigPad(host,strokes,onChange){
+  var c=el("canvas","sigpad"), ctx=null, cur=null, W=0, H=0, dpr=Math.min(window.devicePixelRatio||1,3); host.appendChild(c);
+  function base(){ ctx.clearRect(0,0,W,H); ctx.save(); ctx.strokeStyle="#B9C3D3"; ctx.lineWidth=1.5; ctx.setLineDash([7,7]); ctx.beginPath(); ctx.moveTo(22,H*0.74); ctx.lineTo(W-22,H*0.74); ctx.stroke(); ctx.restore(); ctx.fillStyle="#B9C3D3"; ctx.font="600 22px Barlow, Arial, sans-serif"; ctx.fillText("×",24,H*0.74-10); }
+  function seg(x0,y0,x1,y1){ ctx.strokeStyle="#0E1929"; ctx.lineWidth=3.2; ctx.lineCap="round"; ctx.lineJoin="round"; ctx.beginPath(); ctx.moveTo(x0*W/SIG_W,y0*H/SIG_H); ctx.lineTo(x1*W/SIG_W,y1*H/SIG_H); ctx.stroke(); }
+  function redraw(){ if(!ctx) return; base(); strokes.forEach(function(s){ if(s.length===2) seg(s[0],s[1],s[0]+0.5,s[1]); for(var i=2;i<s.length;i+=2) seg(s[i-2],s[i-1],s[i],s[i+1]); }); c.classList.toggle("inked",api.hasInk()); }
+  function size(){ var r=c.getBoundingClientRect(); if(!r.width) return; W=r.width; H=r.height; c.width=Math.round(W*dpr); c.height=Math.round(H*dpr); ctx=c.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0); redraw(); }
+  function pt(e){ var r=c.getBoundingClientRect(); return [Math.max(0,Math.min(SIG_W,Math.round((e.clientX-r.left)*SIG_W/r.width))), Math.max(0,Math.min(SIG_H,Math.round((e.clientY-r.top)*SIG_H/r.height)))]; }
+  c.addEventListener("pointerdown",function(e){ if(!ctx) size(); if(!ctx) return; e.preventDefault(); try{ c.setPointerCapture(e.pointerId); }catch(x){} var p=pt(e); cur=[p[0],p[1]]; strokes.push(cur); seg(p[0],p[1],p[0]+0.5,p[1]); armSheet(); });
+  c.addEventListener("pointermove",function(e){ if(!cur) return; e.preventDefault(); var p=pt(e), n=cur.length; if(Math.abs(p[0]-cur[n-2])+Math.abs(p[1]-cur[n-1])<2) return; seg(cur[n-2],cur[n-1],p[0],p[1]); cur.push(p[0],p[1]); });
+  function up(){ if(!cur) return; cur=null; c.classList.toggle("inked",api.hasInk()); onChange&&onChange(); }
+  c.addEventListener("pointerup",up); c.addEventListener("pointercancel",up); c.addEventListener("lostpointercapture",up);
+  var api={ canvas:c, hasInk:function(){ return inkLength(strokes)>=SIG_MIN_INK; }, clear:function(){ strokes.length=0; redraw(); onChange&&onChange(); },
+            data:function(){ return {w:SIG_W,h:SIG_H,strokes:strokes.map(function(x){ return x.slice(); })}; }, resize:size };
+  requestAnimationFrame(size); return api;
+}
+function sigSvg(sig,w){
+  var NS="http://www.w3.org/2000/svg", sw=(sig&&sig.w)||SIG_W, sh=(sig&&sig.h)||SIG_H, svg=document.createElementNS(NS,"svg");
+  svg.setAttribute("viewBox","0 0 "+sw+" "+sh); svg.setAttribute("class","sigview"); if(w){ svg.style.width=w+"px"; svg.style.height=Math.round(w*sh/sw)+"px"; }
+  ((sig&&sig.strokes)||[]).forEach(function(st){ var pts=[]; for(var i=0;i<st.length;i+=2) pts.push(st[i]+","+st[i+1]); if(st.length===2) pts.push((st[0]+1)+","+st[1]);
+    var pl=document.createElementNS(NS,"polyline"); pl.setAttribute("points",pts.join(" ")); pl.setAttribute("fill","none"); pl.setAttribute("stroke","#0E1929"); pl.setAttribute("stroke-width","3.2"); pl.setAttribute("stroke-linecap","round"); pl.setAttribute("stroke-linejoin","round"); svg.appendChild(pl); });
+  return svg;
+}
+function sigState(p){ var need=0, have=0; segs(p).forEach(function(b){ need++; if(b.sigIn) have++; if(b.out){ need++; if(b.sigOut) have++; } }); return !need||!have?"none":have===need?"full":"partial"; }
+function lastSigAt(p){ var m=""; segs(p).forEach(function(b){ [b.sigIn,b.sigOut].forEach(function(g){ if(g&&g.at>m) m=g.at; }); }); return m; }
+function editedAfterSign(p){ var m=lastSigAt(p); return !!(m&&p.editedAt&&p.editedAt>m); }
+
+/* =====================================================================
+   SIGN IN / OUT
+   ===================================================================== */
+function armSheet(){ clearTimeout(sheetTimer); sheetTimer=setTimeout(closeSheet,SHEET_TIMEOUT); }
+function openSheet(w){
+  var p=livePunch(punches[keyFor(w.id)]), now=new Date(), ss=segs(p);
+  var mode=isOpen(p)?"out":"in";
+  var cur=ss.length?ss[ss.length-1]:null;
+  draft={ w:w, mode:mode, now:now, again:mode==="in"&&ss.length>0, code:(p&&codeOf(p))||"", note:(p&&p.note)||"", showNote:false, filter:"",
+          quick: mode==="out"&&cur&&minsBetween(cur.in,hhmm(now))<QUICK_OUT_MIN };
+  drawSheet(); document.getElementById("veil").hidden=false; armSheet();
+}
+function closeSheet(){ clearTimeout(sheetTimer); document.getElementById("veil").hidden=true; draft=null; }
+
+function drawSheet(){
+  var s=document.getElementById("sheet"), d=draft, p=livePunch(punches[keyFor(d.w.id)]), ss=segs(p), cur=ss.length?ss[ss.length-1]:null;
+  s.className="sheet"+(d.mode==="out"&&!d.w.noHours?" wide":""); s.textContent="";
+  s.appendChild(el("p","kicker"+(d.mode==="out"?"":" green"), d.mode==="out"?t("signingOut"):d.again?t("backOn"):t("signingIn")));
+  s.appendChild(el("h2",null,d.w.name));
+  var stamp=el("div","stamp"); stamp.appendChild(el("span","big",clockFace(d.now)));
+  stamp.appendChild(el("span","note", d.mode==="out" ? biSentence(function(f,l){ return f("started")+" "+pretty(cur.in)+" · "+spanText(minsBetween(cur.in,hhmm(d.now)),l)+" "+f("onSiteFor")+" "+f("thisBlock"); })
+                                                  : dayName(today())));
+  s.appendChild(stamp);
+  if(ss.length&&(d.mode==="in"||ss.length>1)){ var e=el("div","eyebrow",t("earlier")+": "+segText(p)+(codeOf(p)?"  ·  "+codeOf(p):"")); s.appendChild(e); }
+  if(d.quick){ var wb=el("div","warnband"); wb.appendChild(el("b",null,t("quickTitle"))); wb.appendChild(document.createTextNode(biSentence(function(f,l){ return f("quickBody").split("$").join(spanText(minsBetween(cur.in,hhmm(d.now)),l)); }))); s.appendChild(wb); }
+
+  if(d.mode==="out"&&d.w.noHours){ s.appendChild(el("div","eyebrow",t("noCodeNeeded"))); }
+  else if(d.mode==="out"){
+    var f=el("div","field"); f.appendChild(el("span",null,t("codeOut"))); f.appendChild(el("div","eyebrow",t("codeOutSub")));
+    var quick=[], seen={};
+    function q(c,tag){ if(c&&codeObj(c)&&!seen[c]){ seen[c]=1; quick.push({code:c,tag:tag}); } }
+    q(p&&codeOf(p),t("today_")); q(d.w.defaultCode,t("usual")); q(lastCodeFor(d.w.id),t("lastTime"));
+    if(quick.length){ var pk=el("div","picks"); quick.forEach(function(x){ pk.appendChild(pickBtn(x.code,x.tag)); }); f.appendChild(pk); }
+    var find=el("input","finput"); find.id="codeFind"; find.placeholder=t("findCode"); find.value=d.filter; find.autocomplete="off";
+    find.addEventListener("input",function(){ d.filter=find.value; drawCodeList(); armSheet(); }); f.appendChild(find);
+    var lst=el("div","codelist"); lst.id="codeList"; f.appendChild(lst); s.appendChild(f);
+    var ch=el("div","chips"); ch.id="chips"; s.appendChild(ch);
+  }
+  if(d.showNote||d.note){ var nf=el("div","field"); nf.appendChild(el("span",null,t("addNote"))); var ta=el("textarea","finput"); ta.id="noteBox"; ta.placeholder=t("notePh"); ta.value=d.note;
+    ta.addEventListener("input",function(){ d.note=ta.value; armSheet(); }); nf.appendChild(ta); s.appendChild(nf); }
+  else { var nb=el("button","linkish","+ "+t("addNote")); nb.addEventListener("click",function(){ d.showNote=true; drawSheet(); }); s.appendChild(nb); }
+
+  /* signature — required at every sign-in and sign-out (Isaac, 9/13/26) */
+  var sf=el("div","field sigwrap"); sf.id="sigField"; var top=el("div","sigtop"); top.appendChild(el("span",null,t("signHere")));
+  var clr=el("button","linkish",t("clearSig")); top.appendChild(clr); sf.appendChild(top);
+  sf.appendChild(el("div","sigattest",t(d.mode==="out"?"attestOut":"attestIn")));
+  d.sigStrokes=d.sigStrokes||[]; d.sig=sigPad(sf,d.sigStrokes,syncGo); clr.addEventListener("click",function(){ d.sig.clear(); armSheet(); }); s.appendChild(sf);
+
+  var foot=el("div","foot"), acts=el("div","acts");
+  var cancel=el("button"); cancel.appendChild(biBtn(d.mode==="in"?"notMe":"cancel")); cancel.addEventListener("click",closeSheet);
+  var go=el("button"); go.id="goBtn"; go.appendChild(biBtn(d.mode==="in"?"confirmIn":"confirmOut")); go.addEventListener("click",commit);
+  /* Isaac, 9/21: the SIGN OUT button is the green one and it stays grey until the cost code and
+     the signature are both in; "stay signed in" is never green. The "That was quick" warning band
+     above the buttons still appears — the warning stays, only the colouring changed. */
+  if(d.quick){ cancel.className="no wide"; cancel.textContent=""; cancel.appendChild(biBtn("stayIn")); go.className="go"; go.textContent=""; go.appendChild(biBtn("yesOut")); }
+  else { cancel.className="no"; go.className="go"; }
+  acts.appendChild(cancel); acts.appendChild(go); foot.appendChild(acts);
+  var need=el("div","err"); need.id="needCode"; foot.appendChild(need);
+  var to=el("div","timeout"); to.appendChild(el("i")); foot.appendChild(to); s.appendChild(foot);
+  s.onclick=armSheet;
+  if(d.mode==="out") drawCodeList(); syncGo();
+  /* the pad must never hide under the sticky buttons: when the sheet overflows and the next thing to do is sign, scroll so the pad sits right above them */
+  requestAnimationFrame(function(){ if(draft!==d) return; if(s.scrollHeight>s.clientHeight+4 && (d.mode!=="out"||d.w.noHours||d.code)) s.scrollTop=s.scrollHeight; if(d.sig) d.sig.resize(); });
+}
+function pickBtn(code,tag){
+  var d=draft, on=d.code===code, b=el("button","pick"); b.setAttribute("aria-pressed",on?"true":"false"); b.setAttribute("data-code",code);
+  b.appendChild(el("span","box",on?"✓":"")); b.appendChild(el("span","cd",code));
+  var lb=el("span","lb"); lb.appendChild(el("b",null,codeLabel(code))); var o2=codeLabel(code,otherLang()); if(o2&&o2!==codeLabel(code)) lb.appendChild(el("span",null,o2)); b.appendChild(lb);
+  if(tag) b.appendChild(el("span","tag",tag));
+  b.addEventListener("click",function(){ choose(code); }); return b;
+}
+function choose(code){
+  var d=draft; if(!d) return; d.code=(d.code===code)?"":code;     /* one code for the day; tapping it again clears it */
+  [].forEach.call(document.querySelectorAll('#sheet .pick'),function(b){ var on=b.getAttribute("data-code")===d.code; b.setAttribute("aria-pressed",on?"true":"false"); b.querySelector(".box").textContent=on?"✓":""; });
+  syncGo(); armSheet();
+  if(d.code){ var sf=document.getElementById("sigField"); if(sf&&sf.scrollIntoView) try{ sf.scrollIntoView({behavior:"smooth",block:"center"}); }catch(e){} }
+}
+function drawCodeList(){
+  var d=draft, lst=document.getElementById("codeList"); if(!lst) return; lst.textContent=""; var q=foldName(d.filter);
+  codes.forEach(function(c){ if(q&&foldName(c.code+" "+(c.label||"")+" "+(c.labelEs||"")).indexOf(q)<0) return; lst.appendChild(pickBtn(c.code,null)); });
+  if(!lst.children.length) lst.appendChild(el("div","empty","—"));
+}
+function syncGo(){
+  var d=draft, go=document.getElementById("goBtn"), ch=document.getElementById("chips"), need=document.getElementById("needCode"); if(!d||!go) return;
+  if(ch){ ch.textContent=""; if(d.code){ ch.appendChild(el("i",null,t("chosen"))); ch.appendChild(el("span",null,d.code+"  "+codeLabel(d.code))); } }
+  var storeOk=CLOUD||STORE_OK;
+  var codeOk=d.mode!=="out"||!!d.code||!!d.w.noHours, inkOk=!!(d.sig&&d.sig.hasInk()), ok=codeOk&&inkOk&&storeOk;
+  go.disabled=!ok; go.classList.toggle("dis",!ok);
+  if(need) need.textContent = !storeOk ? t("noStoreS")
+                            : ok ? ""
+                            : (!codeOk&&!inkOk?t("codeAndSign"):!codeOk?t("codeFirst"):t("signFirst"));
+}
+function commit(){
+  var d=draft; if(!d) return;
+  if(!d.sig||!d.sig.hasInk()){ syncGo(); return; }
+  var now=new Date(), id=keyFor(d.w.id), p=livePunch(punches[id])||null, ss=segs(p).map(function(x){ return Object.assign({},x); }), rec, verb;
+  var sig=Object.assign({at:iso(now)},d.sig.data());
+  if(d.mode==="in"){
+    ss.push({in:hhmm(now),inAt:iso(now),out:null,outAt:null,sigIn:sig});
+    rec = p ? Object.assign({},p) : { workerId:d.w.id, name:d.w.name, agency:(d.w.agency||"PEG").toUpperCase(), job:JOB.code, jobName:JOB.name, date:today(), code:null, note:"", tz:offsetStr(now), source:"kiosk" };
+    if(d.w.walkOn) rec.walkOn=true; if(d.w.noHours) rec.noHours=true; rec.note=d.note||rec.note||"";
+    withSegs(rec,ss); verb=d.again?"okBack":"okIn";
+  } else {
+    if(!d.code&&!d.w.noHours) return;
+    ss[ss.length-1].out=hhmm(now); ss[ss.length-1].outAt=iso(now);
+    ss[ss.length-1].sigOut=Object.assign({for:{blocks:ss.map(function(x){ return [x.in,x.out]; }),code:d.code||null}},sig);
+    rec=withSegs(Object.assign({},p,{code:d.code||null, note:d.note||p.note||""}),ss); if(d.w.noHours) rec.noHours=true; verb="okOut";
+  }
+  delete rec.codes;
+  lastAct={ id:id, before:punches[id]||null, label:d.w.name.split(" ")[0]+" "+clockFace(now), at:Date.now() };
+  savePunch(id,rec); closeSheet(); paint(); armHome();
+  showFlash(d.w.name,verb,clockFace(now),d.mode==="out",d.mode==="out"?(d.code||null):null);
+}
+function undoLast(){ if(!lastAct) return; savePunch(lastAct.id,lastAct.before); lastAct=null; hideFlash(); paint(); }
+
+/* =====================================================================
+   FIND MY NAME / WALK-ON
+   ===================================================================== */
+function openWalk(agency){ draft={walk:true,name:"",agency:agency||"",now:new Date()}; drawWalk(); document.getElementById("veil").hidden=false; armSheet(); }
+function drawWalk(){
+  var s=document.getElementById("sheet"), d=draft; s.className="sheet"; s.textContent="";
+  s.appendChild(el("p","kicker green",t("signingIn"))); s.appendChild(el("h2","md",t("walkTitle"))); s.appendChild(el("div","eyebrow",t("walkSub")));
+  var f=el("div","field"); f.appendChild(el("span",null,t("yourName")));
+  var inp=el("input","finput"); inp.id="walkName"; inp.value=d.name; inp.placeholder="Juan Pérez"; inp.autocomplete="off"; inp.autocapitalize="words";
+  inp.addEventListener("input",function(){ d.name=inp.value; drawSugg(); armSheet(); }); f.appendChild(inp); s.appendChild(f);
+  var sg=el("div","sugg"); sg.id="sugg"; s.appendChild(sg);
+  var af=el("div","field"); af.appendChild(el("span",null,t("company"))); af.appendChild(agencyPicker(d.agency,function(a){ d.agency=a; drawWalk(); })); s.appendChild(af);
+  var err=el("div","err"); err.id="walkErr"; s.appendChild(err);
+  var acts=el("div","acts"); var cancel=el("button","no"); cancel.appendChild(biBtn("cancel")); cancel.addEventListener("click",closeSheet);
+  var go=el("button","go"); go.appendChild(biBtn("signAsNew")); go.addEventListener("click",commitWalk); acts.appendChild(cancel); acts.appendChild(go); s.appendChild(acts);
+  var to=el("div","timeout"); to.appendChild(el("i")); s.appendChild(to); s.onclick=armSheet; drawSugg();
+  setTimeout(function(){ var n=document.getElementById("walkName"); if(n) n.focus(); },30);
+}
+function agencyPicker(current,onPick){
+  var box=el("div","agpick"), known=agencies(); AG_PREF.forEach(function(a){ if(known.indexOf(a)<0) known.push(a); });
+  known.forEach(function(a){ var b=el("button",null,a); b.setAttribute("aria-pressed",current===a?"true":"false"); b.addEventListener("click",function(){ onPick(a); }); box.appendChild(b); });
+  var other=el("button",null,t("other")+"…"); other.setAttribute("aria-pressed",current&&known.indexOf(current)<0?"true":"false");
+  other.addEventListener("click",function(){ var v=prompt(t("company")); if(v&&v.trim()) onPick(v.trim().toUpperCase().slice(0,12)); }); box.appendChild(other); return box;
+}
+function drawSugg(){
+  var d=draft, sg=document.getElementById("sugg"); if(!sg) return; sg.textContent=""; var q=foldName(d.name); if(q.length<2) return;
+  var hits=allWorkers().filter(function(w){ return foldName(w.name).indexOf(q)>=0; }).slice(0,5); if(!hits.length) return;
+  sg.appendChild(el("div","eyebrow",t("isThatYou")));
+  hits.forEach(function(w){ var b=el("button"); b.appendChild(el("b",null,w.name)); b.appendChild(el("span",null,(w.agency||"")+(w.trade?" · "+w.trade:"")));
+    b.addEventListener("click",function(){ view.agency=(w.agency||"PEG").toUpperCase(); openSheet(w); paint(); }); sg.appendChild(b); });
+}
+function commitWalk(){
+  var d=draft; if(!d) return; var nm=(d.name||"").trim().replace(/\s+/g," "), err=document.getElementById("walkErr");
+  if(nm.split(" ").length<2){ err.textContent=t("nameNeeded"); return; }
+  var exact=allWorkers().filter(function(w){ return foldName(w.name)===foldName(nm); })[0];
+  if(exact){ view.agency=(exact.agency||"PEG").toUpperCase(); openSheet(exact); paint(); return; }
+  if(!d.agency){ err.textContent=t("company"); return; }
+  var id="w-"+slugBase(nm), rec={name:nm,agency:d.agency.toUpperCase(),firstDate:today(),lastDate:today()};
+  var existing=walkons.filter(function(w){ return w.id===id; })[0]; if(existing){ rec=Object.assign({},existing,{lastDate:today()}); delete rec.id; }
+  if(!existing){ walkons.push(Object.assign({id:id},rec)); LS.set("walkons",walkons); }
+  writeDoc("walkons/"+id,rec,function(){}); view.agency=rec.agency; paint(); openSheet(Object.assign({id:id,walkOn:true},rec));
+}
+
+/* =====================================================================
+   FLASH
+   ===================================================================== */
+function showFlash(name,verbKey,at,isOut,code){
+  var f=document.getElementById("flash"),box=document.getElementById("flashIn"); f.className="flash"+(isOut?" outk":""); box.textContent="";
+  box.appendChild(el("div","tick","✓")); box.appendChild(el("div","verb",t(verbKey))); box.appendChild(el("h3",null,name)); box.appendChild(el("div","at",at));
+  if(code) box.appendChild(el("div","codesum",code+"  "+codeLabel(code)));
+  var u=el("button","undobig"); u.appendChild(biBtn("undoThis")); u.addEventListener("click",undoLast); box.appendChild(u);
+  var r=el("div","ring"); r.appendChild(el("i")); box.appendChild(r); box.appendChild(el("div","sub",t("autoClose")));
+  f.hidden=false; clearTimeout(flashTimer); flashTimer=setTimeout(hideFlash,FLASH_MS); clearTimeout(undoTimer); undoTimer=setTimeout(function(){ lastAct=null; paintUndo(); },UNDO_MS);
+}
+function hideFlash(){ clearTimeout(flashTimer); document.getElementById("flash").hidden=true; paintUndo(); }
+
+/* =====================================================================
+   PIN
+   ===================================================================== */
+var pinBuf="",pinMode="check",pinFirst="",pinThen=null,pinSupName=null;
+function pins(){ if(!SEC) return null; if(SEC.pins) return SEC.pins; if(SEC.pin){ var m={}; m[SEC.pin]="Office"; return m; } return null; }
+function openPin(mode,then,forName){ pinBuf=""; pinFirst=""; pinThen=then; pinSupName=forName||null; pinMode=pins()&&Object.keys(pins()).length?mode:"set"; drawPad(); drawPin(pinMsgNow(),false); document.getElementById("pinVeil").hidden=false; }
+function closePin(){ document.getElementById("pinVeil").hidden=true; pinBuf=""; pinFirst=""; }
+function pinMsgNow(){ return pinMode==="set"?(pinFirst?t("pinAgain"):t("pinNew")):t("pinSub"); }
+function drawPin(msg,bad){ document.getElementById("pinTitle").textContent=t("office"); var m=document.getElementById("pinMsg"); m.textContent=msg; m.className=bad?"bad":""; var pp=document.getElementById("pips").children; for(var i=0;i<4;i++) pp[i].className=i<pinBuf.length?"on":""; }
+function drawPad(){ var pad=document.getElementById("pad"); pad.textContent=""; ["1","2","3","4","5","6","7","8","9","clr","0","del"].forEach(function(k){ var b=el("button",k==="clr"||k==="del"?"sm":null,k==="clr"?"C":k==="del"?"←":k); b.addEventListener("click",function(){ pinKey(k); }); pad.appendChild(b); }); }
+function pinKey(k){ if(k==="clr"){ pinBuf=""; drawPin(pinMsgNow(),false); return; } if(k==="del"){ pinBuf=pinBuf.slice(0,-1); drawPin(pinMsgNow(),false); return; } if(pinBuf.length>=4) return; pinBuf+=k; drawPin(pinMsgNow(),false); if(pinBuf.length===4) setTimeout(pinDone,140); }
+function pinDone(){
+  var map=pins()||{};
+  if(pinMode==="set"){
+    if(!pinFirst){ pinFirst=pinBuf; pinBuf=""; drawPin(t("pinAgain"),false); return; }
+    if(pinFirst!==pinBuf){ pinFirst=""; pinBuf=""; drawPin(t("pinNoMatch"),true); return; }
+    var name=pinSupName||SUP||"Office"; Object.keys(map).forEach(function(k){ if(map[k]===name) delete map[k]; }); map[pinBuf]=name;
+    SEC={pins:map}; LS.set("sec",SEC); writeDoc("config/security",SEC,function(){}); SUP=name; closePin(); if(pinThen) pinThen(); return;
+  }
+  if(map[pinBuf]){ SUP=map[pinBuf]; closePin(); if(pinThen) pinThen(); return; }
+  pinBuf=""; drawPin(t("pinBad"),true);
+}
+
+/* =====================================================================
+   CREW MANAGER
+   ===================================================================== */
+var crewEdit=null;
+function openCrew(){ crewEdit=null; drawCrew(); document.getElementById("crewVeil").hidden=false; }
+function closeCrew(){ document.getElementById("crewVeil").hidden=true; crewEdit=null; }
+function refreshOffice(){ if(!document.getElementById("crewVeil").hidden&&!crewEdit) drawCrew(); if(!document.getElementById("revVeil").hidden&&!revEdit) drawReview(); }
+function abtn(cls,key){ var b=el("button",cls); b.appendChild(biBtn(key)); return b; }
+function labelled(id,label,val,ph,opts){ opts=opts||{}; var f=el("div","field"); f.appendChild(el("span",null,label)); var i=el(opts.textarea?"textarea":"input","finput"); i.id=id; i.value=val||""; i.placeholder=ph||""; i.autocomplete="off";
+  if(opts.type) i.type=opts.type; if(opts.numeric) i.inputMode="numeric"; if(opts.max) i.maxLength=opts.max; if(opts.disabled) i.disabled=true; f.appendChild(i); return f; }
+function codeGrid(current,onPick,allowNone){
+  var g=el("div","picks");
+  if(allowNone){ var nb=el("button","pick"); nb.setAttribute("aria-pressed",!current?"true":"false"); nb.appendChild(el("span","cd","—")); var l0=el("span","lb"); l0.appendChild(el("b",null,t("none"))); nb.appendChild(l0); nb.addEventListener("click",function(){ onPick(""); }); g.appendChild(nb); }
+  codes.forEach(function(c){ var b=el("button","pick"); b.setAttribute("aria-pressed",c.code===current?"true":"false"); b.appendChild(el("span","cd",c.code)); var lb=el("span","lb"); lb.appendChild(el("b",null,codeLabel(c.code))); var o2=codeLabel(c.code,otherLang()); if(o2&&o2!==codeLabel(c.code)) lb.appendChild(el("span",null,o2)); b.appendChild(lb); b.addEventListener("click",function(){ onPick(c.code); }); g.appendChild(b); });
+  return g;
+}
+var crewMsg="";
+function missingDefaults(){ return DEFAULT_ROSTER.filter(function(d){ return !roster.concat(walkons).some(function(x){ return x.id===d.id||foldName(x.name)===foldName(d.name); }); }); }
+function loadDefaults(){ var miss=missingDefaults(), order=roster.reduce(function(m,x){ return Math.max(m,x.sortOrder||0); },0); miss.forEach(function(d){ var rec=Object.assign({},d); delete rec.id; rec.sortOrder=++order; localWrite("roster/"+d.id,rec); }); crewMsg=t("loadedCrew").split("$").join(miss.length); drawCrew(); }
+function drawCrew(){
+  var s=document.getElementById("crewSheet"); s.textContent="";
+  s.appendChild(el("p","kicker",SUP?t("office")+"  —  "+SUP:t("office"))); s.appendChild(el("h2","md",t("crewTitle")));
+  if(crewEdit){ drawCrewForm(s); return; }
+  if(crewMsg){ s.appendChild(el("div","ok",crewMsg)); crewMsg=""; }
+  var pend=walkons.filter(function(w){ return !roster.some(function(r){ return r.id===w.id; }); });
+  if(pend.length){ var sp=el("div","sect"); sp.appendChild(el("h3",null,t("pending")));
+    pend.forEach(function(w){ var r=el("button","row pend"), who=el("span","who"); who.appendChild(el("b",null,w.name)); who.appendChild(el("span",null,w.agency+" · "+dayName(w.lastDate||w.firstDate))); r.appendChild(who); r.appendChild(el("span","tagc",t("addToCrew")));
+      r.addEventListener("click",function(){ crewEdit={kind:"worker",id:w.id,isNew:true,fromWalk:w}; drawCrew(); }); sp.appendChild(r); }); s.appendChild(sp); }
+  var ags=agencies(); AG_PREF.forEach(function(a){ if(ags.indexOf(a)<0) ags.push(a); });
+  ags.forEach(function(a){
+    var live=roster.filter(function(w){ return w.active!==false&&(w.agency||"PEG").toUpperCase()===a; }); if(!live.length&&AG_PREF.indexOf(a)<0) return;
+    var sec=el("div","sect"); sec.appendChild(el("h3",null,t("onCrew")+" — "+a)); if(!live.length) sec.appendChild(el("div","empty",t("noOne")));
+    live.forEach(function(w){ sec.appendChild(workerRow(w,false)); });
+    var add=el("button","addbtn",t("addWorker")+" — "+a); add.addEventListener("click",function(){ crewEdit={kind:"worker",id:null,isNew:true,agency:a}; drawCrew(); }); sec.appendChild(add); s.appendChild(sec);
+  });
+  var off=roster.filter(function(w){ return w.active===false; }); if(off.length){ var so=el("div","sect"); so.appendChild(el("h3",null,t("offCrew"))); off.forEach(function(w){ so.appendChild(workerRow(w,true)); }); s.appendChild(so); }
+  var sc=el("div","sect"); sc.appendChild(el("h3",null,t("codesTitle")));
+  codes.forEach(function(c){ var r=el("button","row"); r.appendChild(el("span","tagc",c.code)); var who=el("span","who"); who.appendChild(el("b",null,c.label||"")); who.appendChild(el("span",null,c.labelEs||"")); r.appendChild(who); r.addEventListener("click",function(){ crewEdit={kind:"code",id:c.code,isNew:false}; drawCrew(); }); sc.appendChild(r); });
+  var addc=el("button","addbtn",t("addCode")); addc.addEventListener("click",function(){ crewEdit={kind:"code",id:null,isNew:true}; drawCrew(); }); sc.appendChild(addc); s.appendChild(sc);
+  var ss=el("div","sect"); ss.appendChild(el("h3",null,t("sups"))); var map=pins()||{};
+  Object.keys(map).forEach(function(k){ var r=el("button","row"), who=el("span","who"); who.appendChild(el("b",null,map[k])); who.appendChild(el("span",null,"••••")); r.appendChild(who); r.appendChild(el("span","tagc",map[k]===SUP?t("changeMy"):"✎")); r.addEventListener("click",function(){ crewEdit={kind:"sup",id:k,isNew:false}; drawCrew(); }); ss.appendChild(r); });
+  var adds=el("button","addbtn",t("addSup")); adds.addEventListener("click",function(){ crewEdit={kind:"sup",id:null,isNew:true}; drawCrew(); }); ss.appendChild(adds); s.appendChild(ss);
+  if(!CLOUD){
+    var sj=el("div","sect"); sj.appendChild(el("h3",null,t("jobTitle")));
+    var jr=el("button","row"), jw=el("span","who"); jw.appendChild(el("b",null,JOB.name+" · "+JOB.code)); jw.appendChild(el("span",null,JOB.sub||"")); jr.appendChild(jw); jr.appendChild(el("span","tagc","✎"));
+    jr.addEventListener("click",function(){ crewEdit={kind:"job"}; drawCrew(); }); sj.appendChild(jr);
+    var miss=missingDefaults(); if(miss.length){ var ld=el("button","row"), lw=el("span","who"); lw.appendChild(el("b",null,t("loadCrew"))); lw.appendChild(el("span",null,t("loadCrewSub").split("$").join(miss.length))); ld.appendChild(lw); ld.appendChild(el("span","tagc","+"+miss.length)); ld.addEventListener("click",loadDefaults); sj.appendChild(ld); }
+    var rs=el("button","addbtn",t("restoreFile")); rs.addEventListener("click",function(){ document.getElementById("restoreFile").click(); }); sj.appendChild(rs);
+    s.appendChild(sj);
+  }
+  var acts=el("div","acts tight"); var cl=abtn("no wide","close"); cl.addEventListener("click",closeCrew); acts.appendChild(cl); s.appendChild(acts);
+}
+function workerRow(w,isOff){ var r=el("button","row"+(isOff?" off":"")), who=el("span","who"); who.appendChild(el("b",null,w.name)); who.appendChild(el("span",null,(w.agency||"")+(w.trade?" · "+w.trade:"")+(w.noHours?" · "+t("attOnly"):""))); r.appendChild(who); r.appendChild(el("span","tagc",w.noHours?"—":(w.defaultCode||"—"))); r.addEventListener("click",function(){ crewEdit={kind:"worker",id:w.id,isNew:false}; drawCrew(); }); return r; }
+function drawCrewForm(s){
+  var e=crewEdit, err=el("div","err"); var back=abtn("no","cancel"); back.addEventListener("click",function(){ crewEdit=null; drawCrew(); }); var acts=el("div","acts"); acts.appendChild(back);
+  if(e.kind==="worker"){
+    var w=e.isNew?{name:e.fromWalk?e.fromWalk.name:"",trade:"",defaultCode:"",agency:(e.fromWalk?e.fromWalk.agency:e.agency)||"PEG"}:roster.filter(function(x){ return x.id===e.id; })[0]; if(!w){ crewEdit=null; drawCrew(); return; }
+    var st={agency:(w.agency||"PEG").toUpperCase(),code:w.defaultCode||"",noHours:!!w.noHours};
+    s.appendChild(labelled("wName",t("fName"),w.name,"Gerson Antonio Diaz")); s.appendChild(labelled("wTrade",t("fTrade"),w.trade||"","Electrician"));
+    var af=el("div","field"); af.appendChild(el("span",null,t("fAgency"))); var agHost=el("div"); af.appendChild(agHost); s.appendChild(af);
+    function drawAg(){ agHost.textContent=""; agHost.appendChild(agencyPicker(st.agency,function(a){ st.agency=a; drawAg(); })); } drawAg();
+    var pf=el("div","field"); pf.appendChild(el("span",null,t("fPay"))); var payHost=el("div","agpick col"); pf.appendChild(payHost); s.appendChild(pf);
+    var cf=el("div","field"); cf.appendChild(el("span",null,t("fCode"))); var cgHost=el("div"); cf.appendChild(cgHost); s.appendChild(cf);
+    function drawPay(){ payHost.textContent=""; [["hourly",false],["salaried",true]].forEach(function(o){ var b=el("button"); b.appendChild(biBtn(o[0])); b.setAttribute("aria-pressed",st.noHours===o[1]?"true":"false"); b.addEventListener("click",function(){ st.noHours=o[1]; if(o[1]) st.code=""; drawPay(); drawCg(); }); payHost.appendChild(b); }); cf.hidden=st.noHours; }
+    function drawCg(){ cgHost.textContent=""; cgHost.appendChild(codeGrid(st.code,function(c){ st.code=c; drawCg(); },true)); } drawPay(); drawCg();
+    s.appendChild(err);
+    var save=abtn("go","save"); save.addEventListener("click",function(){
+      var nm=document.getElementById("wName").value.trim(), tr=document.getElementById("wTrade").value.trim(); if(!nm){ err.textContent=t("nameNeeded"); return; }
+      var same=roster.filter(function(x){ return x.id!==e.id&&foldName(x.name)===foldName(nm); }); if(same.some(function(x){ return x.active!==false; })){ err.textContent=t("dupName"); return; }
+      var id,order;
+      if(e.isNew&&same.length){ id=same[0].id; order=same[0].sortOrder||0; }
+      else if(e.isNew&&e.fromWalk){ id=e.fromWalk.id; order=roster.reduce(function(m,x){ return Math.max(m,x.sortOrder||0); },0)+1; }
+      else if(e.isNew){ var base=slugBase(nm),taken={}; roster.concat(walkons).forEach(function(x){ taken[x.id]=1; }); id=base; for(var n=2;taken[id];n++) id=base+"-"+n; order=roster.reduce(function(m,x){ return Math.max(m,x.sortOrder||0); },0)+1; }
+      else { id=e.id; order=w.sortOrder||0; }
+      err.textContent="";
+      writeDoc("roster/"+id,{name:nm,trade:tr,agency:st.agency,defaultCode:st.noHours?"":st.code,noHours:st.noHours,job:JOB.code,sortOrder:order,active:true},function(bad){ if(bad){ err.textContent=t("saveFailed"); return; }
+        if(e.fromWalk){ deleteDoc("walkons/"+e.fromWalk.id,function(){}); walkons=walkons.filter(function(x){ return x.id!==e.fromWalk.id; }); LS.set("walkons",walkons); } crewEdit=null; drawCrew(); });
+    }); acts.appendChild(save); s.appendChild(acts);
+    if(!e.isNew){ var rm=el("button","linkish red",w.active===false?t("restore"):t("remove")); rm.addEventListener("click",function(){ var rec=Object.assign({},w,{active:w.active===false}); delete rec.id; writeDoc("roster/"+e.id,rec,function(bad){ if(bad){ err.textContent=t("saveFailed"); return; } crewEdit=null; drawCrew(); }); }); s.appendChild(rm); }
+    if(e.fromWalk){ var dm=el("button","linkish red",t("dismiss")); dm.addEventListener("click",function(){ deleteDoc("walkons/"+e.fromWalk.id,function(){ walkons=walkons.filter(function(x){ return x.id!==e.fromWalk.id; }); LS.set("walkons",walkons); crewEdit=null; drawCrew(); }); }); s.appendChild(dm); }
+    setTimeout(function(){ var n=document.getElementById("wName"); if(e.isNew&&n&&!n.value) n.focus(); },40);
+  } else if(e.kind==="code"){
+    var c=e.isNew?{code:"",label:"",labelEs:""}:codeObj(e.id); if(!c){ crewEdit=null; drawCrew(); return; }
+    s.appendChild(labelled("cNum",t("codeNum"),c.code,"1023",{disabled:!e.isNew,max:7})); s.appendChild(labelled("cEn",t("codeEn"),c.label,"Branch Cabling")); s.appendChild(labelled("cEs",t("codeEs"),c.labelEs,"Cableado de ramales")); s.appendChild(err);
+    var save2=abtn("go","save"); save2.addEventListener("click",function(){ var num=document.getElementById("cNum").value.trim(),en=document.getElementById("cEn").value.trim(),es=document.getElementById("cEs").value.trim();
+      if(!/^\d{3,5}(-\d{2})?$/.test(num)){ err.textContent=t("codeNeeded"); return; } writeDoc("codes/"+num,{label:en,labelEs:es},function(bad){ if(bad){ err.textContent=t("saveFailed"); return; } crewEdit=null; drawCrew(); }); });
+    acts.appendChild(save2); s.appendChild(acts);
+    if(!e.isNew){ var rm2=el("button","linkish red",t("remove")); rm2.addEventListener("click",function(){ if(roster.some(function(w){ return w.active!==false&&w.defaultCode===e.id; })||codes.length<=1){ err.textContent=t("saveFailed"); return; } deleteDoc("codes/"+e.id,function(bad){ if(bad){ err.textContent=t("saveFailed"); return; } crewEdit=null; drawCrew(); }); }); s.appendChild(rm2); }
+  } else if(e.kind==="job"){
+    s.appendChild(labelled("jNum",t("jobNum"),JOB.code,"25-013")); s.appendChild(labelled("jNm",t("jobNm"),JOB.name,"Oyster")); s.appendChild(labelled("jSub",t("jobSub"),JOB.sub,"Pioneer Electric Group — NewCold, Hagerstown MD"));
+    s.appendChild(labelled("jMail",t("officeEmail"),officeEmail(),"isaac@pioneerelectricgrp.com",{type:"email"})); s.appendChild(err);
+    var saveJ=abtn("go","save"); saveJ.addEventListener("click",function(){ var code=document.getElementById("jNum").value.trim(), nm=document.getElementById("jNm").value.trim(); if(!code||!nm){ err.textContent=t("nameNeeded"); return; }
+      var mail=document.getElementById("jMail").value.trim(); if(mail&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)){ err.textContent=t("officeEmail"); return; }
+      writeDoc("config/job",{code:code,name:nm,sub:document.getElementById("jSub").value.trim(),officeEmail:mail||"isaac@pioneerelectricgrp.com"},function(bad){ if(bad){ err.textContent=t("saveFailed"); return; } crewEdit=null; drawCrew(); }); });
+    acts.appendChild(saveJ); s.appendChild(acts);
+  } else {
+    var map=pins()||{}, nm0=e.isNew?"":map[e.id];
+    s.appendChild(labelled("sName",t("supName"),nm0,"Josh Kelle")); s.appendChild(labelled("sPin",t("supPin"),e.isNew?"":e.id,"••••",{numeric:true,max:4,type:"password"})); s.appendChild(err);
+    var save3=abtn("go","save"); save3.addEventListener("click",function(){ var nm=document.getElementById("sName").value.trim(),pn=document.getElementById("sPin").value.trim();
+      if(!nm){ err.textContent=t("nameNeeded"); return; } if(!/^\d{4}$/.test(pn)){ err.textContent=t("pinNeeded"); return; }
+      var m=Object.assign({},map); if(!e.isNew) delete m[e.id]; m[pn]=nm; SEC={pins:m}; LS.set("sec",SEC); if(SUP===nm0) SUP=nm;
+      writeDoc("config/security",SEC,function(bad){ if(bad){ err.textContent=t("saveFailed"); return; } crewEdit=null; drawCrew(); }); });
+    acts.appendChild(save3); s.appendChild(acts);
+    if(!e.isNew&&Object.keys(map).length>1){ var rm3=el("button","linkish red",t("remove")); rm3.addEventListener("click",function(){ var m=Object.assign({},map); delete m[e.id]; SEC={pins:m}; LS.set("sec",SEC); writeDoc("config/security",SEC,function(bad){ if(bad){ err.textContent=t("saveFailed"); return; } crewEdit=null; drawCrew(); }); }); s.appendChild(rm3); }
+  }
+}
+
+/* =====================================================================
+   REVIEW
+   ===================================================================== */
+var revDay=today(), revRows=[], revEdit=null, revMsg="";
+function openReview(){ revDay=today(); revEdit=null; revMsg=""; loadReview(); document.getElementById("revVeil").hidden=false; }
+function closeReview(){ document.getElementById("revVeil").hidden=true; revEdit=null; }
+function loadReview(){
+  if(revDay===today()){ revRows=Object.keys(punches).map(function(k){ return Object.assign({_id:k},punches[k]); }); drawReview(); return; }
+  var cached=LS.get("cache."+revDay,{}); revRows=Object.keys(cached).map(function(k){ return Object.assign({_id:k},cached[k]); }); drawReview();
+  if(db){ db.collection("punches").where("date","==",revDay).get().then(function(snap){ var rows=[],c={}; snap.docs.forEach(function(d){ var v=d.data(); if(v){ rows.push(Object.assign({_id:d.id},v)); c[d.id]=v; } }); revRows=rows; LS.set("cache."+revDay,c); if(!revEdit) drawReview(); }).catch(function(){}); }
+}
+function statusOf(p){
+  if(p.voided) return [["void",t("voided")]]; var out=[];
+  if(p.approved) out.push(["ok",t("approved")]); else if(isOpen(p)) out.push(p.date===today()?["in",t("stillOn")]:["bad",t("missing")]);
+  if(p.editedAt) out.push(["ed",t("edited")]); if(p.walkOn) out.push(["ed",t("walkOn")]);
+  var sg=sigState(p); if(segs(p).length&&sg!=="full") out.push(["bad",t("unsigned")+(sg==="partial"?" ½":"")]);
+  if(editedAfterSign(p)) out.push(["bad",t("editedAfterSign")]);
+  return out;
+}
+function drawReview(){
+  var s=document.getElementById("revSheet"); s.textContent=""; s.appendChild(el("p","kicker",SUP?t("office")+"  —  "+SUP:t("office")));
+  if(revEdit){ drawRevForm(s); return; }
+  var nav=el("div","daynav"); var prev=el("button",null,"‹"); prev.addEventListener("click",function(){ revDay=shiftDay(revDay,-1); loadReview(); });
+  var next=el("button",null,"›"); next.disabled=revDay>=today(); next.addEventListener("click",function(){ revDay=shiftDay(revDay,1); loadReview(); });
+  nav.appendChild(prev); nav.appendChild(el("span","dl",dayName(revDay))); nav.appendChild(next); s.appendChild(nav);
+  var rows=revRows.slice().sort(function(a,b){ return (a.agency+a.name).localeCompare(b.agency+b.name); });
+  if(!rows.length) s.appendChild(el("div","empty",t("noPunch")));
+  else {
+    var hd=el("div","rhead"); [t("thName"),t("thIn"),t("thOut"),t("thCodes"),""].forEach(function(h,i){ hd.appendChild(el("span",i===3?"h4":null,h)); }); s.appendChild(hd);
+    var list=el("div","sect");
+    rows.forEach(function(p){
+      var ss=segs(p), r=el("button","rrow"+(p.voided?" void":"")), who=el("span","who"); who.appendChild(el("b",null,p.name)); who.appendChild(el("span",null,p.agency||"")); r.appendChild(who);
+      var ti=el("span","tm",pretty(p.inLocal)); if(ss.length>1) ti.appendChild(el("small",null,ss.length+" "+t("blocks")+" · "+spanText(onSiteMins(p)))); r.appendChild(ti);
+      r.appendChild(el("span","tm"+(isOpen(p)?" miss":""),isOpen(p)?"—":pretty(p.outLocal)));
+      r.appendChild(el("span","cds",codeOf(p)||"—"));
+      var sts=el("span","sts"); statusOf(p).forEach(function(x){ sts.appendChild(el("span","stat "+x[0],x[1])); }); r.appendChild(sts);
+      r.addEventListener("click",function(){ revEdit={id:p._id,p:p}; drawReview(); }); list.appendChild(r);
+    }); s.appendChild(list);
+  }
+  if(revMsg){ s.appendChild(el("div","ok",revMsg)); revMsg=""; }
+  var acts=el("div","acts tight");
+  var addp=abtn("no wide","addPunch"); addp.addEventListener("click",function(){ revEdit={id:null,p:null}; drawReview(); }); acts.appendChild(addp);
+  var todo=rows.filter(function(p){ return !p.voided&&!isOpen(p)&&segs(p).length&&!p.approved; });
+  var apAll=abtn("go blue","approveAll"); apAll.disabled=!todo.length; if(!todo.length) apAll.classList.add("dis");
+  apAll.addEventListener("click",function(){ var n=0; todo.forEach(function(p){ var rec=Object.assign({},p,{approved:true,approvedBy:SUP||"Office",approvedAt:iso(new Date())}); delete rec._id; commitRev(p._id,rec,function(){ n++; if(n===todo.length){ revMsg=t("approved")+" · "+n; loadReview(); } }); }); });
+  acts.appendChild(apAll);
+  var ex=abtn(CLOUD?"no wide":"go blue",CLOUD?"exportCsv":"sendOffice"); ex.addEventListener("click",exportWeek); acts.appendChild(ex);
+  var cl=abtn("no wide","close"); cl.addEventListener("click",closeReview); acts.appendChild(cl); s.appendChild(acts);
+}
+function commitRev(id,rec,done){
+  if(rec.date===today()){ punches[id]=rec; LS.set("cacheToday",punches); LS.set("cache."+today(),punches); paint(); }
+  else { var c=LS.get("cache."+rec.date,{}); c[id]=rec; LS.set("cache."+rec.date,c); }
+  writeDoc("punches/"+id,rec,function(bad){ done&&done(bad); });
+}
+function drawRevForm(s){
+  var e=revEdit, p=e.p, isNew=!p, err=el("div","err"), locked=p&&p.approved;
+  var st={ who:p?{id:p.workerId,name:p.name,agency:p.agency,noHours:!!p.noHours}:null, blocks:p?segs(p).map(function(x){ return {in:x.in,out:x.out||""}; }):[{in:"06:00",out:""}], code:p?codeOf(p):"", note:p?(p.note||""):"" };
+  s.appendChild(el("h2","md",isNew?t("addPunch"):p.name)); s.appendChild(el("div","eyebrow",dayName(revDay)+(p?"  ·  "+(p.agency||""):"")));
+  if(locked) s.appendChild(el("div","warnband",t("lockedNote")));
+  if(p&&p.orig){ var au=el("div","audit"), o=p.orig; au.appendChild(el("b",null,t("origWas")+": "));
+    au.appendChild(document.createTextNode((o.segments||[]).map(function(x){ return pretty(x.in)+"→"+(x.out?pretty(x.out):"…"); }).join("  ")+"  ·  "+(o.code||"—")+(p.editedBy?"  ·  "+t("edited")+" "+t("by")+" "+p.editedBy+" "+String(p.editedAt||"").replace("T"," ").slice(0,16):""))); s.appendChild(au); }
+  if(isNew){ var wf=el("div","field"); wf.appendChild(el("span",null,t("who"))); var sel=el("select","finput"); sel.id="whoSel"; var o0=el("option",null,t("pickWorker")); o0.value=""; sel.appendChild(o0);
+    allWorkers().sort(function(a,b){ return (a.agency+a.name).localeCompare(b.agency+b.name); }).forEach(function(w){ var o=el("option",null,w.agency+" — "+w.name); o.value=w.id; sel.appendChild(o); });
+    sel.addEventListener("change",function(){ var w=allWorkers().filter(function(x){ return x.id===sel.value; })[0]; st.who=w?{id:w.id,name:w.name,agency:(w.agency||"PEG").toUpperCase(),noHours:!!w.noHours}:null; cf.hidden=!!(st.who&&st.who.noHours); }); wf.appendChild(sel); s.appendChild(wf); }
+  /* blocks editor */
+  var bf=el("div","field"); bf.appendChild(el("span",null,t("inTime")+" / "+t("outTime"))); var host=el("div","segs"); bf.appendChild(host); s.appendChild(bf);
+  function drawBlocks(){ host.textContent="";
+    st.blocks.forEach(function(b,i){ var row=el("div","seg"); var ti=el("input","finput"); ti.type="time"; ti.value=b.in||""; ti.disabled=!!locked; ti.addEventListener("change",function(){ b.in=ti.value; });
+      var to=el("input","finput"); to.type="time"; to.value=b.out||""; to.disabled=!!locked; to.addEventListener("change",function(){ b.out=to.value; });
+      var rm=el("button","rm","×"); rm.disabled=!!locked||st.blocks.length<=1; rm.addEventListener("click",function(){ st.blocks.splice(i,1); drawBlocks(); });
+      row.appendChild(ti); row.appendChild(to); row.appendChild(rm); host.appendChild(row); });
+    if(!locked){ var ab=el("button","linkish",t("addBlock")); ab.addEventListener("click",function(){ st.blocks.push({in:"",out:""}); drawBlocks(); }); host.appendChild(ab); } }
+  drawBlocks();
+  if(p&&segs(p).length){ var sgs=segs(p), sb=el("div","field"); sb.appendChild(el("span",null,t("sigs")));
+    sgs.forEach(function(b,i){ var row=el("div","sigrow"); if(sgs.length>1) row.appendChild(el("b",null,t("blockN")+" "+(i+1)));
+      row.appendChild(el("span",null,t("sigIn")+" "+pretty(b.in)+":")); row.appendChild(b.sigIn?sigSvg(b.sigIn,150):el("span","nosig",t("noSig")));
+      if(b.out){ row.appendChild(el("span",null,t("sigOut")+" "+pretty(b.out)+":")); row.appendChild(b.sigOut?sigSvg(b.sigOut,150):el("span","nosig",t("noSig"))); }
+      sb.appendChild(row); });
+    if(editedAfterSign(p)) sb.appendChild(el("div","err",t("editedAfterSign")+" — "+t("origWas")+": "+((p.orig&&p.orig.segments)||[]).map(function(x){ return pretty(x.in)+"→"+(x.out?pretty(x.out):"…"); }).join("  ")));
+    s.appendChild(sb); }
+  var cf=el("div","field"); cf.appendChild(el("span",null,t("codesLbl"))); var cgHost=el("div"); cf.appendChild(cgHost); s.appendChild(cf); cf.hidden=!!(st.who&&st.who.noHours);
+  if(p&&p.noHours) s.appendChild(el("div","eyebrow",t("noCodeNeeded")));
+  function drawCg(){ cgHost.textContent=""; var g=codeGrid(st.code,function(c){ if(!locked){ st.code=c; drawCg(); } },false); cgHost.appendChild(g); } drawCg();
+  s.appendChild(labelled("rNote",t("addNote"),st.note,"",{textarea:true,disabled:locked})); s.appendChild(err);
+  var acts=el("div","acts"); var back=abtn("no","cancel"); back.addEventListener("click",function(){ revEdit=null; drawReview(); }); acts.appendChild(back);
+  if(locked){ var un=abtn("no wide","unapprove"); un.addEventListener("click",function(){ var rec=Object.assign({},p,{approved:false}); delete rec.approvedBy; delete rec.approvedAt; delete rec._id; commitRev(e.id,rec,function(bad){ if(bad){ err.textContent=t("saveFailed"); return; } revEdit=null; loadReview(); }); }); acts.appendChild(un); }
+  else { var save=abtn("go","save"); save.addEventListener("click",function(){ doSave(false); }); acts.appendChild(save); var ap=abtn("go blue","approve"); ap.addEventListener("click",function(){ doSave(true); }); acts.appendChild(ap); }
+  s.appendChild(acts);
+  if(p&&!locked){ var vd=el("button","linkish red",p.voided?t("unvoid"):t("voidIt")); vd.addEventListener("click",function(){ var rec=Object.assign({},p,{voided:!p.voided,editedAt:iso(new Date()),editedBy:SUP||"Office"}); delete rec._id; commitRev(e.id,rec,function(bad){ if(bad){ err.textContent=t("saveFailed"); return; } revEdit=null; loadReview(); }); }); s.appendChild(vd); }
+  function doSave(approve){
+    var note=document.getElementById("rNote").value;
+    if(isNew&&!st.who){ err.textContent=t("pickWorker"); return; }
+    var blocks=st.blocks.filter(function(b){ return b.in||b.out; });
+    if(!blocks.length){ err.textContent=t("timesBad"); return; }
+    for(var i=0;i<blocks.length;i++){ var b=blocks[i]; if(!/^\d\d:\d\d$/.test(b.in)){ err.textContent=t("timesBad"); return; } if(b.out&&(!/^\d\d:\d\d$/.test(b.out)||toMin(b.out)<=toMin(b.in))){ err.textContent=t("timesBad"); return; } if(i<blocks.length-1&&!b.out){ err.textContent=t("timesBad"); return; } }
+    var open=!blocks[blocks.length-1].out;
+    var nh=!!(st.who&&st.who.noHours); if(nh) st.code="";
+    if(!open&&!st.code&&!nh){ err.textContent=t("codeFirst"); return; }
+    if(approve&&open){ err.textContent=t("outTime"); return; }
+    var date=p?p.date:revDay, old=p?segs(p):[], list=blocks.map(function(b,i){ var o=old[i]||{}, sg={in:b.in,inAt:isoAt(date,b.in),out:b.out||null,outAt:b.out?isoAt(date,b.out):null}; if(o.sigIn) sg.sigIn=o.sigIn; if(o.sigOut&&b.out) sg.sigOut=o.sigOut; return sg; });
+    var now=iso(new Date()), rec, id;
+    if(isNew){ id=keyFor(st.who.id,revDay); rec=withSegs({ workerId:st.who.id, name:st.who.name, agency:st.who.agency, job:JOB.code, jobName:JOB.name, date:revDay, code:st.code||null, note:note, tz:offsetStr(new Date()), source:"office", editedAt:now, editedBy:SUP||"Office" },list); if(nh) rec.noHours=true; }
+    else { id=e.id; rec=Object.assign({},p); delete rec._id; delete rec.codes;
+      var changed=JSON.stringify(segs(p).map(function(x){ return [x.in,x.out||null]; }))!==JSON.stringify(list.map(function(x){ return [x.in,x.out]; }))||st.code!==codeOf(p)||note!==(p.note||"");
+      if(changed){ if(!rec.orig) rec.orig={segments:segs(p).map(function(x){ return {in:x.in,out:x.out||null}; }),code:codeOf(p)||null}; withSegs(rec,list); rec.code=st.code||null; rec.note=note; rec.editedAt=now; rec.editedBy=SUP||"Office"; } }
+    if(approve){ rec.approved=true; rec.approvedBy=SUP||"Office"; rec.approvedAt=now; }
+    commitRev(id,rec,function(bad){ if(bad){ err.textContent=t("saveFailed"); return; } revEdit=null; loadReview(); });
+  }
+}
+
+/* =====================================================================
+   EXPORT
+   ===================================================================== */
+function csvCell(v){ v=(v===null||v===undefined)?"":String(v); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }
+function buildExport(){
+  var all=allPunches().map(function(p){ var q=Object.assign({},p); delete q._id; return q; });
+  Object.keys(punches).forEach(function(k){ if(!all.some(function(p){ return p.date+"__"+p.workerId===k; })) all.push(punches[k]); });
+  all.sort(function(a,b){ return (a.date+a.agency+a.name)<(b.date+b.agency+b.name)?-1:1; });
+  return { kind:"pioneer-signin-export", version:9, exported:iso(new Date()), job:JOB, device:(navigator.userAgent||"").slice(0,80), roster:roster, walkons:walkons, codes:codes, punches:all };
+}
+function toCsv(rows){
+  var head=["date","name","agency","job","first_in","last_out","blocks","minutes_on_site","cost_code","attendance_only","note","approved","approved_by","edited_by","orig_blocks","orig_code","walk_on","voided","source","signed","changed_after_sign"];
+  return [head.join(",")].concat(rows.map(function(p){ var o=p.orig||{}; return [p.date,p.name,p.agency,p.job,p.inLocal,p.outLocal,segs(p).map(function(x){ return x.in+"-"+(x.out||""); }).join("|"),onSiteMins(p),codeOf(p),p.noHours?"Y":"",p.note,p.approved?"Y":"",p.approvedBy,p.editedBy,(o.segments||[]).map(function(x){ return x.in+"-"+(x.out||""); }).join("|"),o.code,p.walkOn?"Y":"",p.voided?"Y":"",p.source,sigState(p)==="full"?"Y":sigState(p)==="partial"?"partial":"",editedAfterSign(p)?"Y":""].map(csvCell).join(","); })).join("\n");
+}
+function markSent(){
+  var now=iso(new Date()); LAST_SENT=now; LS.set("lastSent",now);
+  allDays().forEach(function(d){ var c=LS.get("cache."+d,{}), ch=false; Object.keys(c).forEach(function(k){ if(!isOpen(c[k])&&!c[k].sentAt){ c[k].sentAt=now; ch=true; } }); if(ch) LS.set("cache."+d,c); });
+  punches=LS.get("cache."+today(),punches); rebuildRecent(); paint();
+}
+function downloadBlob(name,blob){ var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },4000); }
+var sendPkg=null;
+function packageExport(){
+  var ex=buildExport(), stamp=today(), base=(JOB.name||"job").toLowerCase().replace(/[^a-z0-9]+/g,"")+"-signin-"+stamp;
+  var csv=toCsv(ex.punches), json=JSON.stringify(ex);
+  var jsonBlob=new Blob([json],{type:"application/json"}), csvBlob=new Blob([csv],{type:"text/csv"});
+  var files=[]; try{ files=[new File([jsonBlob],base+".json",{type:"application/json"}), new File([csvBlob],base+".csv",{type:"text/csv"})]; }catch(e){}
+  var days={}; ex.punches.forEach(function(p){ days[p.date]=1; });
+  return { ex:ex, stamp:stamp, base:base, csv:csv, jsonBlob:jsonBlob, csvBlob:csvBlob, files:files, nDays:Object.keys(days).length,
+           title:JOB.name+" "+JOB.code+" sign-in · "+stamp,
+           canShare: !!(navigator.share&&navigator.canShare&&files.length&&navigator.canShare({files:files})) };
+}
+function sendToOffice(){ sendPkg=packageExport(); drawSend("ready",""); document.getElementById("veil").hidden=false; clearTimeout(sheetTimer); }
+function drawSend(state,msg){
+  var s=document.getElementById("sheet"), k=sendPkg; s.className="sheet"; s.textContent=""; s.onclick=null;
+  s.appendChild(el("p","kicker",t("office")+(SUP?"  —  "+SUP:""))); s.appendChild(el("h2","md",t("sendTitle")));
+  var info=el("div","audit");
+  info.appendChild(el("b",null,t("sendWhat").replace("$1",k.ex.punches.length).replace("$2",k.nDays)+" ")); info.appendChild(el("span","mono",k.base+".json  ·  "+k.base+".csv"));
+  info.appendChild(el("br")); info.appendChild(el("b",null,t("sendTo")+" ")); info.appendChild(el("span","mono",officeEmail()));
+  s.appendChild(info);
+  if(msg) s.appendChild(el("div",state==="ready"?"err":"ok",msg));
+  if(state==="ready"){
+    var opts=el("div","sect");
+    function opt(key,sub,cls,fn,disabled){ var b=el("button","row"); if(cls) b.classList.add(cls); var who=el("span","who"); who.appendChild(el("b",null,t(key))); who.appendChild(el("span",null,t(sub))); b.appendChild(who); b.disabled=!!disabled; if(disabled) b.classList.add("off"); b.addEventListener("click",fn); opts.appendChild(b); }
+    opt("optShare","optShareSub",null,doShare,!k.canShare);
+    if(!k.canShare) opts.appendChild(el("div","eyebrow",t("noShare")));
+    opt("optEmail","optEmailSub",null,doEmail);
+    opt("optSave","optSaveSub",null,doSave);
+    s.appendChild(opts);
+    var acts=el("div","acts tight"); var cl=abtn("no wide","cancel"); cl.addEventListener("click",closeSheet); acts.appendChild(cl); s.appendChild(acts);
+  } else {
+    s.appendChild(el("div","eyebrow",t("didItGo")));
+    var acts2=el("div","acts"); var yes=abtn("go","yesSent"); yes.addEventListener("click",function(){ markSent(); closeSheet(); }); var no=abtn("no","notYet"); no.addEventListener("click",closeSheet); acts2.appendChild(no); acts2.appendChild(yes); s.appendChild(acts2);
+  }
+}
+function doShare(){
+  var k=sendPkg;
+  navigator.share({files:k.files,title:k.title,text:k.title+" — "+t("sendTo")+" "+officeEmail()})
+    .then(function(){ drawSend("done",t("optShare")+" ✓"); })
+    .catch(function(){ drawSend("ready",t("shareClosed")); });
+}
+function saveBoth(){ var k=sendPkg; downloadBlob(k.base+".json",k.jsonBlob); setTimeout(function(){ downloadBlob(k.base+".csv",k.csvBlob); },500); }
+function doEmail(){
+  var k=sendPkg; saveBoth();
+  var body=t("emailBodyHead")+"\n\n"+t("attachThese")+"\n  "+k.base+".json\n  "+k.base+".csv\n\n";
+  if(k.csv.length<=8000) body+=k.csv; else body+="("+k.ex.punches.length+" punches — too many to include here; the attached CSV has them all.)";
+  var href="mailto:"+encodeURIComponent(officeEmail())+"?subject="+encodeURIComponent(k.title)+"&body="+encodeURIComponent(body);
+  setTimeout(function(){ var a=document.createElement("a"); a.href=href; a.rel="noopener"; document.body.appendChild(a); a.click(); a.remove(); },900);
+  drawSend("done",t("emailOpened").replace("$",officeEmail()));
+}
+function doSave(){ saveBoth(); drawSend("done",t("savedTwo").replace("$",officeEmail())); }
+function restoreFromFile(file){
+  var r=new FileReader(); r.onload=function(){ try{
+    var ex=JSON.parse(r.result); if(ex.kind!=="pioneer-signin-export") throw 0;
+    (ex.roster||[]).forEach(function(w){ if(!roster.some(function(x){ return x.id===w.id||foldName(x.name)===foldName(w.name); })) roster.push(w); }); roster.sort(function(a,b){ return (a.sortOrder||0)-(b.sortOrder||0)||String(a.name).localeCompare(String(b.name)); }); LS.set("roster",roster);
+    if(ex.codes&&ex.codes.length){ codes=ex.codes; LS.set("codes",codes); }
+    (ex.walkons||[]).forEach(function(w){ if(!walkons.some(function(x){ return x.id===w.id; })) walkons.push(w); }); LS.set("walkons",walkons);
+    if(ex.job&&!LS.get("job",null)){ JOB=ex.job; LS.set("job",JOB); }
+    var n=0; (ex.punches||[]).forEach(function(p){ var k=p.date+"__"+p.workerId, c=LS.get("cache."+p.date,{}); if(!c[k]){ c[k]=p; n++; LS.set("cache."+p.date,c); } });
+    punches=LS.get("cache."+today(),{}); LS.set("cacheToday",punches); rebuildRecent(); paint(); crewMsg=t("restored")+": "+n; crewEdit=null; drawCrew();
+  }catch(e){ crewMsg=t("saveFailed"); crewEdit=null; drawCrew(); } }; r.readAsText(file);
+}
+function exportWeek(){
+  if(!CLOUD){ sendToOffice(); return; }
+  var all={}; for(var i=0;i<8;i++){ var d=shiftDay(revDay,-i),c=LS.get("cache."+d,{}); Object.keys(c).forEach(function(k){ all[k]=c[k]; }); } Object.keys(punches).forEach(function(k){ all[k]=punches[k]; });
+  var rows=Object.keys(all).map(function(k){ return all[k]; }).sort(function(a,b){ return (a.date+a.agency+a.name)<(b.date+b.agency+b.name)?-1:1; });
+  var csv=toCsv(rows);
+  if(!window.claude||!claude.use){ alert(csv); return; }
+  claude.use("downloads").then(function(dl){ if(!dl){ alert(csv); return; } dl.save({filename:"oyster-signin-"+revDay+".csv",data:csv}).catch(function(){}); }).catch(function(){ alert(csv); });
+}
+
+/* =====================================================================
+   WIRING
+   ===================================================================== */
+document.getElementById("lang").hidden=true;
+document.getElementById("undoChip").addEventListener("click",undoLast);
+document.getElementById("backBtn").addEventListener("click",function(){ view.agency=null; paint(); });
+document.getElementById("openCrew").addEventListener("click",function(){ openPin("check",openCrew); });
+document.getElementById("openReview").addEventListener("click",function(){ openPin("check",openReview); });
+document.getElementById("veil").addEventListener("click",function(e){ if(e.target===this) closeSheet(); });
+document.getElementById("pinVeil").addEventListener("click",function(e){ if(e.target===this) closePin(); });
+document.getElementById("crewVeil").addEventListener("click",function(e){ if(e.target===this) closeCrew(); });
+document.getElementById("revVeil").addEventListener("click",function(e){ if(e.target===this) closeReview(); });
+document.getElementById("flash").addEventListener("click",function(e){ if(e.target===this) hideFlash(); });
+document.addEventListener("keydown",function(e){ if(e.key==="Escape"){ closeSheet(); hideFlash(); closePin(); closeCrew(); closeReview(); } });
+document.getElementById("main").addEventListener("click",armHome);
+paintClock(); setInterval(paintClock,1000); paint(); setInterval(paintUndo,5000); setInterval(paintSync,5000);
+var boardDay=today(); setInterval(function(){ if(today()!==boardDay){ boardDay=today(); punches=LS.get("cache."+boardDay,{}); LS.set("cacheToday",punches); closeSheet(); hideFlash(); view.agency=null; paint(); } },30000);
+
+document.getElementById("restoreFile").addEventListener("change",function(){ if(this.files&&this.files[0]) restoreFromFile(this.files[0]); this.value=""; });
+if(!CLOUD){ rebuildRecent(); paint();
+  /* navigator.storage.persist() returns a PROMISE - a try/catch never sees its rejection, and in a
+     sandboxed context it rejects with "cannot access storage". That unhandled rejection is what put
+     "A script didn't run correctly on this page" on Isaac's screen on 9/21. Catch it properly. */
+  try{ if(navigator.storage&&navigator.storage.persist){ var pp=navigator.storage.persist(); if(pp&&pp.catch) pp.catch(function(){}); } }catch(e){}
+}
+paintStore();
+/* Nothing in this page is worth crashing the host viewer over. */
+window.addEventListener("unhandledrejection",function(e){ try{ console.warn("swallowed rejection:",e.reason); e.preventDefault(); }catch(_){} });
+/* If the context cannot save, warn before a Back press or a reload throws the day away. */
+window.addEventListener("beforeunload",function(e){
+  if(CLOUD||STORE_OK) return;
+  var n=0; try{ n=Object.keys(punches||{}).length; }catch(_){}
+  if(!n) return;
+  e.preventDefault(); e.returnValue="";
+});
+(function(){
+  if(!CLOUD){ paintSync(); return; }
+  if(claude.permissions&&claude.permissions.request){ try{ claude.permissions.request(["db","downloads"]); }catch(e){} }
+  claude.use("db").then(function(handle){
+    db=handle; if(!db){ paintSync(); return; } flush(); setInterval(flush,15000);
+    db.collection("roster").onSnapshot(function(snap){ var list=[]; snap.docs.forEach(function(doc){ var v=doc.data(); if(v) list.push(Object.assign({id:doc.id},v)); }); list.sort(function(a,b){ return (a.sortOrder||0)-(b.sortOrder||0)||String(a.name).localeCompare(String(b.name)); }); roster=list; LS.set("roster",roster); paint(); refreshOffice(); },function(e){ console.error("roster",e&&e.code); });
+    db.collection("walkons").onSnapshot(function(snap){ var list=[]; snap.docs.forEach(function(doc){ var v=doc.data(); if(v) list.push(Object.assign({id:doc.id},v)); }); walkons=list; LS.set("walkons",walkons); paint(); refreshOffice(); },function(e){ console.error("walkons",e&&e.code); });
+    db.collection("codes").onSnapshot(function(snap){ var list=[]; snap.docs.forEach(function(doc){ var v=doc.data(); if(v) list.push(Object.assign({code:doc.id},v)); }); list.sort(function(a,b){ return String(a.code)<String(b.code)?-1:1; }); codes=list; LS.set("codes",codes); paint(); if(draft&&!draft.walk) drawSheet(); refreshOffice(); },function(e){ console.error("codes",e&&e.code); });
+    db.collection("punches").orderBy("date","desc").limit(120).onSnapshot(function(snap){
+      var mine={},open=[],td=today(),rec=[];
+      snap.docs.forEach(function(doc){ var v=doc.data(); if(!v) return; rec.push(v); if(v.date===td) mine[doc.id]=v; else { if(isOpen(v)&&!v.voided) open.push(v); var c=LS.get("cache."+v.date,{}); c[doc.id]=v; LS.set("cache."+v.date,c); } });
+      open.sort(function(a,b){ return a.date<b.date?1:-1; }); punches=mine; stale=open.slice(0,6); recent=rec; LS.set("recent",rec.slice(0,120)); LS.set("cacheToday",punches); LS.set("cache."+td,punches);
+      paint(); if(!document.getElementById("revVeil").hidden&&revDay===td&&!revEdit) loadReview();
+    },function(e){ console.error("punches",e&&e.code); });
+    db.doc("config/security").get().then(function(doc){ var v=doc&&doc.exists?doc.data():null; if(v&&(v.pins||v.pin)){ SEC=v; LS.set("sec",SEC); } }).catch(function(){});
+    db.doc("config/job").get().then(function(doc){ var v=doc&&doc.exists?doc.data():null; if(v&&v.code){ JOB=v; LS.set("job",JOB); paint(); } }).catch(function(){});
+  }).catch(function(){ paintSync(); });
+})();
+</script>
+</body></html>
