@@ -232,23 +232,36 @@ textarea.finput{min-height:84px;resize:vertical}
 .sugg button span{font-size:13px;color:var(--muted)}
 
 /* ---------- confirmation flash ---------- */
-.flash{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:20px;background:#0B1F17}
+/* Punch confirmation, v13 (Isaac, 9/21): a BAND ACROSS THE TOP, not a full-screen takeover.
+   The board stays visible and tappable throughout, so the next man in the queue does not wait.
+   pointer-events:none on the strip, re-enabled on Undo only, so a stray tap anywhere else goes
+   straight through to the board instead of being eaten by the confirmation. */
+.flash{position:fixed;left:0;right:0;top:0;z-index:60;display:flex;justify-content:center;
+  padding:10px clamp(10px,2vw,20px);pointer-events:none;animation:drop .18s ease-out}
 .flash[hidden]{display:none!important}
-.flash.outk{background:#0F1B2D}
-.flashin{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;max-width:760px;width:100%}
-.tick{font-size:clamp(64px,13vw,120px);line-height:1;color:var(--live)}
+@keyframes drop{from{transform:translateY(-100%)}to{transform:translateY(0)}}
+.flashin{display:flex;align-items:center;gap:clamp(10px,1.8vw,22px);width:100%;max-width:1500px;
+  background:#12321F;border:2px solid var(--live);border-radius:var(--r);padding:12px clamp(12px,2vw,20px);
+  box-shadow:0 10px 30px rgba(0,0,0,.45);position:relative;overflow:hidden}
+.flash.outk .flashin{background:#132542;border-color:var(--accent)}
+.tick{font-size:clamp(30px,4.4vw,44px);line-height:1;color:var(--live);flex:none}
 .flash.outk .tick{color:var(--accent)}
-.flash h3{margin:0;font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;font-weight:700;font-size:clamp(34px,6.4vw,62px);line-height:1.02;letter-spacing:.01em;color:var(--ink);text-wrap:balance}
-.flash .verb{font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;text-transform:uppercase;letter-spacing:.16em;font-weight:600;font-size:clamp(16px,2.4vw,22px);color:var(--live)}
+.flash h3{margin:0;font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;font-weight:700;
+  font-size:clamp(20px,3.2vw,34px);line-height:1.05;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.flash .verb{font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;text-transform:uppercase;
+  letter-spacing:.14em;font-weight:600;font-size:clamp(11px,1.5vw,14px);color:var(--live)}
 .flash.outk .verb{color:var(--accent)}
-.flash .at{font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;font-weight:600;font-size:clamp(36px,7vw,68px);line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
-.flash .sub{color:var(--muted);font-size:16px}
-.flash .codesum{font-family:"Roboto Mono",monospace;font-size:18px;color:var(--muted)}
-.flash .undobig{margin-top:8px;border:2px solid var(--muted);color:var(--ink);border-radius:10px;padding:16px 34px;min-height:64px;font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;text-transform:uppercase;letter-spacing:.1em;font-weight:600;font-size:18px}
-.ring{width:min(420px,80%);height:4px;border-radius:3px;background:#1E3A2F;overflow:hidden;margin-top:6px}
-.flash.outk .ring{background:#1F3455}
-.ring i{display:block;height:100%;background:var(--live);width:100%;transform-origin:left center;animation:drain 7s linear forwards}
+.flash .who{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 auto}
+.flash .at{font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;font-weight:600;
+  font-size:clamp(26px,4.2vw,42px);line-height:1;color:var(--ink);font-variant-numeric:tabular-nums;flex:none}
+.flash .codesum{font-family:"Roboto Mono",monospace;font-size:14px;color:var(--muted);flex:none;white-space:nowrap}
+.flash .undobig{pointer-events:auto;flex:none;border:2px solid var(--muted);color:var(--ink);border-radius:10px;
+  padding:10px 20px;min-height:52px;font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;
+  text-transform:uppercase;letter-spacing:.09em;font-weight:600;font-size:14px}
+.ring{position:absolute;left:0;right:0;bottom:0;height:4px;background:transparent;overflow:hidden}
+.ring i{display:block;height:100%;background:var(--live);width:100%;transform-origin:left center;animation:drain 4s linear forwards}
 .flash.outk .ring i{background:var(--accent)}
+@media (max-width:760px){ .flash .codesum{display:none} .flash .undobig{padding:10px 14px;font-size:13px} }
 @keyframes drain{from{transform:scaleX(1)}to{transform:scaleX(0)}}
 
 /* ---------- office: pin + crew + review ---------- */
@@ -408,13 +421,18 @@ en:{ onsite:"on site", signedout:"signed out", tapCo:"Tap your company.", tapIn:
   local:"Saved on this tablet", sendOffice:"Send to office", lastSent:"Last sent to office", neverSent:"Never sent", daysAgo:"days ago",
   unsent:"days of sign-ins not sent yet", sentOk:"Sent. The office will find it.", shareFail:"Could not open the share menu. The file was downloaded instead — attach it to an email.",
   restoreFile:"Restore from a sent file", restored:"Restored", jobTitle:"This job", jobNum:"Job number", jobNm:"Job name", jobSub:"Line under the name",
-  officeEmail:"Office email (where the sign-ins go)", sendTitle:"Send to office", sendWhat:"$1 sign-ins across $2 days · two files:", sendTo:"Goes to:",
-  optShare:"Share…", optShareSub:"Opens this device's share menu — pick Mail, OneDrive or Teams", optEmail:"Email it", optEmailSub:"Saves the two files, then opens an email to the office with the hours already in it — attach the files and send",
+  officeEmail:"Office email (where the sign-ins go)", sendTitle:"Send to office", sendWhat:"$1 sign-ins across $2 days · one file:", sendTo:"Goes to:",
+  fullRecord:"Save the full signed record (.json)", fullRecordSaved:"Saved $ — the complete record, signatures and all.",
+  clearDay:"Clear this day — remove every sign-in", clearTitle:"Clear every sign-in for this day?",
+  clearBody:"$1 records will be removed for good. There is no undo, and Undo on the board will not bring them back.",
+  clearApproved:"$ of these are APPROVED. Approved punches are what gets billed — make sure you mean this.",
+  clearGo:"Yes, delete them all", cleared:"Cleared $ records.",
+  optShare:"Share…", optShareSub:"Opens this device's share menu — pick Mail, OneDrive or Teams", optEmail:"Email it", optEmailSub:"Saves the CSV, then opens an email to the office with the hours already in it — attach the file and send",
   optSave:"Just save the files", optSaveSub:"Saves both files on this device. You attach or move them yourself",
   shareClosed:"Nothing was sent — the share menu was closed.", didItGo:"Did it go through?", yesSent:"Yes — mark as sent", notYet:"Not yet",
   emailOpened:"An email to $ has been opened. Attach the two files from your Downloads folder, then send. The hours are also in the body of the email as a backup.",
   savedTwo:"Two files saved to this device's Downloads folder. Attach them to an email to $, or move them into OneDrive → Timesheets → Sign-in board.",
-  noShare:"This device has no share menu — use Email it.", emailBodyHead:"Sign-ins from the tablet. The two attached files are the record; the hours below are a copy.", attachThese:"Attach these two files:" },
+  noShare:"This device has no share menu — use Email it.", emailBodyHead:"Sign-ins from the tablet. The attached file is the record; the hours below are a copy.", attachThese:"Attach this file:" },
 es:{ onsite:"en obra", signedout:"salieron", tapCo:"Toque su compañía.", tapIn:"Toque su nombre para entrar.",
   allIn:"Todos están en obra.", allCrews:"Todas las cuadrillas", ofOn:"de", onSiteNow:"en obra ahora",
   tapToIn:"Toque para entrar", tapToOut:"Toque para salir", tapBack:"Toque para volver a entrar", outSince:"Salió a las",
@@ -465,13 +483,18 @@ es:{ onsite:"en obra", signedout:"salieron", tapCo:"Toque su compañía.", tapIn
   local:"Guardado en esta tableta", sendOffice:"Enviar a la oficina", lastSent:"Último envío a la oficina", neverSent:"Nunca enviado", daysAgo:"días",
   unsent:"días de registros sin enviar", sentOk:"Enviado. La oficina lo encontrará.", shareFail:"No se pudo abrir el menú de compartir. Se descargó el archivo — adjúntelo a un correo.",
   restoreFile:"Restaurar desde un archivo enviado", restored:"Restaurado", jobTitle:"Esta obra", jobNum:"Número de obra", jobNm:"Nombre de la obra", jobSub:"Línea bajo el nombre",
-  officeEmail:"Correo de la oficina (a dónde van los registros)", sendTitle:"Enviar a la oficina", sendWhat:"$1 registros en $2 días · dos archivos:", sendTo:"Va a:",
-  optShare:"Compartir…", optShareSub:"Abre el menú de compartir de este equipo — elija Mail, OneDrive o Teams", optEmail:"Enviar por correo", optEmailSub:"Guarda los dos archivos y abre un correo a la oficina con las horas ya incluidas — adjunte los archivos y envíe",
+  officeEmail:"Correo de la oficina (a dónde van los registros)", sendTitle:"Enviar a la oficina", sendWhat:"$1 registros en $2 días · un archivo:", sendTo:"Va a:",
+  fullRecord:"Guardar el registro completo firmado (.json)", fullRecordSaved:"Guardado $ — el registro completo, con firmas.",
+  clearDay:"Borrar este día — quitar todos los registros", clearTitle:"¿Borrar todos los registros de este día?",
+  clearBody:"Se eliminarán $1 registros de forma definitiva. No se puede deshacer.",
+  clearApproved:"$ de estos están APROBADOS. Los registros aprobados son los que se facturan — asegúrese.",
+  clearGo:"Sí, borrarlos todos", cleared:"Se borraron $ registros.",
+  optShare:"Compartir…", optShareSub:"Abre el menú de compartir de este equipo — elija Mail, OneDrive o Teams", optEmail:"Enviar por correo", optEmailSub:"Guarda el CSV y abre un correo a la oficina con las horas ya incluidas — adjunte el archivo y envíe",
   optSave:"Solo guardar los archivos", optSaveSub:"Guarda ambos archivos en este equipo. Usted los adjunta o los mueve",
   shareClosed:"No se envió nada — se cerró el menú de compartir.", didItGo:"¿Se envió?", yesSent:"Sí — marcar como enviado", notYet:"Todavía no",
   emailOpened:"Se abrió un correo a $. Adjunte los dos archivos de la carpeta Descargas y envíe. Las horas también van en el cuerpo del correo como respaldo.",
   savedTwo:"Dos archivos guardados en Descargas. Adjúntelos a un correo a $, o muévalos a OneDrive → Timesheets → Sign-in board.",
-  noShare:"Este equipo no tiene menú de compartir — use Enviar por correo.", emailBodyHead:"Registros de la tableta. Los dos archivos adjuntos son el registro; las horas abajo son una copia.", attachThese:"Adjunte estos dos archivos:" }
+  noShare:"Este equipo no tiene menú de compartir — use Enviar por correo.", emailBodyHead:"Registros de la tableta. El archivo adjunto es el registro; las horas abajo son una copia.", attachThese:"Adjunte este archivo:" }
 };
 /* Both languages, always, everywhere a worker looks. No toggle to get stuck on. */
 var lang="en";
@@ -503,7 +526,7 @@ var LS={ get:function(k,d){ try{ var v=localStorage.getItem("peg."+k); return v?
    reload or Back.  Isaac hit exactly that on 9/21.  Test it once, out loud, at boot. */
 var STORE_OK=(function(){ try{ localStorage.setItem("peg.__probe","1");
     var v=localStorage.getItem("peg.__probe"); localStorage.removeItem("peg.__probe"); return v==="1"; }catch(e){ return false; } })();
-var QUICK_OUT_MIN=10, SHEET_TIMEOUT=30000, HOME_TIMEOUT=45000, FLASH_MS=7000, UNDO_MS=120000, OFFLINE_AFTER=12000;
+var QUICK_OUT_MIN=10, SHEET_TIMEOUT=30000, HOME_TIMEOUT=45000, FLASH_MS=4000, UNDO_MS=120000, OFFLINE_AFTER=12000;
 var AG_PREF=["PEG","KNP","ABG"];
 var CLOUD=!!(window.claude&&claude.use);          /* on claude.ai → shared database; anywhere else → this tablet is the record */
 var db=null, SUP=null, T0=Date.now();
@@ -617,14 +640,13 @@ function rebuildRecent(){
    BOARD
    ===================================================================== */
 function unsentDays(){ var n=0; allDays().forEach(function(d){ var c=LS.get("cache."+d,{}); if(Object.keys(c).some(function(k){ return !c[k].sentAt&&!isOpen(c[k]); })) n++; }); return n; }
-function paintSend(){
-  var bar=document.getElementById("sendBar"); if(CLOUD){ bar.hidden=true; return; }
-  var n=unsentDays(), days=LAST_SENT?Math.floor((Date.now()-new Date(LAST_SENT).getTime())/86400000):null, late=n&&(days===null||days>=2);
-  bar.textContent=""; bar.hidden=false; bar.className="missed sendbar"+(late?" late":"");
-  bar.appendChild(el("span","tag",t("sendOffice")));
-  var s=el("span"); s.appendChild(el("b",null,t("lastSent")+": ")); s.appendChild(document.createTextNode(LAST_SENT?(dayName(LAST_SENT.slice(0,10))+(days>0?" · "+days+" "+t("daysAgo"):"")):t("neverSent"))); bar.appendChild(s);
-  if(n) bar.appendChild(el("span",null," · "+n+" "+t("unsent")));
-  var b=el("button"); b.appendChild(biBtn("sendOffice")); b.addEventListener("click",function(){ openPin("check",sendToOffice); }); bar.appendChild(b);
+/* Isaac, 9/21: Send to office moved OFF the board and into Crew, behind the PIN, so the men
+   queueing at the gate never see it. The bar element stays in the markup, permanently hidden. */
+function paintSend(){ var bar=document.getElementById("sendBar"); if(bar) bar.hidden=true; }
+function sendStatusLine(){
+  var n=unsentDays(), days=LAST_SENT?Math.floor((Date.now()-new Date(LAST_SENT).getTime())/86400000):null;
+  return { late: !!(n&&(days===null||days>=2)),
+           text: t("lastSent")+": "+(LAST_SENT?(dayName(LAST_SENT.slice(0,10))+(days>0?"  ·  "+days+" "+t("daysAgo"):"")):t("neverSent"))+(n?"  ·  "+n+" "+t("unsent"):"") };
 }
 function paintSync(){
   var dot=document.getElementById("syncDot"),txt=document.getElementById("syncTxt"),bar=document.getElementById("offlineBar");
@@ -909,10 +931,12 @@ function commitWalk(){
    ===================================================================== */
 function showFlash(name,verbKey,at,isOut,code){
   var f=document.getElementById("flash"),box=document.getElementById("flashIn"); f.className="flash"+(isOut?" outk":""); box.textContent="";
-  box.appendChild(el("div","tick","✓")); box.appendChild(el("div","verb",t(verbKey))); box.appendChild(el("h3",null,name)); box.appendChild(el("div","at",at));
+  box.appendChild(el("div","tick","✓"));
+  var who=el("div","who"); who.appendChild(el("div","verb",t(verbKey))); who.appendChild(el("h3",null,name)); box.appendChild(who);
+  box.appendChild(el("div","at",at));
   if(code) box.appendChild(el("div","codesum",code+"  "+codeLabel(code)));
   var u=el("button","undobig"); u.appendChild(biBtn("undoThis")); u.addEventListener("click",undoLast); box.appendChild(u);
-  var r=el("div","ring"); r.appendChild(el("i")); box.appendChild(r); box.appendChild(el("div","sub",t("autoClose")));
+  var r=el("div","ring"); r.appendChild(el("i")); box.appendChild(r);
   f.hidden=false; clearTimeout(flashTimer); flashTimer=setTimeout(hideFlash,FLASH_MS); clearTimeout(undoTimer); undoTimer=setTimeout(function(){ lastAct=null; paintUndo(); },UNDO_MS);
 }
 function hideFlash(){ clearTimeout(flashTimer); document.getElementById("flash").hidden=true; paintUndo(); }
@@ -964,6 +988,16 @@ function drawCrew(){
   s.appendChild(el("p","kicker",SUP?t("office")+"  —  "+SUP:t("office"))); s.appendChild(el("h2","md",t("crewTitle")));
   if(crewEdit){ drawCrewForm(s); return; }
   if(crewMsg){ s.appendChild(el("div","ok",crewMsg)); crewMsg=""; }
+  if(!CLOUD){
+    /* Send to office, and the full signed record, live here now - behind the PIN. */
+    var sd=el("div","sect"); sd.appendChild(el("h3",null,t("sendTitle")));
+    var st=sendStatusLine(); var sl=el("div","empty"); sl.textContent=st.text;
+    if(st.late) sl.style.color="#FFB4A2";
+    sd.appendChild(sl);
+    var sb=el("button","addbtn",t("sendTitle")); sb.addEventListener("click",function(){ closeCrew(); sendToOffice(); }); sd.appendChild(sb);
+    var jb=el("button","linkish",t("fullRecord")); jb.addEventListener("click",downloadFullRecord); sd.appendChild(jb);
+    s.appendChild(sd);
+  }
   var pend=walkons.filter(function(w){ return !roster.some(function(r){ return r.id===w.id; }); });
   if(pend.length){ var sp=el("div","sect"); sp.appendChild(el("h3",null,t("pending")));
     pend.forEach(function(w){ var r=el("button","row pend"), who=el("span","who"); who.appendChild(el("b",null,w.name)); who.appendChild(el("span",null,w.agency+" · "+dayName(w.lastDate||w.firstDate))); r.appendChild(who); r.appendChild(el("span","tagc",t("addToCrew")));
@@ -1050,8 +1084,8 @@ function drawCrewForm(s){
 /* =====================================================================
    REVIEW
    ===================================================================== */
-var revDay=today(), revRows=[], revEdit=null, revMsg="";
-function openReview(){ revDay=today(); revEdit=null; revMsg=""; loadReview(); document.getElementById("revVeil").hidden=false; }
+var revDay=today(), revRows=[], revEdit=null, revMsg="", revClear=false;
+function openReview(){ revDay=today(); revEdit=null; revMsg=""; revClear=false; loadReview(); document.getElementById("revVeil").hidden=false; }
 function closeReview(){ document.getElementById("revVeil").hidden=true; revEdit=null; }
 function loadReview(){
   if(revDay===today()){ revRows=Object.keys(punches).map(function(k){ return Object.assign({_id:k},punches[k]); }); drawReview(); return; }
@@ -1069,6 +1103,7 @@ function statusOf(p){
 function drawReview(){
   var s=document.getElementById("revSheet"); s.textContent=""; s.appendChild(el("p","kicker",SUP?t("office")+"  —  "+SUP:t("office")));
   if(revEdit){ drawRevForm(s); return; }
+  if(revClear){ drawClearDay(s); return; }
   var nav=el("div","daynav"); var prev=el("button",null,"‹"); prev.addEventListener("click",function(){ revDay=shiftDay(revDay,-1); loadReview(); });
   var next=el("button",null,"›"); next.disabled=revDay>=today(); next.addEventListener("click",function(){ revDay=shiftDay(revDay,1); loadReview(); });
   nav.appendChild(prev); nav.appendChild(el("span","dl",dayName(revDay))); nav.appendChild(next); s.appendChild(nav);
@@ -1095,6 +1130,34 @@ function drawReview(){
   acts.appendChild(apAll);
   var ex=abtn(CLOUD?"no wide":"go blue",CLOUD?"exportCsv":"sendOffice"); ex.addEventListener("click",exportWeek); acts.appendChild(ex);
   var cl=abtn("no wide","close"); cl.addEventListener("click",closeReview); acts.appendChild(cl); s.appendChild(acts);
+  /* Isaac, 9/21: wipe a whole day in one go - for resetting after a test run, or when someone
+     signs the crew in by mistake. Office only (Review is already behind the PIN), and it takes a
+     second screen that states the count and flags anything approved before it will do anything. */
+  if(rows.length){
+    var cd=el("button","linkish red",t("clearDay"));
+    cd.addEventListener("click",function(){ revClear=true; drawReview(); });
+    s.appendChild(cd);
+  }
+}
+function drawClearDay(s){
+  var live=revRows.filter(function(p){ return !p.voided; }), appr=live.filter(function(p){ return p.approved; });
+  s.appendChild(el("h2","md",t("clearTitle")));
+  var info=el("div","audit");
+  info.appendChild(el("b",null,dayName(revDay))); info.appendChild(el("br"));
+  info.appendChild(document.createTextNode(t("clearBody").replace("$1",live.length)));
+  s.appendChild(info);
+  if(appr.length){ var w=el("div","err"); w.textContent=t("clearApproved").replace("$",appr.length); s.appendChild(w); }
+  var sv=el("button","addbtn",t("fullRecord")); sv.addEventListener("click",downloadFullRecord); s.appendChild(sv);
+  var acts=el("div","acts");
+  var no=abtn("go wide","cancel"); no.addEventListener("click",function(){ revClear=false; drawReview(); }); acts.appendChild(no);
+  var yes=el("button","no wide"); yes.appendChild(biBtn("clearGo"));
+  yes.addEventListener("click",function(){
+    yes.disabled=true; var n=0, total=revRows.length;
+    if(!total){ revClear=false; drawReview(); return; }
+    revRows.forEach(function(p){ deleteDoc("punches/"+p._id,function(){ if(++n===total){
+      revClear=false; revMsg=t("cleared").replace("$",total); loadReview(); paint(); } }); });
+  });
+  acts.appendChild(yes); s.appendChild(acts);
 }
 function commitRev(id,rec,done){
   if(rec.date===today()){ punches[id]=rec; LS.set("cacheToday",punches); LS.set("cache."+today(),punches); paint(); }
@@ -1176,6 +1239,7 @@ function markSent(){
   allDays().forEach(function(d){ var c=LS.get("cache."+d,{}), ch=false; Object.keys(c).forEach(function(k){ if(!isOpen(c[k])&&!c[k].sentAt){ c[k].sentAt=now; ch=true; } }); if(ch) LS.set("cache."+d,c); });
   punches=LS.get("cache."+today(),punches); rebuildRecent(); paint();
 }
+function downloadFullRecord(){ var k=packageExport(); downloadBlob(k.base+".json",k.jsonBlob); crewMsg=t("fullRecordSaved").replace("$",k.base+".json"); drawCrew(); }
 function downloadBlob(name,blob){ var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },4000); }
 var sendPkg=null;
 function packageExport(){
@@ -1193,17 +1257,17 @@ function drawSend(state,msg){
   var s=document.getElementById("sheet"), k=sendPkg; s.className="sheet"; s.textContent=""; s.onclick=null;
   s.appendChild(el("p","kicker",t("office")+(SUP?"  —  "+SUP:""))); s.appendChild(el("h2","md",t("sendTitle")));
   var info=el("div","audit");
-  info.appendChild(el("b",null,t("sendWhat").replace("$1",k.ex.punches.length).replace("$2",k.nDays)+" ")); info.appendChild(el("span","mono",k.base+".json  ·  "+k.base+".csv"));
+  info.appendChild(el("b",null,t("sendWhat").replace("$1",k.ex.punches.length).replace("$2",k.nDays)+" ")); info.appendChild(el("span","mono",k.base+".csv"));
   info.appendChild(el("br")); info.appendChild(el("b",null,t("sendTo")+" ")); info.appendChild(el("span","mono",officeEmail()));
   s.appendChild(info);
   if(msg) s.appendChild(el("div",state==="ready"?"err":"ok",msg));
   if(state==="ready"){
     var opts=el("div","sect");
     function opt(key,sub,cls,fn,disabled){ var b=el("button","row"); if(cls) b.classList.add(cls); var who=el("span","who"); who.appendChild(el("b",null,t(key))); who.appendChild(el("span",null,t(sub))); b.appendChild(who); b.disabled=!!disabled; if(disabled) b.classList.add("off"); b.addEventListener("click",fn); opts.appendChild(b); }
-    opt("optShare","optShareSub",null,doShare,!k.canShare);
-    if(!k.canShare) opts.appendChild(el("div","eyebrow",t("noShare")));
+    /* Isaac, 9/21: email only. The share sheet and the bare "just save the files" choice are gone —
+       on a PC the share dialog was confusing and nobody used Save. doShare/doSave are left in the
+       file, unreferenced, so putting either back is a one-line change. */
     opt("optEmail","optEmailSub",null,doEmail);
-    opt("optSave","optSaveSub",null,doSave);
     s.appendChild(opts);
     var acts=el("div","acts tight"); var cl=abtn("no wide","cancel"); cl.addEventListener("click",closeSheet); acts.appendChild(cl); s.appendChild(acts);
   } else {
@@ -1219,8 +1283,11 @@ function doShare(){
 }
 function saveBoth(){ var k=sendPkg; downloadBlob(k.base+".json",k.jsonBlob); setTimeout(function(){ downloadBlob(k.base+".csv",k.csvBlob); },500); }
 function doEmail(){
-  var k=sendPkg; saveBoth();
-  var body=t("emailBodyHead")+"\n\n"+t("attachThese")+"\n  "+k.base+".json\n  "+k.base+".csv\n\n";
+  /* Isaac, 9/21: ONE file, the CSV. Chrome allows a single download per page load and silently
+     denies the rest, which is why his first export produced only one file. The full JSON record
+     (signatures, block detail) is still one tap away in Crew - see downloadFullRecord. */
+  var k=sendPkg; downloadBlob(k.base+".csv",k.csvBlob);
+  var body=t("emailBodyHead")+"\n\n"+t("attachThese")+"\n  "+k.base+".csv\n\n";
   if(k.csv.length<=8000) body+=k.csv; else body+="("+k.ex.punches.length+" punches — too many to include here; the attached CSV has them all.)";
   var href="mailto:"+encodeURIComponent(officeEmail())+"?subject="+encodeURIComponent(k.title)+"&body="+encodeURIComponent(body);
   setTimeout(function(){ var a=document.createElement("a"); a.href=href; a.rel="noopener"; document.body.appendChild(a); a.click(); a.remove(); },900);
@@ -1259,7 +1326,9 @@ document.getElementById("veil").addEventListener("click",function(e){ if(e.targe
 document.getElementById("pinVeil").addEventListener("click",function(e){ if(e.target===this) closePin(); });
 document.getElementById("crewVeil").addEventListener("click",function(e){ if(e.target===this) closeCrew(); });
 document.getElementById("revVeil").addEventListener("click",function(e){ if(e.target===this) closeReview(); });
-document.getElementById("flash").addEventListener("click",function(e){ if(e.target===this) hideFlash(); });
+/* The band no longer swallows taps (pointer-events:none in CSS), so the next man can start straight
+   away. Any tap on the board also clears it early, so it never sits over a tile he wants. */
+document.getElementById("main").addEventListener("pointerdown",function(){ hideFlash(); });
 document.addEventListener("keydown",function(e){ if(e.key==="Escape"){ closeSheet(); hideFlash(); closePin(); closeCrew(); closeReview(); } });
 document.getElementById("main").addEventListener("click",armHome);
 paintClock(); setInterval(paintClock,1000); paint(); setInterval(paintUndo,5000); setInterval(paintSync,5000);
