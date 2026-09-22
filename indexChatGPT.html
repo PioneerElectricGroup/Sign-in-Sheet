@@ -1,0 +1,1779 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="app-version" content="16.0 — 2026-09-22">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0E1929">
+<meta name="application-name" content="Sign-In Board">
+<meta name="application-version" content="16.0">
+<meta name="apple-mobile-web-app-title" content="Sign-In">
+<title>Oyster Sign-In Board</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230E1929'/%3E%3Cpath d='M36 6 16 36h14l-4 22 22-32H34z' fill='%236FA6F2'/%3E%3C/svg%3E">
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Barlow:wght@400;500;600;700&family=Roboto+Mono:wght@400;500;700&display=swap">
+<style>
+/* Oyster Sign-In Board — Pioneer Electric Group. A mounted jobsite kiosk.
+   Deliberately single-theme (navy + gray, Pioneer's colours): it runs on a tablet on the
+   gang box at 5:45 AM and must not flip to a light ground because someone's OS says so.
+   Every colour is painted explicitly so the page holds on any host background. */
+:root{
+  --ground:#0E1929;      /* deep navy */
+  --surface:#162640;
+  --surface-2:#20334F;
+  --edge:#455D7F;
+  --control-edge:#7186A5;
+  --ink:#F3F5F8;
+  --muted:#B5C3D6;       /* steel gray */
+  --accent:#6FA6F2;      /* Pioneer blue, lit for a dark ground */
+  --accent-ink:#0E1929;
+  --live:#5FD37A;        /* on site — semantic, not brand */
+  --live-dim:#173A2C;
+  --done:#A9B9D1;
+  --alert:#F0684A;
+  --alert-dim:#3A2320;
+  --r:10px;
+  --pad:clamp(14px,2.2vw,26px);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:Barlow,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-size:17px;line-height:1.45;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;
+  -webkit-user-select:none;user-select:none;min-height:100vh}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+button:disabled{cursor:not-allowed}
+.mono{font-family:"Roboto Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.hd{font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;font-weight:600;letter-spacing:.01em}
+.eyebrow{font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;text-transform:uppercase;letter-spacing:.12em;font-size:12px;color:var(--muted);font-weight:500}
+
+.wrap{padding-inline:var(--pad);padding-block:var(--pad) 0;max-width:1500px;margin:0 auto}
+
+/* ---------- header rail ---------- */
+.rail{display:flex;align-items:center;gap:clamp(12px,2vw,28px);flex-wrap:wrap;border:1px solid var(--edge);
+  border-top:3px solid var(--accent);border-radius:var(--r);background:var(--surface);padding:14px clamp(14px,2vw,22px)}
+.job{display:flex;flex-direction:column;gap:2px;min-width:0}
+.job b{font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;font-weight:600;font-size:clamp(19px,2.4vw,26px);letter-spacing:.02em;line-height:1.1}
+.job span{font-size:13px;color:var(--muted);letter-spacing:.04em}
+.clock{margin-left:auto;display:flex;align-items:baseline;gap:10px}
+.clock .t{font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;font-weight:600;font-size:clamp(34px,5.6vw,58px);color:var(--ink);line-height:.95;font-variant-numeric:tabular-nums}
+.clock .d{font-size:13px;color:var(--muted);letter-spacing:.05em;white-space:nowrap}
+.railbtns{display:flex;gap:8px;align-items:center}
+.chip{border:1px solid var(--edge);border-radius:999px;background:var(--surface-2);padding:9px 15px;font-size:14px;font-weight:600;
+  letter-spacing:.03em;color:var(--ink);display:inline-flex;align-items:center;gap:7px;min-height:44px}
+.chip[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--live);flex:none}
+.dot.warn{background:var(--accent)}.dot.bad{background:var(--alert)}
+
+/* ---------- offline banner ---------- */
+.offline{margin-top:12px;padding:14px 18px;border-radius:var(--r);background:var(--alert-dim);border:2px solid var(--alert);color:#FFDCD2;font-size:17px;font-weight:600;display:flex;gap:12px;align-items:center}
+.offline .dot{width:14px;height:14px;background:var(--alert)}
+.findbtn{border:1px dashed var(--edge);border-radius:var(--r);background:transparent;padding:18px 22px;min-height:70px;color:var(--accent);font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;font-size:clamp(18px,2.2vw,24px);letter-spacing:.03em;display:flex;align-items:center;justify-content:center;gap:12px;width:100%;margin-top:clamp(12px,1.6vw,18px)}
+.findbtn:hover{border-color:var(--accent)}
+.tile.away{background:#121F33;border-color:#28395A}
+.tile.away::before{background:var(--done)}
+.tile.away .nm{color:#C9D3E3}.tile.away .cta{color:var(--accent)}.tile.away .times{color:var(--muted)}
+.tile.away .badge{color:var(--done);border-color:#28395A}
+.segs{display:flex;flex-direction:column;gap:8px}
+.seg{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end}
+.seg .rm{border:1px solid var(--edge);border-radius:9px;min-height:56px;min-width:56px;color:var(--alert);font-size:20px}
+.bi{display:block;font-size:.88em;opacity:1;letter-spacing:.015em;font-weight:600;line-height:1.25;margin-top:3px}
+.rrow .tm small{display:block;font-size:11px;color:var(--muted);font-family:Barlow,sans-serif}
+.sendbar{background:#1B2F4E;border-color:var(--accent);color:#DCE7F7}
+.sendbar b{color:#fff}
+.sendbar .tag{color:var(--accent);border-color:var(--accent)}
+.sendbar button{margin-left:auto;border:1px solid var(--accent);border-radius:999px;background:var(--accent);color:var(--accent-ink);padding:10px 20px;min-height:46px;font-weight:700;font-size:15px}
+.sendbar.late{border-color:var(--alert)}.sendbar.late .tag{color:var(--alert);border-color:var(--alert)}
+/* ---------- strips ---------- */
+.bar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:12px;padding:10px 16px;border-radius:var(--r);
+  background:var(--surface);border:1px solid var(--edge);font-size:14px;color:var(--muted)}
+.bar strong{color:var(--ink);font-weight:600}
+.bar .sep{width:1px;height:16px;background:var(--edge)}
+.back{border:1px solid var(--edge);border-radius:999px;padding:8px 16px 8px 12px;min-height:44px;font-weight:600;font-size:15px;color:var(--ink);display:inline-flex;gap:8px;align-items:center}
+.undo{margin-left:auto;border:1px solid var(--accent);color:var(--accent);background:#1B2F4E;border-radius:999px;padding:8px 18px;min-height:44px;font-weight:700;font-size:14px;letter-spacing:.04em}
+.missed{margin-top:12px;padding:12px 16px;border-radius:var(--r);background:var(--alert-dim);border:1px solid var(--alert);color:#F6CFC4;font-size:15px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.missed b{color:#FFDCD2;font-weight:700}
+.missed .tag{font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;text-transform:uppercase;letter-spacing:.1em;font-size:12px;border:1px solid var(--alert);border-radius:999px;padding:3px 9px;color:var(--alert)}
+
+/* ---------- agency chooser ---------- */
+.agencies{display:grid;gap:clamp(12px,1.6vw,18px);grid-template-columns:repeat(auto-fit,minmax(300px,1fr));margin-top:clamp(12px,1.6vw,18px)}
+.agency{position:relative;display:flex;flex-direction:column;gap:10px;text-align:left;background:var(--surface);border:1px solid var(--edge);
+  border-radius:var(--r);padding:clamp(22px,3vw,34px) clamp(20px,2.6vw,30px);min-height:clamp(200px,30vh,280px);transition:transform .12s ease}
+.agency::before{content:"";position:absolute;left:0;top:0;bottom:0;width:8px;border-radius:var(--r) 0 0 var(--r);background:var(--accent)}
+.agency:active{transform:scale(.985)}
+.agency .ag{font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;font-weight:700;font-size:clamp(44px,6.5vw,72px);line-height:1;letter-spacing:.02em}
+.agency .cnt{font-size:16px;color:var(--muted)}
+.agency .cnt b{color:var(--live);font-weight:700;font-size:20px}
+.agency .arrow{margin-top:auto;font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;text-transform:uppercase;letter-spacing:.09em;font-size:17px;color:var(--accent)}
+
+/* ---------- crew grid ---------- */
+.crew{display:grid;gap:clamp(12px,1.6vw,18px);grid-template-columns:repeat(auto-fit,minmax(430px,1fr));margin-top:clamp(12px,1.6vw,18px)}
+.crew.small{max-width:1010px}
+.tile{position:relative;display:flex;flex-direction:column;gap:12px;text-align:left;background:var(--surface);border:1px solid var(--edge);border-radius:var(--r);
+  padding:clamp(16px,2vw,24px) clamp(16px,2vw,24px) clamp(16px,2vw,22px) clamp(22px,2.4vw,30px);min-height:clamp(170px,22vh,220px);transition:transform .12s ease}
+.tile::before{content:"";position:absolute;left:0;top:0;bottom:0;width:7px;border-radius:var(--r) 0 0 var(--r);background:var(--edge)}
+.tile:active{transform:scale(.985)}
+.tile .nm{font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;font-weight:600;font-size:clamp(24px,3.1vw,36px);line-height:1.04;letter-spacing:.01em;text-wrap:balance;padding-right:110px}
+.tile .sub{font-size:13px;color:var(--muted);letter-spacing:.05em;margin-top:-6px}
+.tile .state{margin-top:auto;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.tile .cta{font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;text-transform:uppercase;letter-spacing:.08em;font-weight:500;font-size:clamp(15px,1.7vw,19px);color:var(--muted);display:inline-flex;align-items:center;gap:8px}
+.tile .cta .g{font-size:1.15em;line-height:1}
+.tile .cta>span:not(.g){display:flex;flex-direction:column;line-height:1.15}
+.tile .cta .bi{font-size:.9em;letter-spacing:.015em;text-transform:none;opacity:1}
+.tile .times{font-size:clamp(15px,1.8vw,19px);letter-spacing:.02em;color:var(--ink)}
+.tile .times i{font-style:normal;color:var(--muted);padding:0 6px}
+.tile .code{font-size:13px;color:var(--muted);letter-spacing:.03em}
+.tile.out .cta{color:var(--accent)}
+.tile.in{background:linear-gradient(180deg,var(--live-dim),var(--surface) 62%);border-color:#2F6B4A}
+.tile.in::before{background:var(--live)}
+.tile.in .cta{color:var(--live)}
+.tile.done{background:#121F33;border-color:#28395A}
+.tile.done::before{background:var(--done)}
+.tile.done .nm{color:#B9C4D6}.tile.done .cta{color:var(--done)}.tile.done .times{color:var(--muted)}
+.tile.walk{border-style:dashed}
+.tile.addw{align-items:center;justify-content:center;text-align:center;border-style:dashed;background:transparent}
+.tile.addw::before{display:none}
+.tile.addw .nm{padding:0;color:var(--accent);font-size:clamp(22px,2.6vw,30px)}
+.tile.addw .sub{color:var(--muted)}
+.badge{position:absolute;top:14px;right:14px;font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;text-transform:uppercase;letter-spacing:.09em;font-weight:600;font-size:12px;
+  padding:5px 11px;border-radius:999px;border:1px solid var(--edge);color:var(--muted)}
+.tile.in .badge{color:var(--accent-ink);background:var(--live);border-color:var(--live)}
+.tile.done .badge{color:var(--done);border-color:#28395A}
+.tile.walk .badge{color:var(--accent);border-color:var(--accent)}
+
+/* ---------- office strip ---------- */
+.office{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;line-height:1.5;margin-top:clamp(14px,2vw,20px);
+  padding:14px 4px calc(var(--pad) + 6px);border-top:1px solid var(--edge);font-size:13px;color:var(--muted);letter-spacing:.03em}
+.office button{border:1px solid var(--edge);border-radius:8px;padding:10px 16px;min-height:44px;color:var(--muted);font-size:14px;font-weight:600}
+.office button:hover{color:var(--ink);border-color:var(--muted)}
+
+/* ---------- overlays ---------- */
+.veil{position:fixed;inset:0;z-index:40;background:rgba(6,11,20,.9);display:flex;align-items:center;justify-content:center;padding:20px;
+  -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.veil[hidden]{display:none!important}
+.sheet{width:min(760px,100%);max-height:94vh;overflow:auto;background:var(--surface);border:1px solid var(--edge);border-top:4px solid var(--accent);
+  border-radius:14px;padding:clamp(20px,3vw,32px);display:flex;flex-direction:column;gap:18px}
+.sheet.wide{width:min(1040px,100%)}
+.sheet .foot{position:sticky;bottom:calc(-1*clamp(20px,3vw,32px) - 2px);background:var(--surface);padding-top:10px;padding-bottom:clamp(20px,3vw,32px);margin-top:-6px;margin-bottom:calc(-1*clamp(20px,3vw,32px));display:flex;flex-direction:column;gap:10px;box-shadow:0 -14px 14px -10px rgba(6,11,20,.9)}
+.sigwrap{display:flex;flex-direction:column;gap:8px}
+.sigtop{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.sigtop>span{font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;text-transform:uppercase;letter-spacing:.11em;font-size:12px;color:var(--muted);font-weight:500}
+.sigtop .linkish{padding:9px 16px;min-height:48px;min-width:122px;align-self:center;border:1px solid var(--control-edge);border-radius:9px;text-decoration:none;text-align:center;background:var(--surface-2);color:var(--ink)}
+.sigpad{display:block;width:100%;height:150px;background:#F4F6FA;border:2px dashed #7B8AA3;border-radius:10px;touch-action:none;cursor:crosshair;-webkit-user-select:none;user-select:none}
+.sigpad.inked{border-style:solid;border-color:var(--live)}
+.sigattest{font-size:16px;color:var(--ink);line-height:1.35}
+.sigview{display:inline-block;width:150px;height:60px;background:#F4F6FA;border-radius:6px;vertical-align:middle}
+.sigrow{display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--muted)}
+.sigrow b{color:var(--ink);font-weight:600}
+.sigrow .nosig{color:var(--alert);font-weight:600}
+.sheet .kicker{font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;text-transform:uppercase;letter-spacing:.13em;font-weight:500;font-size:14px;color:var(--accent);margin:0}
+.sheet .kicker.green{color:var(--live)}
+.sheet h2{margin:0;font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;font-weight:700;font-size:clamp(34px,5.4vw,52px);line-height:1;letter-spacing:.01em;text-wrap:balance}
+.sheet h2.md{font-size:clamp(26px,3.6vw,34px)}
+.stamp{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;background:var(--surface-2);border:1px solid var(--edge);border-radius:var(--r);padding:16px 18px}
+.stamp .big{font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;font-weight:600;font-size:clamp(32px,5vw,46px);line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
+.stamp .note{font-size:14px;color:var(--muted)}
+.warnband{background:var(--alert-dim);border:1px solid var(--alert);border-radius:var(--r);padding:16px 18px;color:#FFDCD2;font-size:17px;line-height:1.4}
+.warnband b{display:block;font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;text-transform:uppercase;letter-spacing:.1em;font-size:13px;color:var(--alert);margin-bottom:5px;font-weight:600}
+.field{display:flex;flex-direction:column;gap:9px}
+.field>span{font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;text-transform:uppercase;letter-spacing:.11em;font-size:12px;color:var(--muted);font-weight:500}
+.finput{width:100%;background:var(--surface-2);color:var(--ink);border:1px solid var(--edge);border-radius:9px;padding:14px 15px;font:inherit;font-size:17px;min-height:56px;-webkit-user-select:text;user-select:text}
+.finput::placeholder{color:#ADBED5;opacity:1}
+input[type=time].finput{font-family:"Roboto Mono",monospace;font-size:20px}
+textarea.finput{min-height:84px;resize:vertical}
+.err{color:var(--alert);font-size:14px;font-weight:600;min-height:18px}
+.ok{color:var(--live);font-size:14px;font-weight:600;min-height:18px}
+.two{display:grid;gap:10px;grid-template-columns:1fr 1fr}
+.acts{display:flex;gap:12px;flex-wrap:wrap}
+.acts button{flex:1 1 210px;min-height:78px;border-radius:10px;font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;text-transform:uppercase;letter-spacing:.09em;font-weight:600;font-size:clamp(17px,2.1vw,21px)}
+.acts.tight button{min-height:58px;font-size:16px}
+.go{background:var(--live);color:var(--accent-ink)}
+.go.blue{background:var(--accent);color:var(--accent-ink)}
+.no{background:var(--surface-2);border:1px solid var(--edge);color:var(--muted);flex:0 1 160px}
+.no.wide{flex:1 1 210px}
+.acts button.dis,button.dis{background:var(--surface-2);border:1px solid var(--edge);color:var(--muted);opacity:1}
+.nostore{margin-top:12px;padding:16px 18px;border-radius:var(--r);background:var(--alert-dim);border:2px solid var(--alert);color:#FFDCD2}
+.nostore b{display:block;font-family:Oswald,"Arial Narrow",Arial,sans-serif;text-transform:uppercase;letter-spacing:.06em;font-size:19px;line-height:1.25}
+.nostore span{display:block;font-weight:500;font-size:15px;line-height:1.45;margin-top:7px;color:#FFD3C6}
+.linkish{align-self:flex-start;color:var(--muted);font-size:15px;text-decoration:underline;text-underline-offset:4px;padding:8px 0;min-height:44px}
+.linkish.red{color:var(--alert)}
+.timeout{height:3px;border-radius:2px;background:var(--edge);overflow:hidden}
+.timeout i{display:block;height:100%;background:var(--muted);width:100%}
+
+/* cost-code picker */
+.picks{display:grid;gap:9px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.pick{border:1px solid var(--edge);border-radius:9px;background:var(--surface-2);padding:13px 15px;text-align:left;min-height:64px;display:flex;gap:12px;align-items:center}
+.pick .box{width:26px;height:26px;border-radius:6px;border:2px solid var(--muted);flex:none;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--accent-ink)}
+.pick[aria-pressed="true"]{border-color:var(--accent);background:#1B2F4E}
+.pick[aria-pressed="true"] .box{background:var(--accent);border-color:var(--accent)}
+.pick .cd{font-family:"Roboto Mono",monospace;font-weight:700;font-size:17px;letter-spacing:.02em;flex:none;min-width:64px}
+.pick .lb{display:flex;flex-direction:column;gap:1px;min-width:0}
+.pick .lb b{font-weight:600;font-size:15px;line-height:1.2}
+.pick .lb span{font-size:12px;color:var(--muted);line-height:1.2}
+.pick .tag{margin-left:auto;font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;text-transform:uppercase;letter-spacing:.09em;font-size:11px;color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:2px 8px;flex:none}
+.codelist{display:flex;flex-direction:column;gap:7px;max-height:38vh;overflow:auto;border:1px solid var(--edge);border-radius:9px;padding:8px;background:#122038}
+.codelist .pick{min-height:58px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;min-height:34px}
+.chips span{font-family:"Roboto Mono",monospace;font-weight:700;font-size:15px;background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:6px 13px}
+.chips i{font-style:normal;color:var(--muted);font-size:14px;align-self:center}
+
+/* agency picker (forms) */
+.agpick{display:flex;gap:9px;flex-wrap:wrap}
+.agpick button{border:1px solid var(--edge);border-radius:9px;background:var(--surface-2);padding:12px 18px;min-height:54px;font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;font-weight:600;font-size:18px;letter-spacing:.03em}
+.agpick button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);background:#1B2F4E}
+.agpick.col{flex-direction:column;align-items:stretch}
+.agpick.col button{text-align:left;font-size:16px;text-transform:none;letter-spacing:0;font-family:Barlow,"Helvetica Neue",Arial,sans-serif}
+
+/* suggestions */
+.sugg{display:flex;flex-direction:column;gap:7px}
+.sugg button{border:1px solid var(--edge);border-radius:9px;background:var(--surface-2);padding:13px 16px;min-height:58px;text-align:left;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.sugg button b{font-size:18px}
+.sugg button span{font-size:13px;color:var(--muted)}
+
+/* ---------- confirmation flash ---------- */
+/* Punch confirmation, v13 (Isaac, 9/21): a BAND ACROSS THE TOP, not a full-screen takeover.
+   The board stays visible and tappable throughout, so the next man in the queue does not wait.
+   pointer-events:none on the strip, re-enabled on Undo only, so a stray tap anywhere else goes
+   straight through to the board instead of being eaten by the confirmation. */
+.flash{position:fixed;left:0;right:0;top:0;z-index:60;display:flex;justify-content:center;
+  padding:10px clamp(10px,2vw,20px);pointer-events:none;animation:drop .18s ease-out}
+.flash[hidden]{display:none!important}
+@keyframes drop{from{transform:translateY(-100%)}to{transform:translateY(0)}}
+.flashin{display:flex;align-items:center;gap:clamp(10px,1.8vw,22px);width:100%;max-width:1500px;
+  background:#12321F;border:2px solid var(--live);border-radius:var(--r);padding:12px clamp(12px,2vw,20px);
+  box-shadow:0 10px 30px rgba(0,0,0,.45);position:relative;overflow:hidden}
+.flash.outk .flashin{background:#132542;border-color:var(--accent)}
+.tick{font-size:clamp(30px,4.4vw,44px);line-height:1;color:var(--live);flex:none}
+.flash.outk .tick{color:var(--accent)}
+.flash h3{margin:0;font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;font-weight:700;
+  font-size:clamp(20px,3.2vw,34px);line-height:1.05;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.flash .verb{font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;text-transform:uppercase;
+  letter-spacing:.14em;font-weight:600;font-size:clamp(11px,1.5vw,14px);color:var(--live)}
+.flash.outk .verb{color:var(--accent)}
+.flash .who{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 auto}
+.flash .at{font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;font-weight:600;
+  font-size:clamp(26px,4.2vw,42px);line-height:1;color:var(--ink);font-variant-numeric:tabular-nums;flex:none}
+.flash .codesum{font-family:"Roboto Mono",monospace;font-size:14px;color:var(--muted);flex:none;white-space:nowrap}
+.flash .undobig{pointer-events:auto;flex:none;border:2px solid var(--muted);color:var(--ink);border-radius:10px;
+  padding:10px 20px;min-height:52px;font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;
+  text-transform:uppercase;letter-spacing:.09em;font-weight:600;font-size:14px}
+.ring{position:absolute;left:0;right:0;bottom:0;height:4px;background:transparent;overflow:hidden}
+.ring i{display:block;height:100%;background:var(--live);width:100%;transform-origin:left center;animation:drain 4s linear forwards}
+.flash.outk .ring i{background:var(--accent)}
+@media (max-width:760px){ .flash .codesum{display:none} .flash .undobig{padding:10px 14px;font-size:13px} }
+@keyframes drain{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+
+/* ---------- office: pin + crew + review ---------- */
+.pinwrap{width:min(430px,100%);background:var(--surface);border:1px solid var(--edge);border-top:4px solid var(--accent);border-radius:14px;padding:clamp(20px,3vw,30px);display:flex;flex-direction:column;gap:16px;text-align:center}
+.pinwrap h2{margin:0;font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;font-weight:600;font-size:26px}
+.pinwrap p{margin:0;color:var(--muted);font-size:15px;min-height:22px}
+.pinwrap p.bad{color:var(--alert);font-weight:600}
+.pips{display:flex;gap:14px;justify-content:center;margin:4px 0 2px}
+.pips i{width:16px;height:16px;border-radius:50%;border:2px solid var(--edge);display:block}
+.pips i.on{background:var(--accent);border-color:var(--accent)}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.pad button{min-height:66px;border:1px solid var(--edge);border-radius:10px;background:var(--surface-2);font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;font-size:26px;font-weight:500;font-variant-numeric:tabular-nums}
+.pad button.sm{font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.pad button:active{background:var(--edge)}
+
+.sect{display:flex;flex-direction:column;gap:9px}
+.sect+.sect{margin-top:16px}
+.sect>h3{margin:0;font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;text-transform:uppercase;letter-spacing:.12em;font-size:12px;color:var(--muted);font-weight:500;display:flex;justify-content:space-between;align-items:center}
+.row{display:flex;align-items:center;gap:14px;width:100%;text-align:left;border:1px solid var(--edge);border-radius:9px;background:var(--surface-2);padding:13px 16px;min-height:62px}
+.row .who{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
+.row .who b{font-size:18px;font-weight:600;line-height:1.2}
+.row .who span{font-size:13px;color:var(--muted)}
+.row .tagc{font-family:"Roboto Mono",monospace;font-size:15px;font-weight:700;color:var(--accent);border:1px solid var(--edge);border-radius:7px;padding:5px 10px;flex:none}
+.row.off{opacity:.55}.row.off .tagc{color:var(--muted)}
+.row.pend{border-style:dashed;border-color:var(--accent)}
+.addbtn{border:1px dashed var(--edge);border-radius:9px;padding:15px;min-height:60px;color:var(--muted);font-weight:600;font-size:15px;letter-spacing:.03em;width:100%}
+.addbtn:hover{color:var(--accent);border-color:var(--accent)}
+.stat{font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;text-transform:uppercase;letter-spacing:.09em;font-size:11px;border:1px solid var(--edge);border-radius:999px;padding:3px 9px;color:var(--muted);white-space:nowrap}
+.stat.in{color:var(--live);border-color:var(--live)}.stat.ok{color:var(--accent-ink);background:var(--live);border-color:var(--live)}
+.stat.ed{color:var(--accent);border-color:var(--accent)}.stat.bad{color:var(--alert);border-color:var(--alert)}
+.stat.void{color:var(--muted);text-decoration:line-through}
+.daynav{display:flex;align-items:center;gap:10px;justify-content:space-between}
+.daynav button{border:1px solid var(--edge);border-radius:9px;background:var(--surface-2);min-height:52px;padding:0 18px;font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;font-size:20px}
+.daynav .dl{font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;font-weight:600;font-size:clamp(18px,2.4vw,24px);text-align:center;flex:1}
+.rrow{display:grid;grid-template-columns:minmax(150px,1.6fr) 74px 74px minmax(90px,1.2fr) auto;gap:10px;align-items:center;width:100%;text-align:left;
+  border:1px solid var(--edge);border-radius:9px;background:var(--surface-2);padding:11px 14px;min-height:60px}
+.rrow.void{opacity:.45}
+.rrow .who b{display:block;font-size:16px;font-weight:600;line-height:1.15}
+.rrow .who span{font-size:12px;color:var(--muted)}
+.rrow .tm{font-family:"Roboto Mono",monospace;font-size:16px;font-variant-numeric:tabular-nums}
+.rrow .tm.miss{color:var(--alert);font-weight:700}
+.rrow .cds{font-family:"Roboto Mono",monospace;font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rrow .sts{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+.rhead{display:grid;grid-template-columns:minmax(150px,1.6fr) 74px 74px minmax(90px,1.2fr) auto;gap:10px;padding:0 14px;font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;text-transform:uppercase;letter-spacing:.1em;font-size:11px;color:var(--muted)}
+.audit{font-size:13px;color:var(--muted);background:#122038;border:1px solid var(--edge);border-radius:9px;padding:10px 14px;line-height:1.5}
+.audit b{color:var(--ink)}
+.empty{padding:34px 18px;text-align:center;color:var(--muted);font-size:15px}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media (max-width:640px){
+  .clock{margin-left:0;width:100%}.crew{grid-template-columns:1fr}.acts button{flex:1 1 100%}.undo{margin-left:0;width:100%;justify-content:center}
+  .two{grid-template-columns:1fr}
+  .rrow,.rhead{grid-template-columns:1fr 64px 64px}.rrow .cds,.rhead .h4{display:none}.rrow .sts{grid-column:1/-1;justify-content:flex-start}
+}
+
+/* v14: readable indoor-iPad controls; fixed Pioneer palette, never OS-auto-switched. */
+:root{color-scheme:dark}
+button,input,select,textarea{touch-action:manipulation}
+.eyebrow{font-size:14px;letter-spacing:.065em}
+.field>span,.sigtop>span{font-size:14px;letter-spacing:.07em;line-height:1.4}
+.finput{border-color:var(--control-edge)}
+.finput:disabled{opacity:.75}
+.sigtop{align-items:center}
+.sigpad{height:160px;touch-action:none}
+.sigattest{font-size:17px}
+.pick .lb span{font-size:14px;line-height:1.35}
+.pick .lb b{font-size:16px;line-height:1.3}
+.pick{border-color:var(--control-edge);flex-wrap:wrap}
+.pick .lb{flex:1 1 130px}
+.pick .tag{font-size:12px;text-align:center;white-space:normal;max-width:105px}
+.tile .nm{padding-right:138px}
+.tile .sub{padding-right:138px}
+.tile.addw .sub{padding-right:0}
+.clock{flex-wrap:wrap}
+.clock .d{white-space:normal}
+.tile .badge{width:130px;max-width:calc(100% - 28px);font-size:12px;letter-spacing:.045em;text-align:center;line-height:1.25;padding:7px 8px}
+.tile .badge .bi{font-family:Barlow,-apple-system,"Segoe UI",sans-serif;font-size:13px;text-transform:none;letter-spacing:0;margin-top:2px;line-height:1.2}
+.tile.away,.tile.done{border-color:var(--edge)}
+.tile.away .badge,.tile.done .badge{color:var(--muted);border-color:var(--control-edge)}
+.tile.walk.in .badge{color:var(--accent-ink);background:var(--live);border-color:var(--live)}
+.tile.walk.away .badge,.tile.walk.out .badge{color:var(--muted);background:transparent;border-color:var(--control-edge)}
+.helper{font-size:16px;color:var(--muted);line-height:1.4;min-height:22px}
+.helper.error{color:var(--alert)}
+.code-select{border:1px solid var(--control-edge);background:var(--surface-2);border-radius:10px;overflow:hidden}
+.code-toggle{width:100%;min-height:64px;padding:13px 16px;display:flex;gap:16px;align-items:center;text-align:left}
+.code-toggle .selection{flex:1;min-width:0;overflow-wrap:anywhere}
+.code-toggle .chevron{color:var(--accent);font-size:23px;flex:none;transition:transform .15s}
+.code-toggle[aria-expanded="true"] .chevron{transform:rotate(180deg)}
+.code-toggle[aria-expanded="true"]{border-bottom:1px solid var(--control-edge)}
+.code-menu{padding:12px;display:flex;flex-direction:column;gap:10px}
+.code-menu .codelist{border:0;background:transparent;padding:0;max-height:clamp(130px,28vh,280px);overscroll-behavior:contain}
+.code-menu .pick{flex-wrap:nowrap;min-height:66px}
+.code-menu .pick .lb{flex:1 1 auto}
+.code-menu .field>label{color:var(--muted);font-size:15px}
+.code-picked{border-color:var(--accent)}
+.chips{min-height:0}
+.chips span{white-space:normal;overflow-wrap:anywhere}
+.review-exception{border:1px solid var(--alert);border-radius:10px;background:var(--alert-dim);padding:16px;display:flex;flex-direction:column;gap:12px}
+.review-check{display:flex;gap:12px;align-items:center;min-height:56px;color:var(--ink);cursor:pointer}
+.review-check input{width:25px;height:25px;flex:none;accent-color:var(--accent)}
+.review-check .bi{font-size:.95em}
+.practice-banner{margin-top:12px;padding:14px 18px;border:2px dashed var(--accent);border-radius:var(--r);background:var(--surface-2);color:var(--ink);font-size:16px;font-weight:600}
+.practice-banner a{color:var(--accent);display:inline-flex;align-items:center;min-height:44px;margin-left:14px}
+.clear-danger{border:2px solid var(--alert)!important;color:#FFDCD2!important;background:var(--alert-dim)!important}
+.clear-danger:disabled{opacity:.55}
+@supports(height:100dvh){.veil{height:100dvh}.sheet{max-height:94dvh}}
+@media(max-width:480px){
+  .veil{padding:10px}.sheet{padding:18px;gap:14px}
+  .sheet .foot{bottom:-20px;padding-bottom:18px;margin-bottom:-18px}
+  .railbtns{max-width:100%}.railbtns .chip{white-space:normal;font-size:13px;letter-spacing:0}
+  .agencies{grid-template-columns:1fr}
+  .tile .nm{padding-right:130px}.tile .badge{width:122px}
+  .picks{grid-template-columns:1fr}.pick .tag{max-width:100px}
+  .code-menu .pick{gap:9px;padding:12px 10px}.code-menu .pick .cd{min-width:60px;font-size:15px}
+  .sheet .foot .acts{flex-wrap:nowrap;gap:8px}
+  .sheet .foot .acts button{flex:1 1 0;min-width:0;font-size:16px;letter-spacing:.02em;min-height:82px;padding:12px 8px}
+  .sigpad{height:160px}.flashin{flex-wrap:wrap}.flash .verb{font-size:12px;letter-spacing:.05em}
+}
+
+/* v16: a distinct, persistent return to the company menu; no crew-order changes. */
+.crew-nav{position:sticky;top:max(8px,env(safe-area-inset-top,0px));z-index:12;
+  display:flex;align-items:center;justify-content:space-between;gap:18px;
+  margin-top:12px;padding:10px 0 12px;background:var(--ground);
+  border-bottom:1px solid var(--edge)}
+.crew-nav .back{display:inline-flex;align-items:center;justify-content:flex-start;gap:13px;
+  min-height:68px;max-width:100%;border:2px solid var(--accent);border-radius:10px;
+  padding:10px 20px;background:var(--accent);color:var(--accent-ink);
+  text-align:left;font-size:21px;font-weight:700;line-height:1.2;letter-spacing:0;
+  box-shadow:0 3px 0 rgba(0,0,0,.2)}
+.crew-nav .back-arrow{width:30px;height:30px;flex:none}
+.crew-nav #backLbl{min-width:0}
+.crew-nav .back .bi{font-size:16px;line-height:1.25;letter-spacing:0;
+  opacity:1;font-weight:600;margin-top:4px}
+.crew-nav .back:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+.crew-nav .back:active{box-shadow:none;transform:translateY(1px)}
+@media(hover:hover){.crew-nav .back:hover{filter:brightness(1.08)}}
+.crew-nav-current{min-width:0;text-align:right;display:flex;flex-direction:column;gap:1px}
+.crew-nav-caption{font-size:14px;color:var(--muted);line-height:1.2}
+.crew-nav-company{font-family:Oswald,"Arial Narrow","Helvetica Neue",Arial,sans-serif;
+  font-size:clamp(24px,3.2vw,32px);font-weight:600;color:var(--ink);line-height:1.1;
+  overflow-wrap:anywhere}
+@media(max-width:480px){
+  .crew-nav{gap:10px;padding:8px 0 10px}
+  .crew-nav .back{gap:9px;padding:10px 12px;min-height:66px;font-size:18px;flex:1 1 auto}
+  .crew-nav .back-arrow{width:24px;height:24px}
+  .crew-nav .back .bi{font-size:15px}
+  .crew-nav-current{flex:0 1 80px}
+  .crew-nav-caption{font-size:12px}
+  .crew-nav-company{font-size:23px}
+}
+
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="rail">
+    <div class="job"><b id="jobName">Oyster · 25-013</b><span id="jobSub">Pioneer Electric Group — NewCold, Hagerstown MD</span></div>
+    <div class="clock"><span class="t" id="clock">--:--</span><span class="d" id="today">—</span></div>
+    <div class="railbtns">
+      <button class="chip" id="lang" aria-pressed="false" title="English / Español">EN</button>
+      <span class="chip" id="sync"><span class="dot" id="syncDot"></span><span id="syncTxt">Checking storage…</span></span>
+    </div>
+  </header>
+
+  <nav class="crew-nav" id="crewNav" aria-label="Crew navigation / Navegación de cuadrillas" hidden>
+    <button class="back" id="backBtn" type="button" aria-controls="main" hidden>
+      <svg class="back-arrow" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 7 5 16l9 9M6 16h21"/></svg>
+      <span id="backLbl"><span>Back to companies<span class="bi" lang="es">Volver a compañías</span></span></span>
+    </button>
+    <div class="crew-nav-current"><span class="crew-nav-caption">Crew / Cuadrilla</span><strong class="crew-nav-company" id="crewNavCompany"></strong></div>
+  </nav>
+
+  <div class="bar" id="statusBar">
+    <span><strong id="onCount">0</strong> <span id="onLbl">on site</span></span>
+    <span class="sep"></span>
+    <span><strong id="doneCount">0</strong> <span id="doneLbl">signed out</span></span>
+    <span class="sep"></span>
+    <span id="hint">Tap your company.</span>
+    <button class="undo" id="undoChip" hidden>Undo</button>
+  </div>
+
+  <div class="practice-banner" id="practiceBanner" hidden></div>
+  <div class="offline" id="offlineBar" hidden><span class="dot"></span><span id="offlineTxt"></span></div>
+  <div class="nostore" id="storeBar" hidden></div>
+  <div class="missed sendbar" id="sendBar" hidden></div>
+  <input type="file" id="restoreFile" accept=".json,application/json" hidden>
+  <div class="missed" id="missed" hidden></div>
+
+  <main id="main"><div class="empty" id="loadingNote">Loading…</div></main>
+
+  <footer class="office">
+    <span id="footNote">Times come from this device's clock. One tap in, one tap out — the office works out the hours.</span>
+    <span style="display:flex;gap:8px"><button id="openCrew">Crew</button><button id="openReview">Review</button></span>
+  </footer>
+</div>
+
+<div class="veil" id="veil" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+<div class="flash" id="flash" hidden><div class="flashin" id="flashIn"></div></div>
+<div class="veil" id="pinVeil" hidden>
+  <div class="pinwrap" role="dialog" aria-modal="true">
+    <h2 id="pinTitle">Office only</h2><p id="pinMsg">Enter your 4-digit code</p>
+    <div class="pips" id="pips"><i></i><i></i><i></i><i></i></div><div class="pad" id="pad"></div>
+  </div>
+</div>
+<div class="veil" id="crewVeil" hidden><div class="sheet wide" id="crewSheet" role="dialog" aria-modal="true"></div></div>
+<div class="veil" id="revVeil" hidden><div class="sheet wide" id="revSheet" role="dialog" aria-modal="true"></div></div>
+
+<script>
+"use strict";
+/* =====================================================================
+   STRINGS
+   ===================================================================== */
+var T={
+en:{ onsite:"on site", signedout:"signed out", tapCo:"Tap your company.", tapIn:"Tap your name to sign in.",
+  allIn:"Everyone is on site.", allCrews:"All crews", backCompanies:"Back to companies", ofOn:"of", onSiteNow:"on site now",
+  tapToIn:"Tap to sign in", tapToOut:"Tap to sign out", tapBack:"Tap to sign back in", outSince:"Out since",
+  bIn:"On site", bOut:"Out", bWalk:"Not on list", findName:"Find my name",
+  notOnList:"Not on the list?", notOnListSub:"Tap here to sign in anyway",
+  signingIn:"Signing in", signingOut:"Signing out", backOn:"Signing back in", earlier:"Earlier today",
+  confirmIn:"Sign in", confirmOut:"Sign out", cancel:"Cancel", notMe:"Not me",
+  addNote:"Add a note", notePh:"Anything the office should know",
+  onSiteFor:"on site", started:"Signed in at", thisBlock:"this time",
+  quickTitle:"That was quick", quickBody:"You signed in $ ago. Sign out already?", stayIn:"No — stay signed in", yesOut:"Yes, sign out",
+  okIn:"Signed in", okOut:"Signed out", okBack:"Back on site",
+  undo:"Undo", undoThis:"Undo — that wasn't me", undoLast:"Undo:", autoClose:"This goes back to the board on its own.",
+  missedTag:"Fix me", missedOut:"never signed out on", missedFix:"Tell the office — do not sign in until it is sorted.",
+  codeOut:"What did you work on today?", codeOutSub:"Choose the code for the work you actually did today. One code covers your whole day.",
+  findCode:"Find a code", codeFirst:"Pick a cost code to sign out.", chosen:"Cost code:",
+  signHere:"Sign here with your finger", attestIn:"I am signing in now.", attestOut:"I confirm these times are correct.", clearSig:"Clear",
+  signFirst:"Sign above to continue.", codeAndSign:"Pick a cost code, then sign.",
+  noStoreT:"This copy cannot save — do not sign anyone in on it",
+  noStoreB:"The browser is blocking storage for this page. That happens when the file is opened straight out of OneDrive or SharePoint instead of from the device. Anything entered here is lost the moment the page reloads or you press Back.",
+  noStoreF:"Fix: save the file to this device and open that copy — in OneDrive choose Download, then open it from your Downloads folder.",
+  noStoreS:"Cannot save on this page.", signedLbl:"Signed", unsigned:"Unsigned", editedAfterSign:"Changed after signing",
+  sigIn:"Signed in", sigOut:"Signed out", noSig:"no signature", blockN:"Block", sigs:"Signatures",
+  walkTitle:"Find your name", walkSub:"Type your first and last name. If you see it below, tap it.", yourName:"First and last name", company:"Company",
+  signAsNew:"I'm not on the list — sign me in", nameNeeded:"Type your first AND last name.", isThatYou:"Is this you?", other:"Other",
+  offlineMsg:"Not connected. Sign-ins are saved on this device and will sync when the connection comes back.",
+  crew:"Crew", review:"Review", office:"Office only", pinSub:"Enter your 4-digit code", pinNew:"Set a 4-digit code for this board",
+  pinAgain:"Enter it again", pinBad:"Wrong code", pinNoMatch:"Those did not match",
+  crewTitle:"Crew list", onCrew:"On the crew", offCrew:"Removed", pending:"Not on the list yet — signed in as walk-ons",
+  addWorker:"+ Add someone", fName:"Name", fTrade:"Trade or role (optional)", fAgency:"Company", fCode:"Office reference cost code (optional)", codeReferenceNote:"For office reference only. Workers must choose their own code at every sign-out.", none:"None",
+  fPay:"Pay type", hourly:"Hourly — needs a cost code at sign-out", salaried:"Salaried — attendance only, no cost code, no hours billed",
+  attOnly:"attendance only", noCodeNeeded:"No cost code needed — salaried, attendance only. Just confirm.",
+  loadCrew:"Add the built-in Oyster crew list", loadCrewSub:"$ names from the office roster are not on this tablet yet", loadedCrew:"Added $ names to the crew",
+  save:"Save", remove:"Remove from crew", restore:"Put back on the crew", addToCrew:"Add to crew", dismiss:"Dismiss",
+  codesTitle:"Cost codes", addCode:"+ Add a cost code", codeNum:"Code", codeEn:"Description (English)", codeEs:"Descripción (Español)",
+  sups:"Supervisors", addSup:"+ Add a supervisor", supName:"Name", supPin:"4-digit code", changeMy:"Change my code",
+  dupName:"That name is already on the crew.", codeNeeded:"A cost code is 3 to 5 digits, like 1023 or 1022-01.", pinNeeded:"A code is exactly 4 digits.",
+  saveFailed:"Could not save — check the connection and try again.", noOne:"Nobody on the crew yet.", close:"Close",
+  revTitle:"Review", noPunch:"Nobody signed in this day.", stillOn:"on site", approveAll:"Approve all complete", approved:"Approved",
+  approve:"Approve", unapprove:"Unapprove", edited:"Edited", walkOn:"Walk-on", missing:"No sign-out", voided:"Voided", voidIt:"Void this punch",
+  unvoid:"Restore", inTime:"In", outTime:"Out", codesLbl:"Cost code", addPunch:"+ Add a missing sign-in", who:"Who", by:"by",
+  blocks:"blocks", addBlock:"+ Add another in/out", timesBad:"Each block needs an In time, and Out must be after In.",
+  origWas:"Originally", exportCsv:"Export this week (CSV)", lockedNote:"Approved — unapprove to edit.", toReview:"to review",
+  thName:"Name", thIn:"In", thOut:"Out", thCodes:"Code",
+  synced:"Synced", waiting:"waiting to sync", offline:"Saved on this device",
+  foot:"Times come from this device's clock. Tap in when you arrive, out when you leave — as many times as you need. The office works out the hours.",
+  noRoster:"No crew list yet. The office needs to add the crew before anyone can sign in.",
+  mins:"min", hrs:"h", under1:"less than a minute", pickWorker:"Pick who",
+  local:"Saved on this tablet", sendOffice:"Send to office", lastSent:"Last sent to office", neverSent:"Never sent", daysAgo:"days ago",
+  unsent:"days of sign-ins not sent yet", sentOk:"Sent. The office will find it.", shareFail:"Could not open the share menu. The file was downloaded instead — attach it to an email.",
+  restoreFile:"Restore from a sent file", restored:"Restored", jobTitle:"This job", jobNum:"Job number", jobNm:"Job name", jobSub:"Line under the name",
+  officeEmail:"Office email (where the sign-ins go)", sendTitle:"Send to office", sendWhat:"$1 sign-ins across $2 days · one file:", sendTo:"Goes to:",
+  fullRecord:"Save the full signed record (.json)", fullRecordSaved:"Saved $ — the complete record, signatures and all.",
+  clearDay:"Clear this day — remove every sign-in", clearTitle:"Clear every sign-in for this day?",
+  clearBody:"$1 records will be removed for good. There is no undo, and Undo on the board will not bring them back.",
+  clearApproved:"$ of these are APPROVED. Approved punches are what gets billed — make sure you mean this.",
+  clearGo:"Yes, delete them all", cleared:"Cleared $ records.",
+  optShare:"Share…", optShareSub:"Opens this device's share menu — pick Mail, OneDrive or Teams", optEmail:"Email it", optEmailSub:"Saves the CSV, then opens an email to the office with the hours already in it — attach the file and send",
+  optSave:"Just save the files", optSaveSub:"Saves both files on this device. You attach or move them yourself",
+  shareClosed:"Nothing was sent — the share menu was closed.", didItGo:"Did it go through?", yesSent:"Yes — mark as sent", notYet:"Not yet",
+  emailOpened:"An email to $ has been opened. Attach the two files from your Downloads folder, then send. The hours are also in the body of the email as a backup.",
+  savedTwo:"Two files saved to this device's Downloads folder. Attach them to an email to $, or move them into OneDrive → Timesheets → Sign-in board.",
+  noShare:"This device has no share menu — use Email it.", emailBodyHead:"Sign-ins from the tablet. The attached file is the record; the hours below are a copy.", attachThese:"Attach this file:" },
+es:{ onsite:"en obra", signedout:"salieron", tapCo:"Toque su compañía.", tapIn:"Toque su nombre para entrar.",
+  allIn:"Todos están en obra.", allCrews:"Todas las cuadrillas", backCompanies:"Volver a compañías", ofOn:"de", onSiteNow:"en obra ahora",
+  tapToIn:"Toque para entrar", tapToOut:"Toque para salir", tapBack:"Toque para volver a entrar", outSince:"Salió a las",
+  bIn:"En obra", bOut:"Fuera", bWalk:"No en lista", findName:"Buscar mi nombre",
+  notOnList:"¿No está en la lista?", notOnListSub:"Toque aquí para entrar de todos modos",
+  signingIn:"Entrada", signingOut:"Salida", backOn:"Volviendo a entrar", earlier:"Hoy más temprano",
+  confirmIn:"Entrar", confirmOut:"Salir", cancel:"Cancelar", notMe:"No soy yo",
+  addNote:"Agregar nota", notePh:"Algo que la oficina deba saber",
+  onSiteFor:"en obra", started:"Entró a las", thisBlock:"esta vez",
+  quickTitle:"Muy pronto", quickBody:"Entró hace $. ¿Ya va a salir?", stayIn:"No — sigo en obra", yesOut:"Sí, salir",
+  okIn:"Entrada registrada", okOut:"Salida registrada", okBack:"De vuelta en obra",
+  undo:"Deshacer", undoThis:"Deshacer — no era yo", undoLast:"Deshacer:", autoClose:"Esta pantalla se cierra sola.",
+  missedTag:"Corregir", missedOut:"no marcó salida el", missedFix:"Avise a la oficina antes de entrar.",
+  codeOut:"¿En qué trabajó hoy?", codeOutSub:"Elija el código del trabajo que realmente hizo hoy. Un código cubre todo el día.",
+  findCode:"Buscar código", codeFirst:"Elija un código para salir.", chosen:"Código:",
+  signHere:"Firme aquí con el dedo", attestIn:"Registro mi entrada ahora.", attestOut:"Confirmo que estas horas son correctas.", clearSig:"Borrar",
+  signFirst:"Firme arriba para continuar.", codeAndSign:"Elija el código de costo y luego firme.",
+  noStoreT:"Esta copia no puede guardar — no registre a nadie aquí",
+  noStoreB:"El navegador está bloqueando el almacenamiento de esta página. Ocurre cuando el archivo se abre directamente desde OneDrive o SharePoint en vez del dispositivo. Todo lo que se registre aquí se pierde al recargar o al volver atrás.",
+  noStoreF:"Solución: guarde el archivo en este dispositivo y abra esa copia — en OneDrive elija Descargar y ábralo desde la carpeta de descargas.",
+  noStoreS:"No se puede guardar en esta página.", signedLbl:"Firmado", unsigned:"Sin firma", editedAfterSign:"Cambiado después de firmar",
+  sigIn:"Firma de entrada", sigOut:"Firma de salida", noSig:"sin firma", blockN:"Bloque", sigs:"Firmas",
+  walkTitle:"Busque su nombre", walkSub:"Escriba su nombre y apellido. Si lo ve abajo, tóquelo.", yourName:"Nombre y apellido", company:"Compañía",
+  signAsNew:"No estoy en la lista — regístreme", nameNeeded:"Escriba su nombre Y apellido.", isThatYou:"¿Es usted?", other:"Otra",
+  offlineMsg:"Sin conexión. Las entradas se guardan en este equipo y se sincronizan cuando vuelva la conexión.",
+  crew:"Personal", review:"Revisar", office:"Solo oficina", pinSub:"Ingrese su código de 4 dígitos", pinNew:"Cree un código de 4 dígitos para este tablero",
+  pinAgain:"Ingréselo otra vez", pinBad:"Código incorrecto", pinNoMatch:"No coinciden",
+  crewTitle:"Lista de personal", onCrew:"En el personal", offCrew:"Retirados", pending:"Aún no en la lista — entraron sin registro",
+  addWorker:"Agregar persona", fName:"Nombre", fTrade:"Oficio o puesto (opcional)", fAgency:"Compañía", fCode:"Código de referencia para la oficina (opcional)", codeReferenceNote:"Solo como referencia para la oficina. Cada trabajador debe elegir su código en cada salida.", none:"Ninguno",
+  fPay:"Tipo de pago", hourly:"Por hora — necesita código de costo al salir", salaried:"Asalariado — solo asistencia, sin código, sin horas facturadas",
+  attOnly:"solo asistencia", noCodeNeeded:"No necesita código de costo — asalariado, solo asistencia. Solo confirme.",
+  loadCrew:"Agregar la lista de personal de Oyster incluida", loadCrewSub:"$ nombres de la lista de la oficina aún no están en esta tableta", loadedCrew:"Se agregaron $ nombres al personal",
+  save:"Guardar", remove:"Quitar del personal", restore:"Regresar al personal", addToCrew:"Agregar al personal", dismiss:"Descartar",
+  codesTitle:"Códigos de costo", addCode:"Agregar código", codeNum:"Código", codeEn:"Description (English)", codeEs:"Descripción (Español)",
+  sups:"Supervisores", addSup:"Agregar supervisor", supName:"Nombre", supPin:"Código de 4 dígitos", changeMy:"Cambiar mi código",
+  dupName:"Ese nombre ya está en el personal.", codeNeeded:"El código es de 3 a 5 dígitos, como 1023 o 1022-01.", pinNeeded:"El código es de 4 dígitos.",
+  saveFailed:"No se pudo guardar — revise la conexión e intente de nuevo.", noOne:"Todavía no hay personal.", close:"Cerrar",
+  revTitle:"Revisar", noPunch:"Nadie entró ese día.", stillOn:"en obra", approveAll:"Aprobar todo lo completo", approved:"Aprobado",
+  approve:"Aprobar", unapprove:"Quitar aprobación", edited:"Editado", walkOn:"Sin registro", missing:"Sin salida", voided:"Anulado", voidIt:"Anular este registro",
+  unvoid:"Restaurar", inTime:"Entrada", outTime:"Salida", codesLbl:"Código de costo", addPunch:"Agregar entrada faltante", who:"Quién", by:"por",
+  blocks:"bloques", addBlock:"Agregar otra entrada/salida", timesBad:"Cada bloque necesita Entrada, y la Salida debe ser después.",
+  origWas:"Original", exportCsv:"Exportar la semana (CSV)", lockedNote:"Aprobado — quite la aprobación para editar.", toReview:"por revisar",
+  thName:"Nombre", thIn:"Entrada", thOut:"Salida", thCodes:"Código",
+  synced:"Sincronizado", waiting:"por sincronizar", offline:"Guardado en este equipo",
+  foot:"Las horas vienen del reloj de este equipo. Toque al llegar, toque al salir — las veces que necesite. La oficina calcula las horas.",
+  noRoster:"Todavía no hay lista de personal. La oficina debe agregar al equipo.",
+  mins:"min", hrs:"h", under1:"menos de un minuto", pickWorker:"Elija quién",
+  local:"Guardado en esta tableta", sendOffice:"Enviar a la oficina", lastSent:"Último envío a la oficina", neverSent:"Nunca enviado", daysAgo:"días",
+  unsent:"días de registros sin enviar", sentOk:"Enviado. La oficina lo encontrará.", shareFail:"No se pudo abrir el menú de compartir. Se descargó el archivo — adjúntelo a un correo.",
+  restoreFile:"Restaurar desde un archivo enviado", restored:"Restaurado", jobTitle:"Esta obra", jobNum:"Número de obra", jobNm:"Nombre de la obra", jobSub:"Línea bajo el nombre",
+  officeEmail:"Correo de la oficina (a dónde van los registros)", sendTitle:"Enviar a la oficina", sendWhat:"$1 registros en $2 días · un archivo:", sendTo:"Va a:",
+  fullRecord:"Guardar el registro completo firmado (.json)", fullRecordSaved:"Guardado $ — el registro completo, con firmas.",
+  clearDay:"Borrar este día — quitar todos los registros", clearTitle:"¿Borrar todos los registros de este día?",
+  clearBody:"Se eliminarán $1 registros de forma definitiva. No se puede deshacer.",
+  clearApproved:"$ de estos están APROBADOS. Los registros aprobados son los que se facturan — asegúrese.",
+  clearGo:"Sí, borrarlos todos", cleared:"Se borraron $ registros.",
+  optShare:"Compartir…", optShareSub:"Abre el menú de compartir de este equipo — elija Mail, OneDrive o Teams", optEmail:"Enviar por correo", optEmailSub:"Guarda el CSV y abre un correo a la oficina con las horas ya incluidas — adjunte el archivo y envíe",
+  optSave:"Solo guardar los archivos", optSaveSub:"Guarda ambos archivos en este equipo. Usted los adjunta o los mueve",
+  shareClosed:"No se envió nada — se cerró el menú de compartir.", didItGo:"¿Se envió?", yesSent:"Sí — marcar como enviado", notYet:"Todavía no",
+  emailOpened:"Se abrió un correo a $. Adjunte los dos archivos de la carpeta Descargas y envíe. Las horas también van en el cuerpo del correo como respaldo.",
+  savedTwo:"Dos archivos guardados en Descargas. Adjúntelos a un correo a $, o muévalos a OneDrive → Timesheets → Sign-in board.",
+  noShare:"Este equipo no tiene menú de compartir — use Enviar por correo.", emailBodyHead:"Registros de la tableta. El archivo adjunto es el registro; las horas abajo son una copia.", attachThese:"Adjunte este archivo:" }
+};
+
+/* v14 additions; worker instructions remain English + Spanish. */
+Object.assign(T.en,{
+ bNotIn:"Not signed in",bSignedOut:"Signed out", chooseCode:"Choose a cost code",chooseDifferent:"Choose a different code",codeSearchHint:"Search by code or description",clearSig:"Clear signature",
+ existingPunch:"A record already exists for this person on this date. The existing record is open below; nothing was replaced.",
+ recordChanged:"This record changed while the form was open. Reopen it and review the latest times before saving.",
+ newDay:"The date changed. Open your name again to record the new day.",
+ exceptionTitle:"Individual exception review",exceptionWhy:"Missing signatures or changes after signing need separate office review. Approval does not create or replace a worker signature.",
+ exceptionCheck:"I reviewed these exceptions and verified the attendance.",exceptionReason:"Reason / how attendance was verified",exceptionNeeded:"Review the exceptions, check the confirmation, and enter a reason (at least 10 characters).",exceptionApproved:"Exception approved",
+ missingCode:"Missing cost code",invalidTimes:"Invalid or overlapping time blocks",bulkSafe:"Approve signed, unchanged records",bulkSkipped:"records require individual review or correction",bulkFailed:"records could not be saved. Review them and try again.",
+ reviewAgain:"Needs review",approvalReset:"New activity after approval",voidedEdit:"This record is voided. Restore it before editing or approving.",
+ practiceTitle:"PRACTICE MODE — test records only. Live attendance is separate.",openPractice:"Open a separate practice board",backLive:"Return to live board",practiceSub:"Uses separate storage. Test punches cannot replace live attendance.",
+ liveClear:"Void this day — keep the signed history",liveClearTitle:"Void all active records for this day?",liveClearBody:"Records and signatures stay in history and may be restored. This does not permanently delete attendance.",liveClearApproved:"Unapprove the approved records individually before voiding this day.",
+ clearDate:"Type the date shown to confirm",clearReason:"Why is this day being voided?",liveClearGo:"Void records — keep history",voidedCount:"Voided $ records; history retained.",practiceClear:"Delete this practice day's records",practiceClearTitle:"Delete these practice records?",practiceClearBody:"Only this practice board is affected. Live attendance is not changed.",
+ wrongExportMode:"Practice and live backups must stay separate. No records were restored.",practiceEmail:"Email is disabled in practice mode. Return to the live board to send attendance.",undoChanged:"Undo is no longer available because this record was changed. Ask the office to review it.",
+ local:"Saved on this device",emailOpened:"An email to $ has been opened. Attach the CSV from your Downloads folder, then send. The full signed JSON record is saved separately from Crew.",
+ signatureChanged:"The cost code changed. Please sign again to confirm it."
+});
+Object.assign(T.es,{
+ bNotIn:"Sin entrada",bSignedOut:"Salida registrada",chooseCode:"Elija un código de costo",chooseDifferent:"Elegir otro código de costo",codeSearchHint:"Buscar por código o descripción",clearSig:"Borrar firma",
+ existingPunch:"Ya existe un registro para esta persona en esta fecha. Se abrió el registro existente abajo; no se reemplazó nada.",
+ recordChanged:"Este registro cambió mientras el formulario estaba abierto. Ábralo de nuevo y revise las horas antes de guardar.",newDay:"Cambió la fecha. Abra su nombre otra vez para registrar el nuevo día.",
+ exceptionTitle:"Revisión individual de excepciones",exceptionWhy:"Las firmas faltantes y los cambios posteriores a la firma requieren revisión de la oficina. Aprobar no crea ni reemplaza una firma del trabajador.",
+ exceptionCheck:"Revisé estas excepciones y verifiqué la asistencia.",exceptionReason:"Motivo / cómo se verificó la asistencia",exceptionNeeded:"Revise las excepciones, marque la confirmación e ingrese un motivo (mínimo 10 caracteres).",exceptionApproved:"Excepción aprobada",
+ missingCode:"Falta código de costo",invalidTimes:"Bloques de horas inválidos o superpuestos",bulkSafe:"Aprobar registros firmados y sin cambios",bulkSkipped:"registros necesitan revisión individual o corrección",bulkFailed:"registros no se pudieron guardar. Revise e intente de nuevo.",
+ reviewAgain:"Por revisar",approvalReset:"Nueva actividad después de la aprobación",voidedEdit:"Este registro está anulado. Restáurelo antes de editar o aprobar.",
+ practiceTitle:"MODO DE PRUEBA — solo registros de prueba. La asistencia real está separada.",openPractice:"Abrir un tablero de prueba separado",backLive:"Volver al tablero real",practiceSub:"Usa almacenamiento separado. Las pruebas no reemplazan la asistencia real.",
+ liveClear:"Anular este día — conservar historial firmado",liveClearTitle:"¿Anular todos los registros activos de este día?",liveClearBody:"Los registros y las firmas quedan en el historial y se pueden restaurar. No se elimina la asistencia de forma permanente.",liveClearApproved:"Quite la aprobación de cada registro aprobado antes de anular este día.",
+ clearDate:"Escriba la fecha indicada para confirmar",clearReason:"¿Por qué se anula este día?",liveClearGo:"Anular registros — conservar historial",voidedCount:"Se anularon $ registros; se conservó el historial.",practiceClear:"Eliminar los registros de este día de prueba",practiceClearTitle:"¿Eliminar estos registros de prueba?",practiceClearBody:"Solo afecta este tablero de prueba. La asistencia real no cambia.",
+ wrongExportMode:"Los respaldos de prueba y los reales deben permanecer separados. No se restauraron registros.",practiceEmail:"El correo está deshabilitado en modo de prueba. Vuelva al tablero real para enviar asistencia.",undoChanged:"Ya no se puede deshacer porque el registro cambió. Pida a la oficina que lo revise.",
+ local:"Guardado en este equipo",emailOpened:"Se abrió un correo a $. Adjunte el CSV de Descargas y envíe. El registro JSON completo con firmas se guarda por separado desde Personal.",
+ signatureChanged:"Cambió el código de costo. Firme otra vez para confirmarlo."
+});
+
+/* Both languages, always, everywhere a worker looks. No toggle to get stuck on. */
+var lang="en";
+function te(k){ return T.en[k]||k; }
+function ts(k){ return T.es[k]||T.en[k]||k; }
+function t(k){ var a=te(k), b=ts(k); return a===b ? a : a+" · "+b; }
+function paintStore(){
+  var b=document.getElementById("storeBar"); if(!b) return;
+  if(CLOUD||STORE_OK){ b.hidden=true; return; }
+  b.hidden=false; b.textContent="";
+  b.appendChild(el("b",null,t("noStoreT")));
+  b.appendChild(el("span",null,t("noStoreB")));
+  b.appendChild(el("span",null,t("noStoreF")));
+}
+function otherLang(){ return "es"; }
+function bi(k){ return t(k); }
+function biBtn(k){ var b=el("span",null,te(k)); var o=ts(k); if(o&&o!==te(k)){ var es=el("span","bi",o); es.lang="es"; b.appendChild(es); } return b; }
+function biSpan(k){ return biBtn(k); }
+
+/* =====================================================================
+   STATE
+   ===================================================================== */
+var PRACTICE=new URLSearchParams(window.location.search).get("practice")==="1";
+var STORE_PREFIX=PRACTICE?"peg.practice.":"peg.";
+var LS={ get:function(k,d){ try{ var v=localStorage.getItem(STORE_PREFIX+k); return v?JSON.parse(v):d; }catch(e){ return d; } },
+         set:function(k,v){ try{ localStorage.setItem(STORE_PREFIX+k,JSON.stringify(v)); STORE_OK=true; return true; }catch(e){ STORE_OK=false; paintStore(); return false; } } };
+
+/* Can this context actually keep anything?  A page served out of the OneDrive / SharePoint
+   preview runs in a sandbox on a throwaway origin: localStorage throws, every write is
+   swallowed by the catch above, the board looks like it is recording and loses the lot on
+   reload or Back.  Isaac hit exactly that on 9/21.  Test it once, out loud, at boot. */
+var STORE_OK=(function(){ try{ localStorage.setItem(STORE_PREFIX+"__probe","1");
+    var v=localStorage.getItem(STORE_PREFIX+"__probe"); localStorage.removeItem(STORE_PREFIX+"__probe"); return v==="1"; }catch(e){ return false; } })();
+var QUICK_OUT_MIN=10, SHEET_TIMEOUT=30000, HOME_TIMEOUT=45000, FLASH_MS=4000, UNDO_MS=120000, OFFLINE_AFTER=12000;
+var AG_PREF=["PEG","KNP","ABG"];
+var CLOUD=!PRACTICE&&!!(window.claude&&claude.use);          /* on claude.ai → shared database; anywhere else → this tablet is the record */
+var db=null, SUP=null, T0=Date.now();
+var DEFAULT_CODES=[["1000","General Labor for Projects","Mano de obra general"],["1001","Temporary Power","Energía temporal"],["1006","Material Handler","Manejo de materiales"],["1008","Non Productive Time","Tiempo no productivo"],["1009","Supervision ON SITE","Supervisión en obra"],["1010","Travel Labor","Tiempo de viaje"],["1011","Underground Electrical","Eléctrico subterráneo"],["1012","Site Lighting Conduit","Conduit de alumbrado exterior"],["1013","Underground Distribution","Distribución subterránea"],["1014","Underground Branch","Ramales subterráneos"],["1015","UG (Utility) Data/Comm.","Datos/comunicaciones subterráneos"],["1018-01","Feeder Cable Terminations","Terminaciones de cable alimentador"],["1022","Branch Conduit (Rough In)","Conduit de ramales (rough-in)"],["1022-01","Branch Lighting Conduit Raceway","Canalización de conduit para iluminación"],["1022-02","Branch Lighting Conduit","Conduit de iluminación"],["1023","Branch Cabling","Cableado de ramales"],["1023-01","Branch Lighting Cabling","Cableado de iluminación"],["1024","Devices (Trim)","Dispositivos (acabado)"],["1025","Equipment Operator","Operador de equipo"],["1027","Light Fixture Trim","Instalación de luminarias"],["1030","Mechanical Rough/Trim","Mecánico (rough/acabado)"],["1032","Panelboards (Mount, Cover)","Tableros (montaje, tapas)"],["1032-01","ATS Mounting/Install","Montaje de ATS (transferencia automática)"],["1037","Grounding (Service, Bldg etc.)","Puesta a tierra (servicio, edificio, etc.)"],["1042","OH Feeder Conduit","Conduit alimentador aéreo"],["1043","OH Feeder Cabling","Cableado alimentador aéreo"],["1044","Utility Feeder Conduit/Cabling","Conduit/cableado alimentador de servicio"],["1045","LV Conduit/Cabling","Conduit/cableado de baja tensión"],["1046","Cable Tray Installation","Instalación de charola portacables"],["1093","Clean Up (General)","Limpieza (general)"]];
+/* The Oyster crew as of WE 9/5/26 (from the scanned time sheets). A fresh tablet starts with this list; the office edits it from the Crew screen. */
+var DEFAULT_ROSTER=[{"id":"diaz","name":"Gerson Antonio Diaz","agency":"PEG","trade":"Electrician","defaultCode":"1023","job":"25-013","sortOrder":1,"active":true},{"id":"miller","name":"Scott Miller","agency":"PEG","trade":"Electrician","defaultCode":"1023","job":"25-013","sortOrder":2,"active":true},{"id":"heber","name":"Heber Rodriguez","agency":"PEG","trade":"Electrician","defaultCode":"1023","job":"25-013","sortOrder":3,"active":true},{"id":"vilchez","name":"Isaac Vilchez","agency":"PEG","trade":"Site supervision","defaultCode":"1009","job":"25-013","sortOrder":4,"active":true},{"id":"jakehaught","name":"Jake Haught","agency":"PEG","trade":"Salaried","defaultCode":"","job":"25-013","sortOrder":5,"active":true,"noHours":true},{"id":"ericshelton","name":"Eric Shelton","agency":"PEG","trade":"Salaried","defaultCode":"","job":"25-013","sortOrder":6,"active":true,"noHours":true},{"id":"isaacyu","name":"Isaac Yu","agency":"PEG","trade":"Salaried","defaultCode":"","job":"25-013","sortOrder":7,"active":true,"noHours":true},{"id":"octaviocerda","name":"Octavio Cerda","agency":"KNP","trade":"","defaultCode":"1022","job":"25-013","sortOrder":8,"active":true},{"id":"deysirocha","name":"Deysi Rocha","agency":"KNP","trade":"","defaultCode":"1022","job":"25-013","sortOrder":9,"active":true},{"id":"luisangelmarquez","name":"Luis Angel Marquez","agency":"KNP","trade":"","defaultCode":"1023","job":"25-013","sortOrder":10,"active":true},{"id":"salomeguzman","name":"Salome Guzman","agency":"KNP","trade":"","defaultCode":"1023","job":"25-013","sortOrder":11,"active":true},{"id":"williamavalos","name":"William Avalos","agency":"KNP","trade":"","defaultCode":"1023","job":"25-013","sortOrder":12,"active":true},{"id":"oscarvanegas","name":"Oscar Vanegas","agency":"KNP","trade":"","defaultCode":"1022","job":"25-013","sortOrder":13,"active":true},{"id":"corinavelazquez","name":"Corina Velazquez","agency":"KNP","trade":"","defaultCode":"1022","job":"25-013","sortOrder":14,"active":true},{"id":"carlosrodriguez","name":"Carlos Rodriguez","agency":"KNP","trade":"","defaultCode":"1044","job":"25-013","sortOrder":15,"active":true},{"id":"hectorquinones","name":"Hector Quinones","agency":"KNP","trade":"","defaultCode":"1044","job":"25-013","sortOrder":16,"active":true},{"id":"jaironlopez","name":"Jairon Lopez","agency":"KNP","trade":"","defaultCode":"1044","job":"25-013","sortOrder":17,"active":true},{"id":"abelardogarcia","name":"Abelardo Garcia","agency":"ABG","trade":"","defaultCode":"1044","job":"25-013","sortOrder":18,"active":true},{"id":"alejandroortiz","name":"Alejandro Ortiz","agency":"ABG","trade":"","defaultCode":"1022","job":"25-013","sortOrder":19,"active":true},{"id":"willblascoriano","name":"Willblas Coriano","agency":"ABG","trade":"","defaultCode":"1022","job":"25-013","sortOrder":20,"active":true},{"id":"angelmiguelsantiago","name":"Angel Miguel Santiago","agency":"ABG","trade":"","defaultCode":"1023","job":"25-013","sortOrder":21,"active":true},{"id":"dannytorres","name":"Danny Torres","agency":"ABG","trade":"","defaultCode":"1023","job":"25-013","sortOrder":22,"active":true},{"id":"darvinveliz","name":"Darvin Veliz","agency":"ABG","trade":"","defaultCode":"1023","job":"25-013","sortOrder":23,"active":true},{"id":"darwinhernandez","name":"Darwin Hernandez","agency":"ABG","trade":"","defaultCode":"1022","job":"25-013","sortOrder":24,"active":true},{"id":"ronielrodriguez","name":"Roniel Rodriguez","agency":"ABG","trade":"","defaultCode":"1022","job":"25-013","sortOrder":25,"active":true},{"id":"geovannyrosario","name":"Geovanny Rosario","agency":"ABG","trade":"","defaultCode":"1044","job":"25-013","sortOrder":26,"active":true},{"id":"jesusfigueroa","name":"Jesus Figueroa","agency":"ABG","trade":"","defaultCode":"1023","job":"25-013","sortOrder":27,"active":true},{"id":"joseluisaponte","name":"Jose Luis Aponte","agency":"ABG","trade":"","defaultCode":"1023","job":"25-013","sortOrder":28,"active":true},{"id":"marlonperez","name":"Marlon Perez","agency":"ABG","trade":"","defaultCode":"1044","job":"25-013","sortOrder":29,"active":true},{"id":"brigidolongaria","name":"Brigido Longaria","agency":"ABG","trade":"","defaultCode":"1044","job":"25-013","sortOrder":30,"active":true},{"id":"davidvillarrealjr","name":"David Villarreal, Jr","agency":"ABG","trade":"","defaultCode":"1022","job":"25-013","sortOrder":31,"active":true},{"id":"osmannavarijo","name":"Osman Navarijo","agency":"ABG","trade":"","defaultCode":"1022","job":"25-013","sortOrder":32,"active":true},{"id":"edgarveliz","name":"Edgar Veliz","agency":"ABG","trade":"","defaultCode":"1022","job":"25-013","sortOrder":33,"active":true},{"id":"rafaellopez","name":"Rafael Lopez","agency":"ABG","trade":"","defaultCode":"1022","job":"25-013","sortOrder":34,"active":true}];
+var roster=LS.get("roster",[]), walkons=LS.get("walkons",[]), codes=LS.get("codes",[]);
+if(!CLOUD&&!codes.length){ codes=DEFAULT_CODES.map(function(c){ return {code:c[0],label:c[1],labelEs:c[2]}; }); LS.set("codes",codes); }
+if(!CLOUD&&!roster.length){ roster=DEFAULT_ROSTER.map(function(w){ return Object.assign({},w); }); LS.set("roster",roster); }
+var LAST_SENT=LS.get("lastSent",null);
+var punches=LS.get("cache."+today(),null), recent=LS.get("recent",[]), stale=[];
+if(!punches){ var oldToday=LS.get("cacheToday",{}); punches={}; Object.keys(oldToday).forEach(function(k){ if(oldToday[k]&&oldToday[k].date===today()) punches[k]=oldToday[k]; }); if(Object.keys(punches).length) LS.set("cache."+today(),punches); }
+var queue=LS.get("queue",[]);
+var JOB=LS.get("job",{code:"25-013",name:"Oyster",sub:"Pioneer Electric Group — NewCold, Hagerstown MD"});
+function officeEmail(){ return (JOB.officeEmail||"isaac@pioneerelectricgrp.com").trim(); }
+var SEC=LS.get("sec",null);
+var view={agency:null};
+var lastAct=null, sheetTimer=null, flashTimer=null, undoTimer=null, homeTimer=null, draft=null;
+
+/* =====================================================================
+   HELPERS
+   ===================================================================== */
+function two(n){ return (n<10?"0":"")+n; }
+function ymd(d){ return d.getFullYear()+"-"+two(d.getMonth()+1)+"-"+two(d.getDate()); }
+function hhmm(d){ return two(d.getHours())+":"+two(d.getMinutes()); }
+function clockFace(d){ var h=d.getHours()%12; if(h===0)h=12; return h+":"+two(d.getMinutes())+" "+(d.getHours()<12?"AM":"PM"); }
+function pretty(hm){ if(!hm) return ""; var p=hm.split(":"),h=+p[0],m=p[1],ap=h<12?"a":"p"; h=h%12; if(h===0)h=12; return h+":"+m+ap; }
+function offsetStr(d){ var o=-d.getTimezoneOffset(),s=o<0?"-":"+"; o=Math.abs(o); return s+two(Math.floor(o/60))+":"+two(o%60); }
+function iso(d){ return ymd(d)+"T"+hhmm(d)+":"+two(d.getSeconds())+offsetStr(d); }
+function isoAt(date,hm){ return date+"T"+hm+":00"+offsetStr(new Date()); }
+function toMin(hm){ var p=hm.split(":"); return +p[0]*60 + +p[1]; }
+function minsBetween(a,b){ var m=toMin(b)-toMin(a); return m<0?m+1440:m; }
+function spanText(m,l){ var f=l==="es"?ts:l==="en"?te:t; return m<1?f("under1"):m<60?m+" "+f("mins"):Math.floor(m/60)+f("hrs")+" "+two(m%60)+f("mins"); }
+/* one sentence per language, so numbers and words stay together: "Signed in at 6:02a · 9h 30min on site this time  ·  Entró a las 6:02a · 9h 30min en obra esta vez" */
+function biSentence(fn){ return fn(te,"en")+"   ·   "+fn(ts,"es"); }
+function today(){ return ymd(new Date()); }
+function keyFor(id,date){ return (date||today())+"__"+id; }
+function dayName(d){ var p=d.split("-"),dt=new Date(+p[0],+p[1]-1,+p[2]), o={weekday:"long",month:"short",day:"numeric"}; return dt.toLocaleDateString("en-US",o)+" · "+dt.toLocaleDateString("es-US",o); }
+function shiftDay(d,n){ var p=d.split("-"),dt=new Date(+p[0],+p[1]-1,+p[2]); dt.setDate(dt.getDate()+n); return ymd(dt); }
+function foldName(n){ return String(n||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/\s+/g," ").trim(); }
+function slugBase(name){ return foldName(name).replace(/[^a-z0-9]+/g,"").slice(0,26)||"worker"; }
+function el(tag,cls,text){ var e=document.createElement(tag); if(cls) e.className=cls; if(text!==undefined) e.textContent=text; return e; }
+function codeObj(c){ for(var i=0;i<codes.length;i++) if(codes[i].code===c) return codes[i]; return null; }
+function codeLabel(c,l){ var o=codeObj(c); if(!o) return ""; l=l||lang; return (l==="es"?(o.labelEs||o.label):(o.label||o.labelEs))||""; }
+function codeOf(p){ return p ? (p.code || (p.codes&&p.codes[0]) || "") : ""; }
+function livePunch(p){ return p&&!p.voided ? p : null; }
+
+/* ---- a day is a list of in/out blocks ---- */
+function segs(p){ if(!p) return []; if(p.segments&&p.segments.length) return p.segments; return p.inLocal ? [{in:p.inLocal,inAt:p.inAt,out:p.outLocal||null,outAt:p.outAt||null}] : []; }
+function isOpen(p){ var s=segs(p); return s.length>0 && !s[s.length-1].out; }
+function withSegs(rec,list){ rec.segments=list; rec.inLocal=list.length?list[0].in:null; rec.inAt=list.length?list[0].inAt:null; var l=list[list.length-1]; rec.outLocal=l&&l.out?l.out:null; rec.outAt=l&&l.outAt?l.outAt:null; return rec; }
+function segText(p){ return segs(p).map(function(s){ return pretty(s.in)+"→"+(s.out?pretty(s.out):"…"); }).join("  "); }
+function onSiteMins(p){ return segs(p).reduce(function(m,s){ return m+(s.out?minsBetween(s.in,s.out):0); },0); }
+
+function allWorkers(){
+  var out=roster.filter(function(w){ return w.active!==false; }).map(function(w){ return Object.assign({},w); });
+  walkons.forEach(function(w){ if(!roster.some(function(r){ return r.id===w.id; })) out.push(Object.assign({walkOn:true},w)); });
+  return out;
+}
+function agencies(){
+  var set={}; allWorkers().forEach(function(w){ set[(w.agency||"PEG").toUpperCase()]=1; });
+  var list=Object.keys(set);
+  list.sort(function(a,b){ var ia=AG_PREF.indexOf(a),ib=AG_PREF.indexOf(b); if(ia<0)ia=99; if(ib<0)ib=99; return ia-ib||a.localeCompare(b); });
+  return list;
+}
+function pendingReview(){ return recent.filter(function(p){ return !p.voided&&!p.approved&&!isOpen(p)&&segs(p).length; }).length; }
+
+
+/* v14 safety helpers. Local guards are NOT a replacement for Firebase transactions/security rules. */
+function cloneRecord(p){ return p?JSON.parse(JSON.stringify(p)):null; }
+function recordToken(p){ if(!p) return ""; var c=Object.assign({},p); delete c._id; return JSON.stringify(c); }
+function cachedPunch(id){
+  var date=id.split("__")[0], c=LS.get("cache."+date,{});
+  if(Object.prototype.hasOwnProperty.call(c,id)) return Object.assign({_id:id},c[id]);
+  if(date===today()&&punches[id]) return Object.assign({_id:id},punches[id]);
+  return null;
+}
+function readPunch(id,done){
+  if(!CLOUD){ done(null,cachedPunch(id)); return; }
+  if(!db){ done("offline",null); return; }
+  db.doc("punches/"+id).get().then(function(doc){ done(null,doc&&doc.exists?Object.assign({_id:id},doc.data()):null); }).catch(function(){ done("failed",null); });
+}
+function auditEvent(rec,kind,details){
+  rec.auditTrail=(rec.auditTrail||[]).slice();
+  rec.auditTrail.push(Object.assign({kind:kind,at:iso(new Date()),by:SUP||"Office"},details||{}));
+}
+function invalidateApproval(rec,reason,actor){
+  if(rec.approved||rec.approvedAt||rec.approvalException){
+    auditEvent(rec,"approval_invalidated",{by:actor||"Kiosk",reason:reason,previous:{approvedBy:rec.approvedBy||null,approvedAt:rec.approvedAt||null,exception:cloneRecord(rec.approvalException)}});
+    rec.reviewRequired=true;
+  }
+  rec.approved=false; delete rec.approvedBy; delete rec.approvedAt; delete rec.approvalException;
+}
+function validTime(v){ return typeof v==="string"&&/^([01]\d|2[0-3]):[0-5]\d$/.test(v); }
+function validBlocks(blocks,allowOpen){
+  if(!blocks.length) return false;
+  for(var i=0;i<blocks.length;i++){
+    var b=blocks[i]; if(!validTime(b.in)) return false;
+    if(b.out){ if(!validTime(b.out)||toMin(b.out)<toMin(b.in)) return false; }
+    else if(!allowOpen||i!==blocks.length-1) return false;
+    if(i&&(!blocks[i-1].out||toMin(b.in)<toMin(blocks[i-1].out))) return false;
+  } return true;
+}
+function signatureValid(sig){
+  if(!sig||!Array.isArray(sig.strokes)||!sig.strokes.length) return false;
+  if(!sig.strokes.every(function(st){ return Array.isArray(st)&&st.length>=2&&st.length%2===0&&st.every(function(n){ return typeof n==="number"&&Number.isFinite(n); }); })) return false;
+  return inkLength(sig.strokes)>=SIG_MIN_INK;
+}
+function approvalBlockers(p){
+  var out=[], ss=segs(p); if(p.voided) out.push("voidedEdit");
+  if(!validBlocks(ss,true)) out.push("invalidTimes");
+  if(!ss.length||ss.some(function(b){ return !b.out; })) out.push("missing");
+  if(!p.noHours&&!codeOf(p)) out.push("missingCode");
+  return out;
+}
+function approvalExceptions(p){
+  var out=[]; if(sigState(p)!=="full") out.push("unsigned");
+  if(editedAfterSign(p)) out.push("editedAfterSign"); return out;
+}
+function canBulkApprove(p){ return !p.approved&&!approvalBlockers(p).length&&!approvalExceptions(p).length; }
+function approveRecord(rec,reason){
+  rec.approved=true; rec.approvedBy=SUP||"Office"; rec.approvedAt=iso(new Date()); rec.reviewRequired=false;
+  if(reason){ rec.approvalException={reasons:approvalExceptions(rec),reason:reason,by:rec.approvedBy,at:rec.approvedAt}; }
+  else delete rec.approvalException;
+  auditEvent(rec,reason?"exception_approved":"approved",{reason:reason||null,exceptions:approvalExceptions(rec)});
+}
+
+/* =====================================================================
+   WRITES
+   ===================================================================== */
+function flush(){
+  if(!db||!queue.length) return;
+  var pending=queue.slice(); queue=[]; LS.set("queue",queue); paintSync();
+  pending.forEach(function(w){ var op=w.del?db.doc(w.path).delete():db.doc(w.path).set(w.data); op.catch(function(){ queue.push(w); LS.set("queue",queue); paintSync(); }); });
+}
+function savePunch(id,data){
+  var day=id.split("__")[0], c=LS.get("cache."+day,{});
+  if(data===null) delete c[id]; else c[id]=data;
+  if(!CLOUD&&!LS.set("cache."+day,c)) return false;
+  if(day===today()){ punches=c; LS.set("cacheToday",punches); }
+  if(CLOUD) LS.set("cache."+day,c);
+  var job=data===null?{path:"punches/"+id,del:true}:{path:"punches/"+id,data:data};
+  if(!CLOUD){ rebuildRecent(); paintSync(); return true; }
+  if(db){ var op=data===null?db.doc(job.path).delete():db.doc(job.path).set(data); op.catch(function(){ queue.push(job); LS.set("queue",queue); paintSync(); }); }
+  else { queue.push(job); LS.set("queue",queue); }
+  paintSync(); return true;
+}
+
+function localWrite(path,data){
+  var seg=path.split("/"), col=seg[0], id=seg[1];
+  function upd(list,key,ldb){ var i=-1; list.forEach(function(x,j){ if(x[key]===id) i=j; }); if(data===null){ if(i>=0) list.splice(i,1); } else { var rec=Object.assign({},data); rec[key]=id; if(i>=0) list[i]=rec; else list.push(rec); } LS.set(ldb,list); }
+  if(col==="roster"){ upd(roster,"id","roster"); roster.sort(function(a,b){ return (a.sortOrder||0)-(b.sortOrder||0)||String(a.name).localeCompare(String(b.name)); }); }
+  else if(col==="walkons") upd(walkons,"id","walkons");
+  else if(col==="codes"){ upd(codes,"code","codes"); codes.sort(function(a,b){ return String(a.code)<String(b.code)?-1:1; }); }
+  else if(col==="config"&&id==="security"){ SEC=data; LS.set("sec",SEC); }
+  else if(col==="config"&&id==="job"){ JOB=data; LS.set("job",JOB); }
+  else if(col==="punches"){ var day=id.split("__")[0], c=LS.get("cache."+day,{}); if(data===null) delete c[id]; else c[id]=data; if(!LS.set("cache."+day,c)) return false; if(day===today()){ punches=c; LS.set("cacheToday",punches); } rebuildRecent(); }
+  paint(); refreshOffice(); return true;
+}
+function writeDoc(path,data,done){ if(!CLOUD){ var ok=localWrite(path,data); done&&done(ok===false?"failed":null); return; } if(!db){ done&&done("offline"); return; } db.doc(path).set(data).then(function(){ done&&done(null); }).catch(function(){ done&&done("failed"); }); }
+function deleteDoc(path,done){ if(!CLOUD){ var ok=localWrite(path,null); done&&done(ok===false?"failed":null); return; } if(!db){ done&&done("offline"); return; } db.doc(path).delete().then(function(){ done&&done(null); }).catch(function(){ done&&done("failed"); }); }
+function allDays(){ var out=[]; try{ for(var i=0;i<localStorage.length;i++){ var k=localStorage.key(i); if(k&&k.indexOf(STORE_PREFIX+"cache.")===0) out.push(k.slice((STORE_PREFIX+"cache.").length)); } }catch(e){} return out.sort(); }
+function allPunches(){ var out=[]; allDays().forEach(function(d){ var c=LS.get("cache."+d,{}); Object.keys(c).forEach(function(k){ out.push(Object.assign({_id:k},c[k])); }); }); return out; }
+function rebuildRecent(){
+  if(CLOUD) return;
+  var all=allPunches(), td=today(); recent=all.filter(function(p){ return p.date>=shiftDay(td,-45); });
+  stale=all.filter(function(p){ return p.date<td&&isOpen(p)&&!p.voided; }).sort(function(a,b){ return a.date<b.date?1:-1; }).slice(0,6);
+  allDays().filter(function(d){ return d<shiftDay(td,-60); }).forEach(function(d){ var c=LS.get("cache."+d,{}), keep={}; Object.keys(c).forEach(function(k){ if(!c[k].sentAt) keep[k]=c[k]; }); if(Object.keys(keep).length) LS.set("cache."+d,keep); else { try{ localStorage.removeItem(STORE_PREFIX+"cache."+d); }catch(e){} } });
+}
+
+/* =====================================================================
+   BOARD
+   ===================================================================== */
+function unsentDays(){ var n=0; allDays().forEach(function(d){ var c=LS.get("cache."+d,{}); if(Object.keys(c).some(function(k){ return !c[k].sentAt&&!isOpen(c[k]); })) n++; }); return n; }
+/* Isaac, 9/21: Send to office moved OFF the board and into Crew, behind the PIN, so the men
+   queueing at the gate never see it. The bar element stays in the markup, permanently hidden. */
+function paintSend(){ var bar=document.getElementById("sendBar"); if(bar) bar.hidden=true; }
+function sendStatusLine(){
+  var n=unsentDays(), days=LAST_SENT?Math.floor((Date.now()-new Date(LAST_SENT).getTime())/86400000):null;
+  return { late: !!(n&&(days===null||days>=2)),
+           text: t("lastSent")+": "+(LAST_SENT?(dayName(LAST_SENT.slice(0,10))+(days>0?"  ·  "+days+" "+t("daysAgo"):"")):t("neverSent"))+(n?"  ·  "+n+" "+t("unsent"):"") };
+}
+function paintSync(){
+  var dot=document.getElementById("syncDot"),txt=document.getElementById("syncTxt"),bar=document.getElementById("offlineBar");
+  paintSend();
+  if(!CLOUD){
+    if(!STORE_OK){ dot.className="dot bad"; txt.textContent=t("noStoreS"); bar.hidden=true; paintStore(); return; }
+    dot.className="dot"; txt.textContent=t("local"); bar.hidden=true; return;
+  }
+  if(!db){ dot.className="dot bad"; txt.textContent=t("offline"); }
+  else if(queue.length){ dot.className="dot warn"; txt.textContent=queue.length+" "+t("waiting"); }
+  else { dot.className="dot"; txt.textContent=t("synced"); }
+  var off = !db && (Date.now()-T0)>OFFLINE_AFTER;
+  bar.hidden=!off; if(off) document.getElementById("offlineTxt").textContent=t("offlineMsg");
+}
+function paintClock(){ var d=new Date(), o={weekday:"long",month:"short",day:"numeric"}; document.getElementById("clock").textContent=clockFace(d);
+  document.getElementById("today").textContent=d.toLocaleDateString("en-US",o)+" · "+d.toLocaleDateString("es-US",o); }
+function paintMissed(){
+  var box=document.getElementById("missed"); box.textContent="";
+  if(!stale.length){ box.hidden=true; return; }
+  box.hidden=false; box.appendChild(el("span","tag",t("missedTag")));
+  stale.slice(0,3).forEach(function(p){ var last=pretty(segs(p)[segs(p).length-1].in), pd=p.date.split("-"), dt=new Date(+pd[0],+pd[1]-1,+pd[2]), o={weekday:"long",month:"short",day:"numeric"};
+    var s=el("span"); s.appendChild(el("b",null,p.name));
+    s.appendChild(document.createTextNode(" "+te("missedOut")+" "+dt.toLocaleDateString("en-US",o)+" ("+te("started")+" "+last+").  ·  "+ts("missedOut")+" "+dt.toLocaleDateString("es-US",o)+" ("+ts("started")+" "+last+")."));
+    box.appendChild(s); });
+  box.appendChild(el("span",null,te("missedFix")+"  ·  "+ts("missedFix")));
+}
+function paintUndo(){ var c=document.getElementById("undoChip"); if(lastAct&&Date.now()-lastAct.at<UNDO_MS){ c.hidden=false; c.textContent=t("undoLast")+" "+lastAct.label; } else c.hidden=true; }
+function armHome(){ clearTimeout(homeTimer); if(view.agency&&agencies().length>1) homeTimer=setTimeout(function(){ view.agency=null; paint(); },HOME_TIMEOUT); }
+function setCounts(on,done,hint){ document.getElementById("onCount").textContent=String(on); document.getElementById("doneCount").textContent=String(done); document.getElementById("hint").textContent=hint; }
+
+function paintCrewNav(company,canGoBack){
+  var visible=!!company&&!!canGoBack;
+  document.getElementById("crewNav").hidden=!visible;
+  document.getElementById("backBtn").hidden=!visible;
+  document.getElementById("crewNavCompany").textContent=visible?company:"";
+}
+
+function paint(){
+  document.getElementById("jobName").textContent=JOB.name+" · "+JOB.code;
+  document.getElementById("jobSub").textContent=JOB.sub;
+  document.getElementById("onLbl").textContent=t("onsite"); document.getElementById("doneLbl").textContent=t("signedout");
+  document.getElementById("footNote").textContent=t("foot");
+  document.getElementById("openCrew").textContent=t("crew");
+  var pr=pendingReview(); document.getElementById("openReview").textContent=t("review")+(pr?" ("+pr+" "+t("toReview")+")":"");
+  var backLabel=document.getElementById("backLbl"); backLabel.textContent="";
+  backLabel.appendChild(biBtn("backCompanies"));
+  var backSpanish=backLabel.querySelector(".bi"); if(backSpanish) backSpanish.lang="es";
+
+  var main=document.getElementById("main"); main.textContent="";
+  var ags=agencies(), workers=allWorkers();
+  if(!workers.length){ main.appendChild(el("div","empty",t("noRoster"))); paintCrewNav(null,false); setCounts(0,0,t("tapIn")); paintMissed(); paintUndo(); paintSync(); return; }
+  if(ags.length===1){ view.agency=ags[0]; view.auto=true; }
+  else if(view.auto){ view.agency=null; view.auto=false; }      /* a second company appeared — hand the choice back */
+
+  if(!view.agency){
+    paintCrewNav(null,false); var grid=el("div","agencies"), onAll=0, doneAll=0;
+    ags.forEach(function(a){
+      var ws=workers.filter(function(w){ return (w.agency||"PEG").toUpperCase()===a; }), on=0, done=0;
+      ws.forEach(function(w){ var p=livePunch(punches[keyFor(w.id)]); if(p&&segs(p).length) (isOpen(p)?on++:done++); });
+      onAll+=on; doneAll+=done;
+      var b=el("button","agency"); b.appendChild(el("span","ag",a));
+      var c=el("span","cnt"); c.appendChild(el("b",null,String(on))); c.appendChild(document.createTextNode(" "+te("ofOn")+" "+ws.length+" "+te("onSiteNow")+"  ·  "+on+" "+ts("ofOn")+" "+ws.length+" "+ts("onSiteNow"))); b.appendChild(c);
+      b.appendChild(el("span","arrow",t("tapIn")+" →"));
+      b.addEventListener("click",function(){ view.agency=a; view.auto=false; paint(); armHome(); }); grid.appendChild(b);
+    });
+    main.appendChild(grid);
+    var fb=el("button","findbtn"); fb.appendChild(el("span",null,"🔍")); fb.appendChild(biBtn("findName")); fb.addEventListener("click",function(){ openWalk(null); }); main.appendChild(fb);
+    setCounts(onAll,doneAll,t("tapCo")); paintMissed(); paintUndo(); paintSync(); return;
+  }
+
+  paintCrewNav(view.agency,ags.length>1);
+  var list=workers.filter(function(w){ return (w.agency||"PEG").toUpperCase()===view.agency; });
+  var crew=el("div","crew"+(list.length<=3?" small":"")), on=0, done=0;
+  list.forEach(function(w){
+    var p=livePunch(punches[keyFor(w.id)]), ss=segs(p);
+    var state=!ss.length?"out":(isOpen(p)?"in":"away");
+    if(state==="in") on++; if(state==="away") done++;
+    var b=el("button","tile "+state+(w.walkOn?" walk":"")); b.setAttribute("data-id",w.id);
+    var badge=el("span","badge"); badge.appendChild(biBtn(state==="in"?"bIn":state==="away"?"bSignedOut":"bNotIn")); b.appendChild(badge);
+    b.appendChild(el("span","nm",w.name));
+    b.appendChild(el("span","sub",(w.trade||w.agency||"")+(w.noHours?" · "+t("attOnly"):"")+(w.walkOn?" · "+t("bWalk"):"")));
+    var st=el("span","state"), left=el("span");
+    if(ss.length){
+      left.appendChild(el("span","times mono",segText(p)));
+      if(codeOf(p)){ left.appendChild(el("br")); left.appendChild(el("span","code",codeOf(p)+" "+codeLabel(codeOf(p)))); }
+    }
+    var right=el("span","cta"); right.appendChild(el("span","g",state==="in"?"←":"→"));
+    right.appendChild(biBtn(state==="in"?"tapToOut":state==="away"?"tapBack":"tapToIn"));
+    st.appendChild(left); st.appendChild(right); b.appendChild(st);
+    b.addEventListener("click",function(){ openSheet(w); }); crew.appendChild(b);
+  });
+  var add=el("button","tile addw"); add.appendChild(el("span","nm",t("notOnList"))); add.appendChild(el("span","sub",t("notOnListSub")));
+  add.addEventListener("click",function(){ openWalk(view.agency); }); crew.appendChild(add);
+  main.appendChild(crew);
+  setCounts(on,done,(on===list.length&&list.length)?t("allIn"):t("tapIn"));
+  paintMissed(); paintUndo(); paintSync();
+}
+
+/* =====================================================================
+   SIGNATURE — finger on glass. Stored as strokes in a 400×160 box (a few hundred bytes),
+   drawn back as SVG in Review and carried in the export. Required at every sign-in and sign-out.
+   ===================================================================== */
+var SIG_W=400, SIG_H=160, SIG_MIN_INK=40;
+function inkLength(strokes){ var L=0; strokes.forEach(function(s){ for(var i=2;i<s.length;i+=2) L+=Math.hypot(s[i]-s[i-2],s[i+1]-s[i-1]); }); return L; }
+function sigPad(host,strokes,onChange){
+  var c=el("canvas","sigpad"), ctx=null, cur=null, W=0, H=0, dpr=Math.min(window.devicePixelRatio||1,3); host.appendChild(c); c.setAttribute("aria-label",t("signHere"));
+  function base(){ ctx.clearRect(0,0,W,H); ctx.save(); ctx.strokeStyle="#B9C3D3"; ctx.lineWidth=1.5; ctx.setLineDash([7,7]); ctx.beginPath(); ctx.moveTo(22,H*0.74); ctx.lineTo(W-22,H*0.74); ctx.stroke(); ctx.restore(); ctx.fillStyle="#B9C3D3"; ctx.font="600 22px Barlow, Arial, sans-serif"; ctx.fillText("×",24,H*0.74-10); }
+  function seg(x0,y0,x1,y1){ ctx.strokeStyle="#0E1929"; ctx.lineWidth=3.2; ctx.lineCap="round"; ctx.lineJoin="round"; ctx.beginPath(); ctx.moveTo(x0*W/SIG_W,y0*H/SIG_H); ctx.lineTo(x1*W/SIG_W,y1*H/SIG_H); ctx.stroke(); }
+  function redraw(){ if(!ctx) return; base(); strokes.forEach(function(s){ if(s.length===2) seg(s[0],s[1],s[0]+0.5,s[1]); for(var i=2;i<s.length;i+=2) seg(s[i-2],s[i-1],s[i],s[i+1]); }); c.classList.toggle("inked",api.hasInk()); }
+  function size(){ var r=c.getBoundingClientRect(); if(!r.width) return; W=r.width; H=r.height; c.width=Math.round(W*dpr); c.height=Math.round(H*dpr); ctx=c.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0); redraw(); }
+  function pt(e){ var r=c.getBoundingClientRect(); return [Math.max(0,Math.min(SIG_W,Math.round((e.clientX-r.left)*SIG_W/r.width))), Math.max(0,Math.min(SIG_H,Math.round((e.clientY-r.top)*SIG_H/r.height)))]; }
+  c.addEventListener("pointerdown",function(e){ if(!ctx) size(); if(!ctx) return; e.preventDefault(); try{ c.setPointerCapture(e.pointerId); }catch(x){} var p=pt(e); cur=[p[0],p[1]]; strokes.push(cur); seg(p[0],p[1],p[0]+0.5,p[1]); armSheet(); });
+  c.addEventListener("pointermove",function(e){ if(!cur) return; e.preventDefault(); var p=pt(e), n=cur.length; if(Math.abs(p[0]-cur[n-2])+Math.abs(p[1]-cur[n-1])<2) return; seg(cur[n-2],cur[n-1],p[0],p[1]); cur.push(p[0],p[1]); });
+  function up(){ if(!cur) return; cur=null; c.classList.toggle("inked",api.hasInk()); onChange&&onChange(); }
+  c.addEventListener("pointerup",up); c.addEventListener("pointercancel",up); c.addEventListener("lostpointercapture",up);
+  var api={ canvas:c, hasInk:function(){ return inkLength(strokes)>=SIG_MIN_INK; }, clear:function(){ strokes.length=0; redraw(); onChange&&onChange(); },
+            data:function(){ return {w:SIG_W,h:SIG_H,strokes:strokes.map(function(x){ return x.slice(); })}; }, resize:size };
+  requestAnimationFrame(size); return api;
+}
+function sigSvg(sig,w){
+  var NS="http://www.w3.org/2000/svg", sw=(sig&&sig.w)||SIG_W, sh=(sig&&sig.h)||SIG_H, svg=document.createElementNS(NS,"svg");
+  svg.setAttribute("viewBox","0 0 "+sw+" "+sh); svg.setAttribute("class","sigview"); if(w){ svg.style.width=w+"px"; svg.style.height=Math.round(w*sh/sw)+"px"; }
+  ((sig&&sig.strokes)||[]).forEach(function(st){ var pts=[]; for(var i=0;i<st.length;i+=2) pts.push(st[i]+","+st[i+1]); if(st.length===2) pts.push((st[0]+1)+","+st[1]);
+    var pl=document.createElementNS(NS,"polyline"); pl.setAttribute("points",pts.join(" ")); pl.setAttribute("fill","none"); pl.setAttribute("stroke","#0E1929"); pl.setAttribute("stroke-width","3.2"); pl.setAttribute("stroke-linecap","round"); pl.setAttribute("stroke-linejoin","round"); svg.appendChild(pl); });
+  return svg;
+}
+function sigState(p){ var need=0, have=0; segs(p).forEach(function(b){ need++; if(signatureValid(b.sigIn)) have++; if(b.out){ need++; if(signatureValid(b.sigOut)) have++; } }); return !need||!have?"none":have===need?"full":"partial"; }
+function lastSigAt(p){ var m=""; segs(p).forEach(function(b){ [b.sigIn,b.sigOut].forEach(function(g){ if(g&&g.at>m) m=g.at; }); }); return m; }
+function editedAfterSign(p){ var m=lastSigAt(p); return !!(p.signatureReviewRequired||(m&&p.editedAt&&p.editedAt>m)); }
+
+/* =====================================================================
+   SIGN IN / OUT
+   ===================================================================== */
+function armSheet(){ clearTimeout(sheetTimer); sheetTimer=setTimeout(closeSheet,SHEET_TIMEOUT); }
+function openSheet(w){
+  if(punches[keyFor(w.id)]&&punches[keyFor(w.id)].voided){ alert(t("voidedEdit")); return; }
+  var p=livePunch(punches[keyFor(w.id)]), now=new Date(), ss=segs(p);
+  var mode=isOpen(p)?"out":"in";
+  var cur=ss.length?ss[ss.length-1]:null;
+  draft={ w:w, mode:mode, now:now, again:mode==="in"&&ss.length>0, code:"", note:(p&&p.note)||"", showNote:false, filter:"", codeMenuOpen:false, date:today(), baseToken:recordToken(punches[keyFor(w.id)]||null),
+          quick: mode==="out"&&cur&&minsBetween(cur.in,hhmm(now))<QUICK_OUT_MIN };
+  drawSheet(); document.getElementById("veil").hidden=false; armSheet();
+}
+function closeSheet(){ clearTimeout(sheetTimer); document.getElementById("veil").hidden=true; draft=null; }
+
+function drawSheet(){
+  var s=document.getElementById("sheet"), d=draft, p=livePunch(punches[keyFor(d.w.id)]), ss=segs(p), cur=ss.length?ss[ss.length-1]:null;
+  s.className="sheet"+(d.mode==="out"&&!d.w.noHours?" wide":""); s.textContent="";
+  s.appendChild(el("p","kicker"+(d.mode==="out"?"":" green"), d.mode==="out"?t("signingOut"):d.again?t("backOn"):t("signingIn")));
+  s.appendChild(el("h2",null,d.w.name));
+  var stamp=el("div","stamp"); stamp.appendChild(el("span","big",clockFace(d.now)));
+  stamp.appendChild(el("span","note", d.mode==="out" ? biSentence(function(f,l){ return f("started")+" "+pretty(cur.in)+" · "+spanText(minsBetween(cur.in,hhmm(d.now)),l)+" "+f("onSiteFor")+" "+f("thisBlock"); })
+                                                  : dayName(today())));
+  s.appendChild(stamp);
+  if(ss.length&&(d.mode==="in"||ss.length>1)){ var e=el("div","eyebrow",t("earlier")+": "+segText(p)+(codeOf(p)?"  ·  "+codeOf(p):"")); s.appendChild(e); }
+  if(d.quick){ var wb=el("div","warnband"); wb.appendChild(el("b",null,t("quickTitle"))); wb.appendChild(document.createTextNode(biSentence(function(f,l){ return f("quickBody").split("$").join(spanText(minsBetween(cur.in,hhmm(d.now)),l)); }))); s.appendChild(wb); }
+
+  if(d.mode==="out"&&d.w.noHours){ s.appendChild(el("div","eyebrow",t("noCodeNeeded"))); }
+  else if(d.mode==="out"){
+    var f=el("div","field"); f.appendChild(el("span",null,t("codeOut"))); f.appendChild(el("div","eyebrow",t("codeOutSub")));
+    /* v15: no usual, last-time or same-day shortcut. The worker opens the full
+       dropdown and explicitly chooses the work code for every sign-out. Stored
+       roster reference codes and prior attendance never preselect a draft code. */
+    var selectWrap=el("div","code-select"); selectWrap.id="codeSelectWrap";
+    var toggle=el("button","code-toggle"); toggle.id="codeToggle"; toggle.type="button"; toggle.setAttribute("aria-expanded",d.codeMenuOpen?"true":"false"); toggle.setAttribute("aria-controls","codeMenu");
+    var current=el("span","selection"); current.id="codeSelection"; toggle.appendChild(current); var arrow=el("span","chevron","⌄"); arrow.setAttribute("aria-hidden","true"); toggle.appendChild(arrow);
+    toggle.addEventListener("click",function(){ setCodeMenu(!d.codeMenuOpen); }); selectWrap.appendChild(toggle);
+    var menu=el("div","code-menu"); menu.id="codeMenu"; menu.hidden=!d.codeMenuOpen; menu.setAttribute("role","region"); menu.setAttribute("aria-label",t("codesTitle"));
+    var searchField=el("div","field"), searchLabel=el("label",null,t("findCode")); searchLabel.htmlFor="codeFind"; searchField.appendChild(searchLabel);
+    var find=el("input","finput"); find.id="codeFind"; find.placeholder=t("codeSearchHint"); find.value=d.filter; find.autocomplete="off"; find.type="search";
+    find.addEventListener("input",function(){ d.filter=find.value; drawCodeList(); armSheet(); }); searchField.appendChild(find); menu.appendChild(searchField);
+    var lst=el("div","codelist"); lst.id="codeList"; menu.appendChild(lst); selectWrap.appendChild(menu); f.appendChild(selectWrap); s.appendChild(f);
+    var ch=el("div","chips"); ch.id="chips"; s.appendChild(ch);
+  }
+  if(d.showNote||d.note){ var nf=el("div","field"); nf.appendChild(el("span",null,t("addNote"))); var ta=el("textarea","finput"); ta.id="noteBox"; ta.placeholder=t("notePh"); ta.value=d.note;
+    ta.addEventListener("input",function(){ d.note=ta.value; armSheet(); }); nf.appendChild(ta); s.appendChild(nf); }
+  else { var nb=el("button","linkish","+ "+t("addNote")); nb.addEventListener("click",function(){ d.showNote=true; drawSheet(); }); s.appendChild(nb); }
+
+  /* signature — required at every sign-in and sign-out (Isaac, 9/13/26) */
+  var sf=el("div","field sigwrap"); sf.id="sigField"; var top=el("div","sigtop"); top.appendChild(el("span",null,t("signHere")));
+  var clr=el("button","linkish"); clr.id="clearSignature"; clr.appendChild(biBtn("clearSig")); top.appendChild(clr); sf.appendChild(top);
+  sf.appendChild(el("div","sigattest",t(d.mode==="out"?"attestOut":"attestIn")));
+  d.sigStrokes=d.sigStrokes||[]; d.sig=sigPad(sf,d.sigStrokes,syncGo); clr.addEventListener("click",function(){ d.sig.clear(); armSheet(); }); s.appendChild(sf);
+
+  var foot=el("div","foot"), acts=el("div","acts");
+  var cancel=el("button"); cancel.appendChild(biBtn(d.mode==="in"?"notMe":"cancel")); cancel.addEventListener("click",closeSheet);
+  var go=el("button"); go.id="goBtn"; go.appendChild(biBtn(d.mode==="in"?"confirmIn":"confirmOut")); go.addEventListener("click",commit);
+  /* Isaac, 9/21: the SIGN OUT button is the green one and it stays grey until the cost code and
+     the signature are both in; "stay signed in" is never green. The "That was quick" warning band
+     above the buttons still appears — the warning stays, only the colouring changed. */
+  if(d.quick){ cancel.className="no wide"; cancel.textContent=""; cancel.appendChild(biBtn("stayIn")); go.className="go"; go.textContent=""; go.appendChild(biBtn("yesOut")); }
+  else { cancel.className="no"; go.className="go"; }
+  acts.appendChild(cancel); acts.appendChild(go); foot.appendChild(acts);
+  var need=el("div","helper"); need.id="needCode"; need.setAttribute("role","status"); need.setAttribute("aria-live","polite"); foot.appendChild(need);
+  var to=el("div","timeout"); to.appendChild(el("i")); foot.appendChild(to); s.appendChild(foot);
+  s.onclick=armSheet;
+  if(d.mode==="out") drawCodeList(); syncGo();
+  /* the pad must never hide under the sticky buttons: when the sheet overflows and the next thing to do is sign, scroll so the pad sits right above them */
+  requestAnimationFrame(function(){ if(draft!==d) return; if(s.scrollHeight>s.clientHeight+4 && (d.mode!=="out"||d.w.noHours||d.code)) s.scrollTop=s.scrollHeight; if(d.sig) d.sig.resize(); });
+}
+function pickBtn(code){
+  var d=draft, on=d.code===code, b=el("button","pick"); b.setAttribute("aria-pressed",on?"true":"false"); b.setAttribute("data-code",code);
+  b.appendChild(el("span","box",on?"✓":"")); b.appendChild(el("span","cd",code));
+  var lb=el("span","lb"); lb.appendChild(el("b",null,codeLabel(code))); var o2=codeLabel(code,otherLang()); if(o2&&o2!==codeLabel(code)) lb.appendChild(el("span",null,o2)); b.appendChild(lb);
+  b.addEventListener("click",function(){ choose(code); }); return b;
+}
+function setCodeMenu(open){
+  if(!draft) return; draft.codeMenuOpen=!!open;
+  var menu=document.getElementById("codeMenu"), toggle=document.getElementById("codeToggle");
+  if(menu) menu.hidden=!open; if(toggle) toggle.setAttribute("aria-expanded",open?"true":"false");
+  if(open){
+    drawCodeList();
+    requestAnimationFrame(function(){
+      var sheet=document.getElementById("sheet"), button=document.getElementById("codeToggle");
+      if(draft&&draft.codeMenuOpen&&sheet&&button){ sheet.scrollTop+=button.getBoundingClientRect().top-sheet.getBoundingClientRect().top-16; }
+    });
+  } armSheet();
+}
+function choose(code){
+  var d=draft; if(!d||!codeObj(code)) return;
+  var changed=d.code!==code, signed=!!(d.sig&&d.sig.hasInk());
+  d.code=code; d.filter=""; var find=document.getElementById("codeFind"); if(find) find.value="";
+  if(changed&&signed) d.sig.clear(); // A signature must attest to the code that is actually saved.
+  [].forEach.call(document.querySelectorAll('#sheet .pick'),function(b){ var on=b.getAttribute("data-code")===d.code; b.setAttribute("aria-pressed",on?"true":"false"); b.querySelector(".box").textContent=on?"✓":""; });
+  var hadFocus=!!(document.activeElement&&document.getElementById("codeMenu")&&document.getElementById("codeMenu").contains(document.activeElement));
+  setCodeMenu(false); syncGo(); armSheet();
+  if(hadFocus){ var toggle=document.getElementById("codeToggle"); if(toggle) toggle.focus({preventScroll:true}); }
+  if(changed&&signed){ var need=document.getElementById("needCode"); if(need) need.textContent=t("signatureChanged"); }
+  requestAnimationFrame(function(){ if(draft!==d) return; var sheet=document.getElementById("sheet"); if(sheet&&sheet.scrollHeight>sheet.clientHeight) sheet.scrollTop=sheet.scrollHeight; });
+}
+
+function drawCodeList(){
+  var d=draft, lst=document.getElementById("codeList"); if(!lst) return; lst.textContent=""; var q=foldName(d.filter);
+  codes.forEach(function(c){ if(q&&foldName(c.code+" "+(c.label||"")+" "+(c.labelEs||"")).indexOf(q)<0) return; lst.appendChild(pickBtn(c.code)); });
+  if(!lst.children.length) lst.appendChild(el("div","empty","—"));
+}
+function syncGo(){
+  var d=draft, go=document.getElementById("goBtn"), ch=document.getElementById("chips"), need=document.getElementById("needCode"); if(!d||!go) return;
+  if(ch){ ch.textContent=""; ch.hidden=true; }
+  var selection=document.getElementById("codeSelection"), wrap=document.getElementById("codeSelectWrap");
+  if(selection){ selection.textContent=""; if(d.code){ selection.appendChild(el("strong",null,d.code+" — "+codeLabel(d.code))); var es=el("span","bi",codeLabel(d.code,"es")); es.lang="es"; selection.appendChild(es); }
+    else selection.appendChild(biBtn("chooseCode")); }
+  if(wrap) wrap.classList.toggle("code-picked",!!d.code);
+  var storeOk=CLOUD||STORE_OK;
+  var codeOk=d.mode!=="out"||!!(d.code&&codeObj(d.code))||!!d.w.noHours, inkOk=!!(d.sig&&d.sig.hasInk()), ok=codeOk&&inkOk&&storeOk;
+  go.disabled=!ok; go.classList.toggle("dis",!ok);
+  if(need) need.textContent = !storeOk ? t("noStoreS")
+                            : ok ? ""
+                            : (!codeOk&&!inkOk?t("codeAndSign"):!codeOk?t("codeFirst"):t("signFirst"));
+}
+function commit(){
+  var d=draft; if(!d) return;
+  if(!d.sig||!d.sig.hasInk()||(!CLOUD&&!STORE_OK)){ syncGo(); return; }
+  if(d.date!==today()){ alert(t("newDay")); closeSheet(); return; }
+  var latest=CLOUD?(punches[keyFor(d.w.id)]||null):cachedPunch(keyFor(d.w.id));
+  if(recordToken(latest)!==d.baseToken){ alert(t("recordChanged")); closeSheet(); paint(); return; }
+  if(d.mode==="out"&&!isOpen(livePunch(latest))||d.mode==="in"&&isOpen(livePunch(latest))){ alert(t("recordChanged")); closeSheet(); return; }
+  var now=new Date(), id=keyFor(d.w.id), p=livePunch(punches[id])||null, ss=segs(p).map(function(x){ return Object.assign({},x); }), rec, verb;
+  var sig=Object.assign({at:iso(now)},d.sig.data());
+  if(d.mode==="in"){
+    ss.push({in:hhmm(now),inAt:iso(now),out:null,outAt:null,sigIn:sig});
+    rec = p ? Object.assign({},p) : { workerId:d.w.id, name:d.w.name, agency:(d.w.agency||"PEG").toUpperCase(), job:JOB.code, jobName:JOB.name, date:today(), code:null, note:"", tz:offsetStr(now), source:"kiosk" };
+    if(d.w.walkOn) rec.walkOn=true; if(d.w.noHours) rec.noHours=true; rec.note=d.note||rec.note||"";
+    withSegs(rec,ss); verb=d.again?"okBack":"okIn";
+  } else {
+    if((!d.code||!codeObj(d.code))&&!d.w.noHours){ syncGo(); return; }
+    ss[ss.length-1].out=hhmm(now); ss[ss.length-1].outAt=iso(now);
+    ss[ss.length-1].sigOut=Object.assign({for:{blocks:ss.map(function(x){ return [x.in,x.out]; }),code:d.code||null}},sig);
+    rec=withSegs(Object.assign({},p,{code:d.code||null, note:d.note||p.note||""}),ss); if(d.w.noHours) rec.noHours=true; verb="okOut";
+  }
+  delete rec.codes;
+  invalidateApproval(rec,"worker_"+d.mode,d.w.name);
+  delete rec.sentAt;
+  rec.updatedAt=iso(now);
+  auditEvent(rec,"worker_"+d.mode,{by:d.w.name});
+  var action={id:id,before:cloneRecord(punches[id]||null),afterToken:recordToken(rec),label:d.w.name.split(" ")[0]+" "+clockFace(now),at:Date.now()};
+  if(!savePunch(id,rec)){ var err=document.getElementById("needCode"); err.textContent=t("saveFailed"); err.classList.add("error"); return; }
+  lastAct=action; closeSheet(); paint(); armHome();
+  showFlash(d.w.name,verb,clockFace(now),d.mode==="out",d.mode==="out"?(d.code||null):null);
+}
+function undoLast(){
+  if(!lastAct||Date.now()-lastAct.at>=UNDO_MS) return;
+  var current=CLOUD?(punches[lastAct.id]||null):cachedPunch(lastAct.id);
+  if(recordToken(current)!==lastAct.afterToken){ lastAct=null; hideFlash(); paint(); alert(t("undoChanged")); return; }
+  var rec=cloneRecord(lastAct.before);
+  if(rec){ invalidateApproval(rec,"worker_undo",rec.name); delete rec.sentAt; }
+  if(!savePunch(lastAct.id,rec)){ alert(t("saveFailed")); return; }
+  lastAct=null; hideFlash(); paint();
+}
+
+/* =====================================================================
+   FIND MY NAME / WALK-ON
+   ===================================================================== */
+function openWalk(agency){ draft={walk:true,name:"",agency:agency||"",now:new Date()}; drawWalk(); document.getElementById("veil").hidden=false; armSheet(); }
+function drawWalk(){
+  var s=document.getElementById("sheet"), d=draft; s.className="sheet"; s.textContent="";
+  s.appendChild(el("p","kicker green",t("signingIn"))); s.appendChild(el("h2","md",t("walkTitle"))); s.appendChild(el("div","eyebrow",t("walkSub")));
+  var f=el("div","field"); f.appendChild(el("span",null,t("yourName")));
+  var inp=el("input","finput"); inp.id="walkName"; inp.value=d.name; inp.placeholder="Juan Pérez"; inp.autocomplete="off"; inp.autocapitalize="words";
+  inp.addEventListener("input",function(){ d.name=inp.value; drawSugg(); armSheet(); }); f.appendChild(inp); s.appendChild(f);
+  var sg=el("div","sugg"); sg.id="sugg"; s.appendChild(sg);
+  var af=el("div","field"); af.appendChild(el("span",null,t("company"))); af.appendChild(agencyPicker(d.agency,function(a){ d.agency=a; drawWalk(); })); s.appendChild(af);
+  var err=el("div","err"); err.id="walkErr"; s.appendChild(err);
+  var acts=el("div","acts"); var cancel=el("button","no"); cancel.appendChild(biBtn("cancel")); cancel.addEventListener("click",closeSheet);
+  var go=el("button","go"); go.appendChild(biBtn("signAsNew")); go.addEventListener("click",commitWalk); acts.appendChild(cancel); acts.appendChild(go); s.appendChild(acts);
+  var to=el("div","timeout"); to.appendChild(el("i")); s.appendChild(to); s.onclick=armSheet; drawSugg();
+  setTimeout(function(){ var n=document.getElementById("walkName"); if(n) n.focus(); },30);
+}
+function agencyPicker(current,onPick){
+  var box=el("div","agpick"), known=agencies(); AG_PREF.forEach(function(a){ if(known.indexOf(a)<0) known.push(a); });
+  /* v15: show a newly typed company by name before saving its first worker.
+     Only a saved worker creates the main-menu company; Cancel adds nothing. */
+  if(current&&known.indexOf(current)<0) known.push(current);
+  known.forEach(function(a){ var b=el("button",null,a); b.setAttribute("aria-pressed",current===a?"true":"false"); b.addEventListener("click",function(){ onPick(a); }); box.appendChild(b); });
+  var other=el("button",null,t("other")+"…"); other.setAttribute("aria-pressed","false");
+  other.addEventListener("click",function(){ var v=prompt(t("company")); if(v&&v.trim()) onPick(v.trim().toUpperCase().slice(0,12)); }); box.appendChild(other); return box;
+}
+function drawSugg(){
+  var d=draft, sg=document.getElementById("sugg"); if(!sg) return; sg.textContent=""; var q=foldName(d.name); if(q.length<2) return;
+  var hits=allWorkers().filter(function(w){ return foldName(w.name).indexOf(q)>=0; }).slice(0,5); if(!hits.length) return;
+  sg.appendChild(el("div","eyebrow",t("isThatYou")));
+  hits.forEach(function(w){ var b=el("button"); b.appendChild(el("b",null,w.name)); b.appendChild(el("span",null,(w.agency||"")+(w.trade?" · "+w.trade:"")));
+    b.addEventListener("click",function(){ view.agency=(w.agency||"PEG").toUpperCase(); openSheet(w); paint(); }); sg.appendChild(b); });
+}
+function commitWalk(){
+  var d=draft; if(!d) return; var nm=(d.name||"").trim().replace(/\s+/g," "), err=document.getElementById("walkErr");
+  if(nm.split(" ").length<2){ err.textContent=t("nameNeeded"); return; }
+  var exact=allWorkers().filter(function(w){ return foldName(w.name)===foldName(nm); })[0];
+  if(exact){ view.agency=(exact.agency||"PEG").toUpperCase(); openSheet(exact); paint(); return; }
+  if(!d.agency){ err.textContent=t("company"); return; }
+  var id="w-"+slugBase(nm), rec={name:nm,agency:d.agency.toUpperCase(),firstDate:today(),lastDate:today()};
+  var existing=walkons.filter(function(w){ return w.id===id; })[0]; if(existing){ rec=Object.assign({},existing,{lastDate:today()}); delete rec.id; }
+  if(!existing){ walkons.push(Object.assign({id:id},rec)); LS.set("walkons",walkons); }
+  writeDoc("walkons/"+id,rec,function(){}); view.agency=rec.agency; paint(); openSheet(Object.assign({id:id,walkOn:true},rec));
+}
+
+/* =====================================================================
+   FLASH
+   ===================================================================== */
+function showFlash(name,verbKey,at,isOut,code){
+  var f=document.getElementById("flash"),box=document.getElementById("flashIn"); f.className="flash"+(isOut?" outk":""); box.textContent="";
+  box.appendChild(el("div","tick","✓"));
+  var who=el("div","who"); who.appendChild(el("div","verb",t(verbKey))); who.appendChild(el("h3",null,name)); box.appendChild(who);
+  box.appendChild(el("div","at",at));
+  if(code) box.appendChild(el("div","codesum",code+"  "+codeLabel(code)));
+  var u=el("button","undobig"); u.appendChild(biBtn("undoThis")); u.addEventListener("click",undoLast); box.appendChild(u);
+  var r=el("div","ring"); r.appendChild(el("i")); box.appendChild(r);
+  f.hidden=false; clearTimeout(flashTimer); flashTimer=setTimeout(hideFlash,FLASH_MS); clearTimeout(undoTimer); undoTimer=setTimeout(function(){ lastAct=null; paintUndo(); },UNDO_MS);
+}
+function hideFlash(){ clearTimeout(flashTimer); document.getElementById("flash").hidden=true; paintUndo(); }
+
+/* =====================================================================
+   PIN
+   ===================================================================== */
+var pinBuf="",pinMode="check",pinFirst="",pinThen=null,pinSupName=null;
+function pins(){ if(!SEC) return null; if(SEC.pins) return SEC.pins; if(SEC.pin){ var m={}; m[SEC.pin]="Office"; return m; } return null; }
+function openPin(mode,then,forName){ pinBuf=""; pinFirst=""; pinThen=then; pinSupName=forName||null; pinMode=pins()&&Object.keys(pins()).length?mode:"set"; drawPad(); drawPin(pinMsgNow(),false); document.getElementById("pinVeil").hidden=false; }
+function closePin(){ document.getElementById("pinVeil").hidden=true; pinBuf=""; pinFirst=""; }
+function pinMsgNow(){ return pinMode==="set"?(pinFirst?t("pinAgain"):t("pinNew")):t("pinSub"); }
+function drawPin(msg,bad){ document.getElementById("pinTitle").textContent=t("office"); var m=document.getElementById("pinMsg"); m.textContent=msg; m.className=bad?"bad":""; var pp=document.getElementById("pips").children; for(var i=0;i<4;i++) pp[i].className=i<pinBuf.length?"on":""; }
+function drawPad(){ var pad=document.getElementById("pad"); pad.textContent=""; ["1","2","3","4","5","6","7","8","9","clr","0","del"].forEach(function(k){ var b=el("button",k==="clr"||k==="del"?"sm":null,k==="clr"?"C":k==="del"?"←":k); b.addEventListener("click",function(){ pinKey(k); }); pad.appendChild(b); }); }
+function pinKey(k){ if(k==="clr"){ pinBuf=""; drawPin(pinMsgNow(),false); return; } if(k==="del"){ pinBuf=pinBuf.slice(0,-1); drawPin(pinMsgNow(),false); return; } if(pinBuf.length>=4) return; pinBuf+=k; drawPin(pinMsgNow(),false); if(pinBuf.length===4) setTimeout(pinDone,140); }
+function pinDone(){
+  var map=pins()||{};
+  if(pinMode==="set"){
+    if(!pinFirst){ pinFirst=pinBuf; pinBuf=""; drawPin(t("pinAgain"),false); return; }
+    if(pinFirst!==pinBuf){ pinFirst=""; pinBuf=""; drawPin(t("pinNoMatch"),true); return; }
+    var name=pinSupName||SUP||"Office"; Object.keys(map).forEach(function(k){ if(map[k]===name) delete map[k]; }); map[pinBuf]=name;
+    SEC={pins:map}; LS.set("sec",SEC); writeDoc("config/security",SEC,function(){}); SUP=name; closePin(); if(pinThen) pinThen(); return;
+  }
+  if(map[pinBuf]){ SUP=map[pinBuf]; closePin(); if(pinThen) pinThen(); return; }
+  pinBuf=""; drawPin(t("pinBad"),true);
+}
+
+/* =====================================================================
+   CREW MANAGER
+   ===================================================================== */
+var crewEdit=null;
+function openCrew(){ crewEdit=null; drawCrew(); document.getElementById("crewVeil").hidden=false; }
+function closeCrew(){ document.getElementById("crewVeil").hidden=true; crewEdit=null; }
+function refreshOffice(){ if(!document.getElementById("crewVeil").hidden&&!crewEdit) drawCrew(); if(!document.getElementById("revVeil").hidden&&!revEdit&&!revBusy) loadReview(); }
+function abtn(cls,key){ var b=el("button",cls); b.appendChild(biBtn(key)); return b; }
+function labelled(id,label,val,ph,opts){ opts=opts||{}; var f=el("div","field"); var labelNode=el("label",null,label); labelNode.htmlFor=id; f.appendChild(labelNode); var i=el(opts.textarea?"textarea":"input","finput"); i.id=id; i.value=val||""; i.placeholder=ph||""; i.autocomplete="off";
+  if(opts.type) i.type=opts.type; if(opts.numeric) i.inputMode="numeric"; if(opts.max) i.maxLength=opts.max; if(opts.disabled) i.disabled=true; f.appendChild(i); return f; }
+function codeGrid(current,onPick,allowNone){
+  var g=el("div","picks");
+  if(allowNone){ var nb=el("button","pick"); nb.setAttribute("aria-pressed",!current?"true":"false"); nb.appendChild(el("span","cd","—")); var l0=el("span","lb"); l0.appendChild(el("b",null,t("none"))); nb.appendChild(l0); nb.addEventListener("click",function(){ onPick(""); }); g.appendChild(nb); }
+  codes.forEach(function(c){ var b=el("button","pick"); b.setAttribute("aria-pressed",c.code===current?"true":"false"); b.appendChild(el("span","cd",c.code)); var lb=el("span","lb"); lb.appendChild(el("b",null,codeLabel(c.code))); var o2=codeLabel(c.code,otherLang()); if(o2&&o2!==codeLabel(c.code)) lb.appendChild(el("span",null,o2)); b.appendChild(lb); b.addEventListener("click",function(){ onPick(c.code); }); g.appendChild(b); });
+  return g;
+}
+var crewMsg="";
+function missingDefaults(){ return DEFAULT_ROSTER.filter(function(d){ return !roster.concat(walkons).some(function(x){ return x.id===d.id||foldName(x.name)===foldName(d.name); }); }); }
+function loadDefaults(){ var miss=missingDefaults(), order=roster.reduce(function(m,x){ return Math.max(m,x.sortOrder||0); },0); miss.forEach(function(d){ var rec=Object.assign({},d); delete rec.id; rec.sortOrder=++order; localWrite("roster/"+d.id,rec); }); crewMsg=t("loadedCrew").split("$").join(miss.length); drawCrew(); }
+function drawCrew(){
+  var s=document.getElementById("crewSheet"); s.textContent="";
+  s.appendChild(el("p","kicker",SUP?t("office")+"  —  "+SUP:t("office"))); s.appendChild(el("h2","md",t("crewTitle")));
+  if(crewEdit){ drawCrewForm(s); return; }
+  if(crewMsg){ s.appendChild(el("div","ok",crewMsg)); crewMsg=""; }
+  if(!CLOUD){
+    /* Send to office, and the full signed record, live here now - behind the PIN. */
+    var sd=el("div","sect"); sd.appendChild(el("h3",null,t("sendTitle")));
+    var st=sendStatusLine(); var sl=el("div","empty"); sl.textContent=st.text;
+    if(st.late) sl.style.color="#FFB4A2";
+    sd.appendChild(sl);
+    var sb=el("button","addbtn",t("sendTitle")); sb.addEventListener("click",function(){ closeCrew(); sendToOffice(); }); sd.appendChild(sb);
+    var jb=el("button","linkish",t("fullRecord")); jb.addEventListener("click",downloadFullRecord); sd.appendChild(jb);
+    s.appendChild(sd);
+  }
+  var pend=walkons.filter(function(w){ return !roster.some(function(r){ return r.id===w.id; }); });
+  if(pend.length){ var sp=el("div","sect"); sp.appendChild(el("h3",null,t("pending")));
+    pend.forEach(function(w){ var r=el("button","row pend"), who=el("span","who"); who.appendChild(el("b",null,w.name)); who.appendChild(el("span",null,w.agency+" · "+dayName(w.lastDate||w.firstDate))); r.appendChild(who); r.appendChild(el("span","tagc",t("addToCrew")));
+      r.addEventListener("click",function(){ crewEdit={kind:"worker",id:w.id,isNew:true,fromWalk:w}; drawCrew(); }); sp.appendChild(r); }); s.appendChild(sp); }
+  var ags=agencies(); AG_PREF.forEach(function(a){ if(ags.indexOf(a)<0) ags.push(a); });
+  ags.forEach(function(a){
+    var live=roster.filter(function(w){ return w.active!==false&&(w.agency||"PEG").toUpperCase()===a; }); if(!live.length&&AG_PREF.indexOf(a)<0) return;
+    var sec=el("div","sect"); sec.appendChild(el("h3",null,t("onCrew")+" — "+a)); if(!live.length) sec.appendChild(el("div","empty",t("noOne")));
+    live.forEach(function(w){ sec.appendChild(workerRow(w,false)); });
+    var add=el("button","addbtn",t("addWorker")+" — "+a); add.addEventListener("click",function(){ crewEdit={kind:"worker",id:null,isNew:true,agency:a}; drawCrew(); }); sec.appendChild(add); s.appendChild(sec);
+  });
+  var off=roster.filter(function(w){ return w.active===false; }); if(off.length){ var so=el("div","sect"); so.appendChild(el("h3",null,t("offCrew"))); off.forEach(function(w){ so.appendChild(workerRow(w,true)); }); s.appendChild(so); }
+  var sc=el("div","sect"); sc.appendChild(el("h3",null,t("codesTitle")));
+  codes.forEach(function(c){ var r=el("button","row"); r.appendChild(el("span","tagc",c.code)); var who=el("span","who"); who.appendChild(el("b",null,c.label||"")); who.appendChild(el("span",null,c.labelEs||"")); r.appendChild(who); r.addEventListener("click",function(){ crewEdit={kind:"code",id:c.code,isNew:false}; drawCrew(); }); sc.appendChild(r); });
+  var addc=el("button","addbtn",t("addCode")); addc.addEventListener("click",function(){ crewEdit={kind:"code",id:null,isNew:true}; drawCrew(); }); sc.appendChild(addc); s.appendChild(sc);
+  var ss=el("div","sect"); ss.appendChild(el("h3",null,t("sups"))); var map=pins()||{};
+  Object.keys(map).forEach(function(k){ var r=el("button","row"), who=el("span","who"); who.appendChild(el("b",null,map[k])); who.appendChild(el("span",null,"••••")); r.appendChild(who); r.appendChild(el("span","tagc",map[k]===SUP?t("changeMy"):"✎")); r.addEventListener("click",function(){ crewEdit={kind:"sup",id:k,isNew:false}; drawCrew(); }); ss.appendChild(r); });
+  var adds=el("button","addbtn",t("addSup")); adds.addEventListener("click",function(){ crewEdit={kind:"sup",id:null,isNew:true}; drawCrew(); }); ss.appendChild(adds); s.appendChild(ss);
+  if(!CLOUD){
+    var sj=el("div","sect"); sj.appendChild(el("h3",null,t("jobTitle")));
+    var jr=el("button","row"), jw=el("span","who"); jw.appendChild(el("b",null,JOB.name+" · "+JOB.code)); jw.appendChild(el("span",null,JOB.sub||"")); jr.appendChild(jw); jr.appendChild(el("span","tagc","✎"));
+    jr.addEventListener("click",function(){ crewEdit={kind:"job"}; drawCrew(); }); sj.appendChild(jr);
+    var miss=missingDefaults(); if(miss.length){ var ld=el("button","row"), lw=el("span","who"); lw.appendChild(el("b",null,t("loadCrew"))); lw.appendChild(el("span",null,t("loadCrewSub").split("$").join(miss.length))); ld.appendChild(lw); ld.appendChild(el("span","tagc","+"+miss.length)); ld.addEventListener("click",loadDefaults); sj.appendChild(ld); }
+    var rs=el("button","addbtn",t("restoreFile")); rs.addEventListener("click",function(){ document.getElementById("restoreFile").click(); }); sj.appendChild(rs);
+    s.appendChild(sj);
+  }
+  var practice=el("div","sect"); practice.appendChild(el("h3",null,PRACTICE?t("practiceTitle"):t("practiceSub")));
+  var pb=el("button","addbtn",t(PRACTICE?"backLive":"openPractice")); pb.addEventListener("click",function(){ var u=new URL(window.location.href); if(PRACTICE) u.searchParams.delete("practice"); else u.searchParams.set("practice","1"); window.open(u.href,"_blank","noopener"); }); practice.appendChild(pb); s.appendChild(practice);
+  var acts=el("div","acts tight"); var cl=abtn("no wide","close"); cl.addEventListener("click",closeCrew); acts.appendChild(cl); s.appendChild(acts);
+}
+function workerRow(w,isOff){ var r=el("button","row"+(isOff?" off":"")), who=el("span","who"); who.appendChild(el("b",null,w.name)); who.appendChild(el("span",null,(w.agency||"")+(w.trade?" · "+w.trade:"")+(w.noHours?" · "+t("attOnly"):""))); r.appendChild(who); r.appendChild(el("span","tagc",w.noHours?"—":(w.defaultCode||"—"))); r.addEventListener("click",function(){ crewEdit={kind:"worker",id:w.id,isNew:false}; drawCrew(); }); return r; }
+function drawCrewForm(s){
+  var e=crewEdit, err=el("div","err"); var back=abtn("no","cancel"); back.addEventListener("click",function(){ crewEdit=null; drawCrew(); }); var acts=el("div","acts"); acts.appendChild(back);
+  if(e.kind==="worker"){
+    var w=e.isNew?{name:e.fromWalk?e.fromWalk.name:"",trade:"",defaultCode:"",agency:(e.fromWalk?e.fromWalk.agency:e.agency)||"PEG"}:roster.filter(function(x){ return x.id===e.id; })[0]; if(!w){ crewEdit=null; drawCrew(); return; }
+    var st={agency:(w.agency||"PEG").toUpperCase(),code:w.defaultCode||"",noHours:!!w.noHours};
+    s.appendChild(labelled("wName",t("fName"),w.name,"Gerson Antonio Diaz")); s.appendChild(labelled("wTrade",t("fTrade"),w.trade||"","Electrician"));
+    var af=el("div","field"); af.appendChild(el("span",null,t("fAgency"))); var agHost=el("div"); af.appendChild(agHost); s.appendChild(af);
+    function drawAg(){ agHost.textContent=""; agHost.appendChild(agencyPicker(st.agency,function(a){ st.agency=a; drawAg(); })); } drawAg();
+    var pf=el("div","field"); pf.appendChild(el("span",null,t("fPay"))); var payHost=el("div","agpick col"); pf.appendChild(payHost); s.appendChild(pf);
+    var cf=el("div","field"); cf.appendChild(el("span",null,t("fCode"))); cf.appendChild(el("div","helper",t("codeReferenceNote"))); var cgHost=el("div"); cf.appendChild(cgHost); s.appendChild(cf);
+    function drawPay(){ payHost.textContent=""; [["hourly",false],["salaried",true]].forEach(function(o){ var b=el("button"); b.appendChild(biBtn(o[0])); b.setAttribute("aria-pressed",st.noHours===o[1]?"true":"false"); b.addEventListener("click",function(){ st.noHours=o[1]; if(o[1]) st.code=""; drawPay(); drawCg(); }); payHost.appendChild(b); }); cf.hidden=st.noHours; }
+    function drawCg(){ cgHost.textContent=""; cgHost.appendChild(codeGrid(st.code,function(c){ st.code=c; drawCg(); },true)); } drawPay(); drawCg();
+    s.appendChild(err);
+    var save=abtn("go","save"); save.addEventListener("click",function(){
+      var nm=document.getElementById("wName").value.trim(), tr=document.getElementById("wTrade").value.trim(); if(!nm){ err.textContent=t("nameNeeded"); return; }
+      var same=roster.filter(function(x){ return x.id!==e.id&&foldName(x.name)===foldName(nm); }); if(same.some(function(x){ return x.active!==false; })){ err.textContent=t("dupName"); return; }
+      var id,order;
+      if(e.isNew&&same.length){ id=same[0].id; order=same[0].sortOrder||0; }
+      else if(e.isNew&&e.fromWalk){ id=e.fromWalk.id; order=roster.reduce(function(m,x){ return Math.max(m,x.sortOrder||0); },0)+1; }
+      else if(e.isNew){ var base=slugBase(nm),taken={}; roster.concat(walkons).forEach(function(x){ taken[x.id]=1; }); id=base; for(var n=2;taken[id];n++) id=base+"-"+n; order=roster.reduce(function(m,x){ return Math.max(m,x.sortOrder||0); },0)+1; }
+      else { id=e.id; order=w.sortOrder||0; }
+      err.textContent="";
+      writeDoc("roster/"+id,{name:nm,trade:tr,agency:st.agency,defaultCode:st.noHours?"":st.code,noHours:st.noHours,job:JOB.code,sortOrder:order,active:true},function(bad){ if(bad){ err.textContent=t("saveFailed"); return; }
+        if(e.fromWalk){ deleteDoc("walkons/"+e.fromWalk.id,function(){}); walkons=walkons.filter(function(x){ return x.id!==e.fromWalk.id; }); LS.set("walkons",walkons); } crewEdit=null; drawCrew(); });
+    }); acts.appendChild(save); s.appendChild(acts);
+    if(!e.isNew){ var rm=el("button","linkish red",w.active===false?t("restore"):t("remove")); rm.addEventListener("click",function(){ var rec=Object.assign({},w,{active:w.active===false}); delete rec.id; writeDoc("roster/"+e.id,rec,function(bad){ if(bad){ err.textContent=t("saveFailed"); return; } crewEdit=null; drawCrew(); }); }); s.appendChild(rm); }
+    if(e.fromWalk){ var dm=el("button","linkish red",t("dismiss")); dm.addEventListener("click",function(){ deleteDoc("walkons/"+e.fromWalk.id,function(){ walkons=walkons.filter(function(x){ return x.id!==e.fromWalk.id; }); LS.set("walkons",walkons); crewEdit=null; drawCrew(); }); }); s.appendChild(dm); }
+    setTimeout(function(){ var n=document.getElementById("wName"); if(e.isNew&&n&&!n.value) n.focus(); },40);
+  } else if(e.kind==="code"){
+    var c=e.isNew?{code:"",label:"",labelEs:""}:codeObj(e.id); if(!c){ crewEdit=null; drawCrew(); return; }
+    s.appendChild(labelled("cNum",t("codeNum"),c.code,"1023",{disabled:!e.isNew,max:7})); s.appendChild(labelled("cEn",t("codeEn"),c.label,"Branch Cabling")); s.appendChild(labelled("cEs",t("codeEs"),c.labelEs,"Cableado de ramales")); s.appendChild(err);
+    var save2=abtn("go","save"); save2.addEventListener("click",function(){ var num=document.getElementById("cNum").value.trim(),en=document.getElementById("cEn").value.trim(),es=document.getElementById("cEs").value.trim();
+      if(!/^\d{3,5}(-\d{2})?$/.test(num)){ err.textContent=t("codeNeeded"); return; } writeDoc("codes/"+num,{label:en,labelEs:es},function(bad){ if(bad){ err.textContent=t("saveFailed"); return; } crewEdit=null; drawCrew(); }); });
+    acts.appendChild(save2); s.appendChild(acts);
+    if(!e.isNew){ var rm2=el("button","linkish red",t("remove")); rm2.addEventListener("click",function(){ if(roster.some(function(w){ return w.active!==false&&w.defaultCode===e.id; })||codes.length<=1){ err.textContent=t("saveFailed"); return; } deleteDoc("codes/"+e.id,function(bad){ if(bad){ err.textContent=t("saveFailed"); return; } crewEdit=null; drawCrew(); }); }); s.appendChild(rm2); }
+  } else if(e.kind==="job"){
+    s.appendChild(labelled("jNum",t("jobNum"),JOB.code,"25-013")); s.appendChild(labelled("jNm",t("jobNm"),JOB.name,"Oyster")); s.appendChild(labelled("jSub",t("jobSub"),JOB.sub,"Pioneer Electric Group — NewCold, Hagerstown MD"));
+    s.appendChild(labelled("jMail",t("officeEmail"),officeEmail(),"isaac@pioneerelectricgrp.com",{type:"email"})); s.appendChild(err);
+    var saveJ=abtn("go","save"); saveJ.addEventListener("click",function(){ var code=document.getElementById("jNum").value.trim(), nm=document.getElementById("jNm").value.trim(); if(!code||!nm){ err.textContent=t("nameNeeded"); return; }
+      var mail=document.getElementById("jMail").value.trim(); if(mail&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)){ err.textContent=t("officeEmail"); return; }
+      writeDoc("config/job",{code:code,name:nm,sub:document.getElementById("jSub").value.trim(),officeEmail:mail||"isaac@pioneerelectricgrp.com"},function(bad){ if(bad){ err.textContent=t("saveFailed"); return; } crewEdit=null; drawCrew(); }); });
+    acts.appendChild(saveJ); s.appendChild(acts);
+  } else {
+    var map=pins()||{}, nm0=e.isNew?"":map[e.id];
+    s.appendChild(labelled("sName",t("supName"),nm0,"Josh Kelle")); s.appendChild(labelled("sPin",t("supPin"),e.isNew?"":e.id,"••••",{numeric:true,max:4,type:"password"})); s.appendChild(err);
+    var save3=abtn("go","save"); save3.addEventListener("click",function(){ var nm=document.getElementById("sName").value.trim(),pn=document.getElementById("sPin").value.trim();
+      if(!nm){ err.textContent=t("nameNeeded"); return; } if(!/^\d{4}$/.test(pn)){ err.textContent=t("pinNeeded"); return; }
+      var m=Object.assign({},map); if(!e.isNew) delete m[e.id]; m[pn]=nm; SEC={pins:m}; LS.set("sec",SEC); if(SUP===nm0) SUP=nm;
+      writeDoc("config/security",SEC,function(bad){ if(bad){ err.textContent=t("saveFailed"); return; } crewEdit=null; drawCrew(); }); });
+    acts.appendChild(save3); s.appendChild(acts);
+    if(!e.isNew&&Object.keys(map).length>1){ var rm3=el("button","linkish red",t("remove")); rm3.addEventListener("click",function(){ var m=Object.assign({},map); delete m[e.id]; SEC={pins:m}; LS.set("sec",SEC); writeDoc("config/security",SEC,function(bad){ if(bad){ err.textContent=t("saveFailed"); return; } crewEdit=null; drawCrew(); }); }); s.appendChild(rm3); }
+  }
+}
+
+/* =====================================================================
+   REVIEW
+   ===================================================================== */
+var revDay=today(), revRows=[], revEdit=null, revMsg="", revMsgBad=false, revClear=false, revBusy=false;
+function openReview(){ revDay=today(); revEdit=null; revMsg=""; revClear=false; loadReview(); document.getElementById("revVeil").hidden=false; }
+function closeReview(){ document.getElementById("revVeil").hidden=true; revEdit=null; }
+function loadReview(){
+  if(revDay===today()){ revRows=Object.keys(punches).map(function(k){ return Object.assign({_id:k},punches[k]); }); drawReview(); return; }
+  var cached=LS.get("cache."+revDay,{}); revRows=Object.keys(cached).map(function(k){ return Object.assign({_id:k},cached[k]); }); drawReview();
+  if(db){ db.collection("punches").where("date","==",revDay).get().then(function(snap){ var rows=[],c={}; snap.docs.forEach(function(d){ var v=d.data(); if(v){ rows.push(Object.assign({_id:d.id},v)); c[d.id]=v; } }); revRows=rows; LS.set("cache."+revDay,c); if(!revEdit) drawReview(); }).catch(function(){}); }
+}
+function statusOf(p){
+  if(p.voided) return [["void",t("voided")]]; var out=[];
+  if(p.approved) out.push(["ok",t(p.approvalException?"exceptionApproved":"approved")]); else if(isOpen(p)) out.push(p.date===today()?["in",t("stillOn")]:["bad",t("missing")]);
+  if(!p.approved&&p.reviewRequired) out.push(["ed",t("reviewAgain")]);
+  if(p.editedAt) out.push(["ed",t("edited")]); if(p.walkOn) out.push(["ed",t("walkOn")]);
+  var sg=sigState(p); if(segs(p).length&&sg!=="full") out.push(["bad",t("unsigned")+(sg==="partial"?" ½":"")]);
+  if(editedAfterSign(p)) out.push(["bad",t("editedAfterSign")]);
+  return out;
+}
+function drawReview(){
+  var s=document.getElementById("revSheet"); s.textContent=""; s.appendChild(el("p","kicker",SUP?t("office")+"  —  "+SUP:t("office")));
+  if(revEdit){ drawRevForm(s); return; }
+  if(revClear){ drawClearDay(s); return; }
+  var nav=el("div","daynav"); var prev=el("button",null,"‹"); prev.addEventListener("click",function(){ revDay=shiftDay(revDay,-1); loadReview(); });
+  var next=el("button",null,"›"); next.disabled=revDay>=today(); next.addEventListener("click",function(){ revDay=shiftDay(revDay,1); loadReview(); });
+  nav.appendChild(prev); nav.appendChild(el("span","dl",dayName(revDay))); nav.appendChild(next); s.appendChild(nav);
+  var rows=revRows.slice().sort(function(a,b){ return (a.agency+a.name).localeCompare(b.agency+b.name); });
+  if(!rows.length) s.appendChild(el("div","empty",t("noPunch")));
+  else {
+    var hd=el("div","rhead"); [t("thName"),t("thIn"),t("thOut"),t("thCodes"),""].forEach(function(h,i){ hd.appendChild(el("span",i===3?"h4":null,h)); }); s.appendChild(hd);
+    var list=el("div","sect");
+    rows.forEach(function(p){
+      var ss=segs(p), r=el("button","rrow"+(p.voided?" void":"")), who=el("span","who"); who.appendChild(el("b",null,p.name)); who.appendChild(el("span",null,p.agency||"")); r.appendChild(who);
+      var ti=el("span","tm",pretty(p.inLocal)); if(ss.length>1) ti.appendChild(el("small",null,ss.length+" "+t("blocks")+" · "+spanText(onSiteMins(p)))); r.appendChild(ti);
+      r.appendChild(el("span","tm"+(isOpen(p)?" miss":""),isOpen(p)?"—":pretty(p.outLocal)));
+      r.appendChild(el("span","cds",codeOf(p)||"—"));
+      var sts=el("span","sts"); statusOf(p).forEach(function(x){ sts.appendChild(el("span","stat "+x[0],x[1])); }); r.appendChild(sts);
+      r.addEventListener("click",function(){ revEdit={id:p._id,p:p}; drawReview(); }); list.appendChild(r);
+    }); s.appendChild(list);
+  }
+  if(revMsg){ s.appendChild(el("div",revMsgBad?"err":"ok",revMsg)); revMsg=""; revMsgBad=false; }
+  var acts=el("div","acts tight");
+  var addp=abtn("no wide","addPunch"); addp.addEventListener("click",function(){ revEdit={id:null,p:null}; drawReview(); }); acts.appendChild(addp);
+  var todo=rows.filter(canBulkApprove), skipped=rows.filter(function(p){ return !p.voided&&!p.approved&&!canBulkApprove(p); }).length;
+  if(skipped) s.appendChild(el("div","helper",skipped+" "+t("bulkSkipped")));
+  var apAll=abtn("go blue","bulkSafe"); apAll.id="approveAllSafe"; apAll.disabled=!todo.length||revBusy; if(apAll.disabled) apAll.classList.add("dis");
+  apAll.addEventListener("click",function(){
+    if(revBusy) return; revBusy=true; apAll.disabled=true;
+    var n=0, approved=0, failed=0;
+    todo.forEach(function(p){
+      var rec=cloneRecord(p); delete rec._id; approveRecord(rec,null);
+      commitRev(p._id,rec,function(bad){
+        if(bad) failed++; else approved++;
+        if(++n===todo.length){ revBusy=false; revMsg=t("approved")+" · "+approved+(failed?"; "+failed+" "+t("bulkFailed"):""); revMsgBad=!!failed; loadReview(); }
+      },{expected:recordToken(p),requireEligible:true});
+    });
+  });
+
+  acts.appendChild(apAll);
+  var ex=abtn(CLOUD?"no wide":"go blue",CLOUD?"exportCsv":"sendOffice"); ex.addEventListener("click",exportWeek); acts.appendChild(ex);
+  var cl=abtn("no wide","close"); cl.addEventListener("click",closeReview); acts.appendChild(cl); s.appendChild(acts);
+  /* v14: Live records are voided with a reason and date confirmation, not permanently erased.
+     Permanent resets are available only in the separate practice namespace. */
+  if(rows.length){
+    var cd=el("button","linkish red",t(PRACTICE?"practiceClear":"liveClear")); cd.id="clearDayButton";
+    cd.addEventListener("click",function(){ revClear=true; drawReview(); });
+    s.appendChild(cd);
+  }
+}
+function drawClearDay(s){
+  var rows=revRows.filter(function(p){ return PRACTICE||!p.voided; }), appr=rows.filter(function(p){ return p.approved; }), date=revDay;
+  s.appendChild(el("h2","md",t(PRACTICE?"practiceClearTitle":"liveClearTitle")));
+  s.appendChild(el("div","stamp",date+" · "+rows.length+" "+t("blocks")));
+  s.appendChild(el("div","audit",t(PRACTICE?"practiceClearBody":"liveClearBody")));
+  if(!PRACTICE&&appr.length) s.appendChild(el("div","err",t("liveClearApproved")));
+  var sv=el("button","addbtn",t("fullRecord")); sv.addEventListener("click",downloadFullRecord); s.appendChild(sv);
+  s.appendChild(labelled("clearConfirmDate",t("clearDate"),"",date));
+  if(!PRACTICE) s.appendChild(labelled("clearReason",t("clearReason"),"","",{textarea:true}));
+  var err=el("div","err"); s.appendChild(err);
+  var acts=el("div","acts"), no=abtn("no wide","cancel"); no.addEventListener("click",function(){ revClear=false; drawReview(); }); acts.appendChild(no);
+  var yes=abtn("no wide clear-danger",PRACTICE?"clearGo":"liveClearGo"); yes.id="confirmClearDay"; yes.disabled=true;
+  function ready(){ yes.disabled=!rows.length||(!PRACTICE&&!!appr.length)||document.getElementById("clearConfirmDate").value.trim()!==date||(!PRACTICE&&document.getElementById("clearReason").value.trim().length<10); }
+  document.getElementById("clearConfirmDate").addEventListener("input",ready);
+  if(!PRACTICE) document.getElementById("clearReason").addEventListener("input",ready);
+  yes.addEventListener("click",function(){
+    ready(); if(yes.disabled||revBusy) return;
+    var reason=PRACTICE?"Practice reset":document.getElementById("clearReason").value.trim();
+    yes.disabled=true; no.disabled=true; revBusy=true;
+    var n=0, count=0, failed=0;
+    function done(bad){
+      if(bad) failed++; else count++;
+      if(++n===rows.length){ revBusy=false; revClear=false; lastAct=null; hideFlash(); revMsg=t(PRACTICE?"cleared":"voidedCount").replace("$",count)+(failed?" "+failed+" "+t("bulkFailed"):""); revMsgBad=!!failed; loadReview(); paint(); }
+    }
+    rows.forEach(function(p){
+      if(PRACTICE){ deleteDoc("punches/"+p._id,done); return; }
+      var rec=cloneRecord(p); delete rec._id; invalidateApproval(rec,"day_void",SUP||"Office"); rec.voided=true; rec.voidReason=reason; rec.editedAt=iso(new Date()); rec.editedBy=SUP||"Office"; delete rec.sentAt;
+      auditEvent(rec,"day_voided",{reason:reason});
+      commitRev(p._id,rec,done,{expected:recordToken(p)});
+    });
+  });
+  acts.appendChild(yes); s.appendChild(acts);
+}
+function commitRev(id,rec,done,options){
+  options=options||{};
+  function finish(bad){ if(!bad&&lastAct&&lastAct.id===id){ lastAct=null; hideFlash(); } done&&done(bad); }
+  function check(current){
+    if(options.createOnly&&current) return "exists";
+    if(options.expected!==undefined&&recordToken(current)!==options.expected) return "changed";
+    if(options.requireEligible&&(!current||!canBulkApprove(current))) return "changed";
+    return null;
+  }
+  if(!CLOUD){
+    var bad=check(cachedPunch(id)); if(bad){ finish(bad); return; }
+    writeDoc("punches/"+id,rec,finish); return;
+  }
+  // Preserve the legacy adapter. Use atomic compare/create if it exposes transactions.
+  // A future Firebase connection must retain these guards inside Firestore transactions.
+  if(!db){ finish("offline"); return; }
+  if(typeof db.runTransaction==="function"){
+    db.runTransaction(function(tx){ var ref=db.doc("punches/"+id); return tx.get(ref).then(function(doc){ var bad=check(doc&&doc.exists?doc.data():null); if(bad) throw new Error(bad); tx.set(ref,rec); }); })
+      .then(function(){ localWrite("punches/"+id,rec); finish(null); }).catch(function(e){ finish(e&&e.message==="exists"?"exists":e&&e.message==="changed"?"changed":"failed"); });
+  } else {
+    readPunch(id,function(bad,current){ if(bad){ finish(bad); return; } var conflict=check(current); if(conflict){ finish(conflict); return; }
+      writeDoc("punches/"+id,rec,function(err){ if(!err) localWrite("punches/"+id,rec); finish(err); });
+    });
+  }
+}
+
+function drawRevForm(s){
+  var e=revEdit, p=e.p, isNew=!p, err=el("div","err"), locked=!!(p&&(p.approved||p.voided)), baseToken=recordToken(p), busy=false;
+  var st={who:p?{id:p.workerId,name:p.name,agency:p.agency,noHours:!!p.noHours}:null,
+    blocks:p?segs(p).map(function(x){ return {in:x.in,out:x.out||"",source:x}; }):[{in:"06:00",out:"",source:null}],code:p?codeOf(p):"",note:p?(p.note||""):""};
+  s.appendChild(el("h2","md",isNew?t("addPunch"):p.name)); s.appendChild(el("div","eyebrow",dayName(revDay)+(p?" · "+(p.agency||""):"")));
+  if(e.notice) s.appendChild(el("div","audit",e.notice));
+  if(locked) s.appendChild(el("div","warnband",t(p.voided?"voidedEdit":"lockedNote")));
+  if(p&&p.orig){ var o=p.orig; s.appendChild(el("div","audit",t("origWas")+": "+(o.segments||[]).map(function(x){ return pretty(x.in)+"→"+(x.out?pretty(x.out):"…"); }).join("  ")+" · "+(o.code||"—")+(p.editedBy?" · "+t("edited")+" "+t("by")+" "+p.editedBy:""))); }
+  var selectionSeq=0;
+  if(isNew){
+    var wf=el("div","field"); wf.appendChild(el("span",null,t("who"))); var sel=el("select","finput"); sel.id="whoSel"; var o0=el("option",null,t("pickWorker")); o0.value=""; sel.appendChild(o0);
+    allWorkers().sort(function(a,b){ return (a.agency+a.name).localeCompare(b.agency+b.name); }).forEach(function(w){ var opt=el("option",null,w.agency+" — "+w.name); opt.value=w.id; sel.appendChild(opt); });
+    sel.addEventListener("change",function(){
+      var w=allWorkers().filter(function(x){ return x.id===sel.value; })[0], seq=++selectionSeq;
+      st.who=w?{id:w.id,name:w.name,agency:(w.agency||"PEG").toUpperCase(),noHours:!!w.noHours}:null; cf.hidden=!!(st.who&&st.who.noHours);
+      if(!w) return;
+      var id=keyFor(w.id,revDay);
+      readPunch(id,function(bad,existing){
+        if(revEdit!==e||seq!==selectionSeq) return;
+        if(bad){ err.textContent=t("saveFailed"); return; }
+        if(existing){ revEdit={id:id,p:existing,notice:t("existingPunch")}; drawReview(); }
+      });
+    }); wf.appendChild(sel); s.appendChild(wf);
+  }
+  var bf=el("div","field"); bf.appendChild(el("span",null,t("inTime")+" / "+t("outTime"))); var host=el("div","segs"); bf.appendChild(host); s.appendChild(bf);
+  function drawBlocks(){
+    host.textContent=""; st.blocks.forEach(function(b,i){
+      var row=el("div","seg"), ti=el("input","finput"), to=el("input","finput"); ti.type=to.type="time"; ti.value=b.in||""; to.value=b.out||""; ti.disabled=to.disabled=locked;
+      ti.setAttribute("aria-label",t("blockN")+" "+(i+1)+" "+t("inTime")); to.setAttribute("aria-label",t("blockN")+" "+(i+1)+" "+t("outTime"));
+      ti.addEventListener("input",function(){ b.in=ti.value; updateException(); }); to.addEventListener("input",function(){ b.out=to.value; updateException(); });
+      ti.addEventListener("change",function(){ b.in=ti.value; updateException(); }); to.addEventListener("change",function(){ b.out=to.value; updateException(); });
+      var rm=el("button","rm","×"); rm.setAttribute("aria-label",t("remove")+" "+t("blockN")+" "+(i+1)); rm.disabled=locked||st.blocks.length<=1;
+      rm.addEventListener("click",function(){ st.blocks.splice(i,1); drawBlocks(); updateException(); }); row.appendChild(ti); row.appendChild(to); row.appendChild(rm); host.appendChild(row);
+    });
+    if(!locked){ var ab=el("button","linkish",t("addBlock")); ab.id="addTimeBlock"; ab.addEventListener("click",function(){ st.blocks.push({in:"",out:"",source:null}); drawBlocks(); updateException(); }); host.appendChild(ab); }
+  }
+  drawBlocks();
+  if(p&&segs(p).length){
+    var sb=el("div","field"); sb.appendChild(el("span",null,t("sigs")));
+    segs(p).forEach(function(b,i){ var row=el("div","sigrow"); row.appendChild(el("b",null,t("blockN")+" "+(i+1)));
+      row.appendChild(el("span",null,t("sigIn")+" "+pretty(b.in)+":")); row.appendChild(signatureValid(b.sigIn)?sigSvg(b.sigIn,150):el("span","nosig",t("noSig")));
+      if(b.out){ row.appendChild(el("span",null,t("sigOut")+" "+pretty(b.out)+":")); row.appendChild(signatureValid(b.sigOut)?sigSvg(b.sigOut,150):el("span","nosig",t("noSig"))); } sb.appendChild(row);
+    });
+    if(editedAfterSign(p)) sb.appendChild(el("div","err",t("editedAfterSign"))); s.appendChild(sb);
+  }
+  var cf=el("div","field"); cf.appendChild(el("span",null,t("codesLbl"))); var cgHost=el("div"); cf.appendChild(cgHost); s.appendChild(cf); cf.hidden=!!(st.who&&st.who.noHours);
+  if(p&&p.noHours) s.appendChild(el("div","eyebrow",t("noCodeNeeded")));
+  function drawCg(){ cgHost.textContent=""; var g=codeGrid(st.code,function(c){ if(!locked){ st.code=c; drawCg(); updateException(); } },false); if(locked) [].forEach.call(g.querySelectorAll("button"),function(b){ b.disabled=true; }); cgHost.appendChild(g); }
+  drawCg(); s.appendChild(labelled("rNote",t("addNote"),st.note,"",{textarea:true,disabled:locked}));
+  var exception=el("div","review-exception"); exception.id="exceptionReview"; exception.hidden=true;
+  exception.appendChild(el("strong",null,t("exceptionTitle"))); exception.appendChild(el("div","helper",t("exceptionWhy")));
+  var reasons=el("div","err"); reasons.id="exceptionReasons"; exception.appendChild(reasons);
+  var checkLabel=el("label","review-check"), check=el("input"); check.type="checkbox"; check.id="exceptionConfirmed"; checkLabel.appendChild(check); checkLabel.appendChild(biBtn("exceptionCheck")); exception.appendChild(checkLabel);
+  exception.appendChild(labelled("exceptionReason",t("exceptionReason"),"","",{textarea:true})); s.appendChild(exception);
+  document.getElementById("rNote").addEventListener("input",updateException);
+  function dirty(){ return !!p&&(JSON.stringify(segs(p).map(function(b){ return [b.in,b.out||null]; }))!==JSON.stringify(st.blocks.map(function(b){ return [b.in,b.out||null]; }))||st.code!==codeOf(p)||document.getElementById("rNote").value!==(p.note||"")); }
+  function updateException(){
+    if(!exception) return;
+    var list=[]; if(isNew||st.blocks.some(function(b){ return !b.source||!signatureValid(b.source.sigIn)||(!!b.out&&!signatureValid(b.source.sigOut)); })) list.push("unsigned");
+    if(p&&(editedAfterSign(p)||(dirty()&&lastSigAt(p)))) list.push("editedAfterSign");
+    exception.hidden=locked||!list.length; reasons.textContent=list.map(t).join(" · ");
+    // A changed form needs a fresh acknowledgement, never a checkbox from earlier content.
+    check.checked=false;
+  }
+  updateException();
+  if(p&&p.approvalException){ var ex=p.approvalException; s.appendChild(el("div","audit",t("exceptionApproved")+" — "+(ex.by||p.approvedBy||"")+" · "+(ex.at||"")+"\n"+(ex.reason||""))); }
+  s.appendChild(err);
+  var acts=el("div","acts"), back=abtn("no","cancel"); back.addEventListener("click",function(){ revEdit=null; loadReview(); }); acts.appendChild(back);
+  if(p&&p.approved){ var un=abtn("no wide","unapprove"); un.id="unapproveRecord"; un.addEventListener("click",function(){
+    var rec=cloneRecord(p); delete rec._id; invalidateApproval(rec,"office_unapprove",SUP||"Office");
+    saveExisting(rec);
+  }); acts.appendChild(un); }
+  else if(!locked){ var save=abtn("go","save"); save.id="saveReview"; save.addEventListener("click",function(){ doSave(false); }); acts.appendChild(save);
+    var ap=abtn("go blue","approve"); ap.id="approveReview"; ap.addEventListener("click",function(){ doSave(true); }); acts.appendChild(ap); }
+  s.appendChild(acts);
+  if(p&&!p.approved){ var vd=el("button","linkish red",p.voided?t("unvoid"):t("voidIt")); vd.id="voidRecord"; vd.addEventListener("click",function(){
+    var rec=cloneRecord(p); delete rec._id; invalidateApproval(rec,p.voided?"restore":"void",SUP||"Office"); rec.voided=!p.voided; rec.editedAt=iso(new Date()); rec.editedBy=SUP||"Office"; rec.signatureReviewRequired=!!(p.signatureReviewRequired||lastSigAt(p)); delete rec.sentAt;
+    auditEvent(rec,p.voided?"restored":"voided"); saveExisting(rec);
+  }); s.appendChild(vd); }
+  function setBusy(on){ busy=on; [].forEach.call(acts.querySelectorAll("button"),function(b){ b.disabled=on; }); }
+  function finishSave(bad,id){
+    setBusy(false);
+    if(bad==="exists"){
+      readPunch(id,function(err2,existing){ if(existing){ revEdit={id:id,p:existing,notice:t("existingPunch")}; drawReview(); } else err.textContent=t(err2?"saveFailed":"recordChanged"); }); return;
+    }
+    if(bad){ err.textContent=t(bad==="changed"?"recordChanged":"saveFailed"); return; }
+    revEdit=null; loadReview();
+  }
+  function saveExisting(rec){ if(busy) return; setBusy(true); commitRev(e.id,rec,function(bad){ finishSave(bad,e.id); },{expected:baseToken}); }
+  function doSave(approve){
+    if(busy||locked) return; var note=document.getElementById("rNote").value;
+    if(isNew&&!st.who){ err.textContent=t("pickWorker"); return; }
+    var blocks=st.blocks.filter(function(b){ return b.in||b.out; });
+    if(!validBlocks(blocks,true)){ err.textContent=t("invalidTimes"); return; }
+    var open=blocks.some(function(b){ return !b.out; }), nh=!!(st.who&&st.who.noHours), code=nh?"":st.code;
+    if(!open&&!code&&!nh){ err.textContent=t("codeFirst"); return; }
+    if(approve&&open){ err.textContent=t("outTime"); return; }
+    var date=p?p.date:revDay, list=blocks.map(function(b){
+      // Match signatures to their original block object, never to the new array index.
+      var o=b.source||{}, sg={in:b.in,inAt:o.in===b.in&&o.inAt?o.inAt:isoAt(date,b.in),out:b.out||null,outAt:b.out?(o.out===b.out&&o.outAt?o.outAt:isoAt(date,b.out)):null};
+      if(o.sigIn) sg.sigIn=cloneRecord(o.sigIn); if(o.sigOut&&b.out) sg.sigOut=cloneRecord(o.sigOut); return sg;
+    });
+    var now=iso(new Date()), rec, id;
+    if(isNew){ id=keyFor(st.who.id,date); rec=withSegs({workerId:st.who.id,name:st.who.name,agency:st.who.agency,job:JOB.code,jobName:JOB.name,date:date,code:code||null,note:note,tz:offsetStr(new Date()),source:"office",editedAt:now,editedBy:SUP||"Office",approved:false},list); if(nh) rec.noHours=true; auditEvent(rec,"office_created"); }
+    else {
+      id=e.id; rec=cloneRecord(p); delete rec._id; delete rec.codes;
+      var changed=JSON.stringify(segs(p).map(function(x){ return [x.in,x.out||null]; }))!==JSON.stringify(list.map(function(x){ return [x.in,x.out]; }))||code!==codeOf(p)||note!==(p.note||"");
+      if(changed){
+        if(!rec.orig) rec.orig={segments:cloneRecord(segs(p)),code:codeOf(p)||null};
+        auditEvent(rec,"office_edited",{before:{segments:cloneRecord(segs(p)),code:codeOf(p)||null,note:p.note||""}});
+        invalidateApproval(rec,"office_edit",SUP||"Office"); withSegs(rec,list); rec.code=code||null; rec.note=note; rec.editedAt=now; rec.editedBy=SUP||"Office";
+        rec.signatureReviewRequired=!!(p.signatureReviewRequired||lastSigAt(p)); delete rec.sentAt;
+      }
+    }
+    if(approve){
+      var blockers=approvalBlockers(rec); if(blockers.length){ err.textContent=blockers.map(t).join(" · "); return; }
+      var exceptions=approvalExceptions(rec), reason=document.getElementById("exceptionReason").value.trim();
+      if(exceptions.length&&(!check.checked||reason.length<10)){
+        exception.hidden=false; reasons.textContent=exceptions.map(t).join(" · "); err.textContent=t("exceptionNeeded"); exception.scrollIntoView({block:"center"}); return;
+      }
+      approveRecord(rec,exceptions.length?reason:null);
+    }
+    rec.updatedAt=now; setBusy(true);
+    commitRev(id,rec,function(bad){ finishSave(bad,id); },isNew?{createOnly:true}:{expected:baseToken});
+  }
+}
+
+
+/* =====================================================================
+   EXPORT
+   ===================================================================== */
+function csvCell(v){ v=(v===null||v===undefined)?"":String(v); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }
+function buildExport(){
+  var all=allPunches().map(function(p){ var q=Object.assign({},p); delete q._id; return q; });
+  Object.keys(punches).forEach(function(k){ if(!all.some(function(p){ return p.date+"__"+p.workerId===k; })) all.push(punches[k]); });
+  all.sort(function(a,b){ return (a.date+a.agency+a.name)<(b.date+b.agency+b.name)?-1:1; });
+  return { kind:"pioneer-signin-export", version:10, mode:PRACTICE?"practice":"live", appVersion:"16.0", exported:iso(new Date()), job:JOB, device:(navigator.userAgent||"").slice(0,80), roster:roster, walkons:walkons, codes:codes, punches:all };
+}
+function toCsv(rows){
+  var head=["date","name","agency","job","first_in","last_out","blocks","minutes_on_site","cost_code","attendance_only","note","approved","approved_by","edited_by","orig_blocks","orig_code","walk_on","voided","source","signed","changed_after_sign","approval_exception","approval_exception_reason","approval_exception_by","approval_exception_at","record_mode"];
+  return [head.join(",")].concat(rows.map(function(p){ var o=p.orig||{}; return [p.date,p.name,p.agency,p.job,p.inLocal,p.outLocal,segs(p).map(function(x){ return x.in+"-"+(x.out||""); }).join("|"),onSiteMins(p),codeOf(p),p.noHours?"Y":"",p.note,p.approved?"Y":"",p.approvedBy,p.editedBy,(o.segments||[]).map(function(x){ return x.in+"-"+(x.out||""); }).join("|"),o.code,p.walkOn?"Y":"",p.voided?"Y":"",p.source,sigState(p)==="full"?"Y":sigState(p)==="partial"?"partial":"",editedAfterSign(p)?"Y":"",p.approvalException?"Y":"",p.approvalException&&p.approvalException.reason,p.approvalException&&p.approvalException.by,p.approvalException&&p.approvalException.at,PRACTICE?"practice":"live"].map(csvCell).join(","); })).join("\n");
+}
+function markSent(){
+  var now=iso(new Date()); LAST_SENT=now; LS.set("lastSent",now);
+  allDays().forEach(function(d){ var c=LS.get("cache."+d,{}), ch=false; Object.keys(c).forEach(function(k){ if(!isOpen(c[k])&&!c[k].sentAt){ c[k].sentAt=now; ch=true; } }); if(ch) LS.set("cache."+d,c); });
+  punches=LS.get("cache."+today(),punches); rebuildRecent(); paint();
+}
+function downloadFullRecord(){ var k=packageExport(); downloadBlob(k.base+".json",k.jsonBlob); crewMsg=t("fullRecordSaved").replace("$",k.base+".json"); drawCrew(); }
+function downloadBlob(name,blob){ var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },4000); }
+var sendPkg=null;
+function packageExport(){
+  var ex=buildExport(), stamp=today(), base=(JOB.name||"job").toLowerCase().replace(/[^a-z0-9]+/g,"")+"-signin-"+(PRACTICE?"practice-":"")+stamp;
+  var csv=toCsv(ex.punches), json=JSON.stringify(ex);
+  var jsonBlob=new Blob([json],{type:"application/json"}), csvBlob=new Blob([csv],{type:"text/csv"});
+  var files=[]; try{ files=[new File([jsonBlob],base+".json",{type:"application/json"}), new File([csvBlob],base+".csv",{type:"text/csv"})]; }catch(e){}
+  var days={}; ex.punches.forEach(function(p){ days[p.date]=1; });
+  return { ex:ex, stamp:stamp, base:base, csv:csv, jsonBlob:jsonBlob, csvBlob:csvBlob, files:files, nDays:Object.keys(days).length,
+           title:JOB.name+" "+JOB.code+" sign-in · "+stamp,
+           canShare: !!(navigator.share&&navigator.canShare&&files.length&&navigator.canShare({files:files})) };
+}
+function sendToOffice(){ sendPkg=packageExport(); drawSend("ready",""); document.getElementById("veil").hidden=false; clearTimeout(sheetTimer); }
+function drawSend(state,msg){
+  var s=document.getElementById("sheet"), k=sendPkg; s.className="sheet"; s.textContent=""; s.onclick=null;
+  s.appendChild(el("p","kicker",t("office")+(SUP?"  —  "+SUP:""))); s.appendChild(el("h2","md",t("sendTitle")));
+  var info=el("div","audit");
+  info.appendChild(el("b",null,t("sendWhat").replace("$1",k.ex.punches.length).replace("$2",k.nDays)+" ")); info.appendChild(el("span","mono",k.base+".csv"));
+  info.appendChild(el("br")); info.appendChild(el("b",null,t("sendTo")+" ")); info.appendChild(el("span","mono",officeEmail()));
+  s.appendChild(info);
+  if(msg) s.appendChild(el("div",state==="ready"?"err":"ok",msg));
+  if(state==="ready"){
+    var opts=el("div","sect");
+    function opt(key,sub,cls,fn,disabled){ var b=el("button","row"); if(cls) b.classList.add(cls); var who=el("span","who"); who.appendChild(el("b",null,t(key))); who.appendChild(el("span",null,t(sub))); b.appendChild(who); b.disabled=!!disabled; if(disabled) b.classList.add("off"); b.addEventListener("click",fn); opts.appendChild(b); }
+    /* Isaac, 9/21: email only. The share sheet and the bare "just save the files" choice are gone —
+       on a PC the share dialog was confusing and nobody used Save. doShare/doSave are left in the
+       file, unreferenced, so putting either back is a one-line change. */
+    opt("optEmail","optEmailSub",null,doEmail);
+    s.appendChild(opts);
+    var acts=el("div","acts tight"); var cl=abtn("no wide","cancel"); cl.addEventListener("click",closeSheet); acts.appendChild(cl); s.appendChild(acts);
+  } else {
+    s.appendChild(el("div","eyebrow",t("didItGo")));
+    var acts2=el("div","acts"); var yes=abtn("go","yesSent"); yes.addEventListener("click",function(){ markSent(); closeSheet(); }); var no=abtn("no","notYet"); no.addEventListener("click",closeSheet); acts2.appendChild(no); acts2.appendChild(yes); s.appendChild(acts2);
+  }
+}
+function doShare(){
+  var k=sendPkg;
+  navigator.share({files:k.files,title:k.title,text:k.title+" — "+t("sendTo")+" "+officeEmail()})
+    .then(function(){ drawSend("done",t("optShare")+" ✓"); })
+    .catch(function(){ drawSend("ready",t("shareClosed")); });
+}
+function saveBoth(){ var k=sendPkg; downloadBlob(k.base+".json",k.jsonBlob); setTimeout(function(){ downloadBlob(k.base+".csv",k.csvBlob); },500); }
+function doEmail(){
+  /* Isaac, 9/21: ONE file, the CSV. Chrome allows a single download per page load and silently
+     denies the rest, which is why his first export produced only one file. The full JSON record
+     (signatures, block detail) is still one tap away in Crew - see downloadFullRecord. */
+  if(PRACTICE){ drawSend("ready",t("practiceEmail")); return; }
+  var k=sendPkg; downloadBlob(k.base+".csv",k.csvBlob);
+  var body=t("emailBodyHead")+"\n\n"+t("attachThese")+"\n  "+k.base+".csv\n\n";
+  if(k.csv.length<=8000) body+=k.csv; else body+="("+k.ex.punches.length+" punches — too many to include here; the attached CSV has them all.)";
+  var href="mailto:"+encodeURIComponent(officeEmail())+"?subject="+encodeURIComponent(k.title)+"&body="+encodeURIComponent(body);
+  setTimeout(function(){ var a=document.createElement("a"); a.href=href; a.rel="noopener"; document.body.appendChild(a); a.click(); a.remove(); },900);
+  drawSend("done",t("emailOpened").replace("$",officeEmail()));
+}
+function doSave(){ saveBoth(); drawSend("done",t("savedTwo").replace("$",officeEmail())); }
+function restoreFromFile(file){
+  var r=new FileReader(); r.onload=function(){ try{
+    var ex=JSON.parse(r.result); if(ex.kind!=="pioneer-signin-export") throw 0;
+    if((ex.mode==="practice")!==PRACTICE){ crewMsg=t("wrongExportMode"); crewEdit=null; drawCrew(); return; }
+    (ex.roster||[]).forEach(function(w){ if(!roster.some(function(x){ return x.id===w.id||foldName(x.name)===foldName(w.name); })) roster.push(w); }); roster.sort(function(a,b){ return (a.sortOrder||0)-(b.sortOrder||0)||String(a.name).localeCompare(String(b.name)); }); LS.set("roster",roster);
+    if(ex.codes&&ex.codes.length){ codes=ex.codes; LS.set("codes",codes); }
+    (ex.walkons||[]).forEach(function(w){ if(!walkons.some(function(x){ return x.id===w.id; })) walkons.push(w); }); LS.set("walkons",walkons);
+    if(ex.job&&!LS.get("job",null)){ JOB=ex.job; LS.set("job",JOB); }
+    var n=0; (ex.punches||[]).forEach(function(p){ var k=p.date+"__"+p.workerId, c=LS.get("cache."+p.date,{}); if(!c[k]){ c[k]=p; n++; LS.set("cache."+p.date,c); } });
+    punches=LS.get("cache."+today(),{}); LS.set("cacheToday",punches); rebuildRecent(); paint(); crewMsg=t("restored")+": "+n; crewEdit=null; drawCrew();
+  }catch(e){ crewMsg=t("saveFailed"); crewEdit=null; drawCrew(); } }; r.readAsText(file);
+}
+function exportWeek(){
+  if(!CLOUD){ sendToOffice(); return; }
+  var all={}; for(var i=0;i<8;i++){ var d=shiftDay(revDay,-i),c=LS.get("cache."+d,{}); Object.keys(c).forEach(function(k){ all[k]=c[k]; }); } Object.keys(punches).forEach(function(k){ all[k]=punches[k]; });
+  var rows=Object.keys(all).map(function(k){ return all[k]; }).sort(function(a,b){ return (a.date+a.agency+a.name)<(b.date+b.agency+b.name)?-1:1; });
+  var csv=toCsv(rows);
+  if(!window.claude||!claude.use){ alert(csv); return; }
+  claude.use("downloads").then(function(dl){ if(!dl){ alert(csv); return; } dl.save({filename:"oyster-signin-"+revDay+".csv",data:csv}).catch(function(){}); }).catch(function(){ alert(csv); });
+}
+
+/* =====================================================================
+   WIRING
+   ===================================================================== */
+document.getElementById("lang").hidden=true;
+document.getElementById("undoChip").addEventListener("click",undoLast);
+document.getElementById("backBtn").addEventListener("click",function(){
+  var previousCompany=view.agency;
+  clearTimeout(homeTimer); view.agency=null; view.auto=false; hideFlash(); paint();
+  window.scrollTo(0,0);
+  /* Keep keyboard users at the company they left without changing the crew order. */
+  var companyButtons=document.querySelectorAll("#main .agency");
+  for(var i=0;i<companyButtons.length;i++){
+    var companyName=companyButtons[i].querySelector(".ag");
+    if(companyName&&companyName.textContent===previousCompany){
+      try{ companyButtons[i].focus({preventScroll:true}); }catch(e){ companyButtons[i].focus(); }
+      break;
+    }
+  }
+});
+document.getElementById("openCrew").addEventListener("click",function(){ openPin("check",openCrew); });
+document.getElementById("openReview").addEventListener("click",function(){ openPin("check",openReview); });
+document.getElementById("veil").addEventListener("click",function(e){ if(e.target===this) closeSheet(); });
+document.getElementById("pinVeil").addEventListener("click",function(e){ if(e.target===this) closePin(); });
+document.getElementById("crewVeil").addEventListener("click",function(e){ if(e.target===this) closeCrew(); });
+document.getElementById("revVeil").addEventListener("click",function(e){ if(e.target===this) closeReview(); });
+/* The band no longer swallows taps (pointer-events:none in CSS), so the next man can start straight
+   away. Any tap on the board also clears it early, so it never sits over a tile he wants. */
+document.getElementById("main").addEventListener("pointerdown",function(){ hideFlash(); });
+document.addEventListener("keydown",function(e){ if(e.key==="Escape"){
+  if(draft&&draft.codeMenuOpen){ e.preventDefault(); setCodeMenu(false); var toggle=document.getElementById("codeToggle"); if(toggle) toggle.focus(); return; }
+  closeSheet(); hideFlash(); closePin(); closeCrew(); closeReview();
+} });
+document.getElementById("main").addEventListener("click",armHome);
+if(PRACTICE){ var banner=document.getElementById("practiceBanner"); banner.hidden=false; banner.appendChild(document.createTextNode(t("practiceTitle"))); var liveLink=el("a",null,t("backLive")); var liveUrl=new URL(window.location.href); liveUrl.searchParams.delete("practice"); liveLink.href=liveUrl.href; banner.appendChild(liveLink); document.title="PRACTICE · "+document.title; }
+window.addEventListener("resize",function(){ if(draft&&draft.sig) requestAnimationFrame(function(){ if(draft&&draft.sig) draft.sig.resize(); }); });
+window.addEventListener("storage",function(e){
+  if(CLOUD||!e.key||e.key!==STORE_PREFIX+"cache."+today()) return;
+  punches=LS.get("cache."+today(),{}); rebuildRecent(); paint(); refreshOffice();
+});
+paintClock(); setInterval(paintClock,1000); paint(); setInterval(paintUndo,5000); setInterval(paintSync,5000);
+var boardDay=today(); setInterval(function(){ if(today()!==boardDay){ boardDay=today(); punches=LS.get("cache."+boardDay,{}); LS.set("cacheToday",punches); closeSheet(); hideFlash(); view.agency=null; paint(); } },30000);
+
+document.getElementById("restoreFile").addEventListener("change",function(){ if(this.files&&this.files[0]) restoreFromFile(this.files[0]); this.value=""; });
+if(!CLOUD){ rebuildRecent(); paint();
+  /* navigator.storage.persist() returns a PROMISE - a try/catch never sees its rejection, and in a
+     sandboxed context it rejects with "cannot access storage". That unhandled rejection is what put
+     "A script didn't run correctly on this page" on Isaac's screen on 9/21. Catch it properly. */
+  try{ if(navigator.storage&&navigator.storage.persist){ var pp=navigator.storage.persist(); if(pp&&pp.catch) pp.catch(function(){}); } }catch(e){}
+}
+paintStore();
+/* Nothing in this page is worth crashing the host viewer over. */
+window.addEventListener("unhandledrejection",function(e){ try{ console.warn("swallowed rejection:",e.reason); e.preventDefault(); }catch(_){} });
+/* If the context cannot save, warn before a Back press or a reload throws the day away. */
+window.addEventListener("beforeunload",function(e){
+  if(CLOUD||STORE_OK) return;
+  var n=0; try{ n=Object.keys(punches||{}).length; }catch(_){}
+  if(!n) return;
+  e.preventDefault(); e.returnValue="";
+});
+(function(){
+  if(!CLOUD){ paintSync(); return; }
+  if(claude.permissions&&claude.permissions.request){ try{ claude.permissions.request(["db","downloads"]); }catch(e){} }
+  claude.use("db").then(function(handle){
+    db=handle; if(!db){ paintSync(); return; } flush(); setInterval(flush,15000);
+    db.collection("roster").onSnapshot(function(snap){ var list=[]; snap.docs.forEach(function(doc){ var v=doc.data(); if(v) list.push(Object.assign({id:doc.id},v)); }); list.sort(function(a,b){ return (a.sortOrder||0)-(b.sortOrder||0)||String(a.name).localeCompare(String(b.name)); }); roster=list; LS.set("roster",roster); paint(); refreshOffice(); },function(e){ console.error("roster",e&&e.code); });
+    db.collection("walkons").onSnapshot(function(snap){ var list=[]; snap.docs.forEach(function(doc){ var v=doc.data(); if(v) list.push(Object.assign({id:doc.id},v)); }); walkons=list; LS.set("walkons",walkons); paint(); refreshOffice(); },function(e){ console.error("walkons",e&&e.code); });
+    db.collection("codes").onSnapshot(function(snap){ var list=[]; snap.docs.forEach(function(doc){ var v=doc.data(); if(v) list.push(Object.assign({code:doc.id},v)); }); list.sort(function(a,b){ return String(a.code)<String(b.code)?-1:1; }); codes=list; LS.set("codes",codes); paint(); if(draft&&!draft.walk) drawSheet(); refreshOffice(); },function(e){ console.error("codes",e&&e.code); });
+    db.collection("punches").orderBy("date","desc").limit(120).onSnapshot(function(snap){
+      var mine={},open=[],td=today(),rec=[];
+      snap.docs.forEach(function(doc){ var v=doc.data(); if(!v) return; rec.push(v); if(v.date===td) mine[doc.id]=v; else { if(isOpen(v)&&!v.voided) open.push(v); var c=LS.get("cache."+v.date,{}); c[doc.id]=v; LS.set("cache."+v.date,c); } });
+      open.sort(function(a,b){ return a.date<b.date?1:-1; }); punches=mine; stale=open.slice(0,6); recent=rec; LS.set("recent",rec.slice(0,120)); LS.set("cacheToday",punches); LS.set("cache."+td,punches);
+      paint(); if(!document.getElementById("revVeil").hidden&&revDay===td&&!revEdit) loadReview();
+    },function(e){ console.error("punches",e&&e.code); });
+    db.doc("config/security").get().then(function(doc){ var v=doc&&doc.exists?doc.data():null; if(v&&(v.pins||v.pin)){ SEC=v; LS.set("sec",SEC); } }).catch(function(){});
+    db.doc("config/job").get().then(function(doc){ var v=doc&&doc.exists?doc.data():null; if(v&&v.code){ JOB=v; LS.set("job",JOB); paint(); } }).catch(function(){});
+  }).catch(function(){ paintSync(); });
+})();
+</script>
+</body></html>
