@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="17.1-pinfix — 2026-09-23">
+<meta name="app-version" content="17.2-csvfix — 2026-09-23">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0E1929">
 <meta name="application-name" content="Sign-In Board">
-<meta name="application-version" content="17.1-pinfix">
+<meta name="application-version" content="17.2-csvfix">
 <meta name="apple-mobile-web-app-title" content="Sign-In">
 <title>TEST — Pioneer Synced Sign-In Board</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230E1929'/%3E%3Cpath d='M36 6 16 36h14l-4 22 22-32H34z' fill='%236FA6F2'/%3E%3C/svg%3E">
@@ -459,7 +459,7 @@ body.sync-busy #sheet .acts button{pointer-events:none;opacity:.7}
 <p class="sync-small"><a href="./index.html">Return to your unchanged, existing board</a></p>
 </section>
 <div class="wrap" id="syncedBoard" hidden>
-<div class="sync-notice" id="syncTestBanner"><b>SYNCED TEST BOARD — fictional workers only · v17.1 PIN fix</b><br><span lang="es">TABLERO DE PRUEBA — solo trabajadores ficticios.</span><br><small>Online-only test. No real attendance imports. Jobsite time: Eastern.</small></div>
+<div class="sync-notice" id="syncTestBanner"><b>SYNCED TEST BOARD — fictional workers only · v17.2 CSV fix (PIN fix retained)</b><br><span lang="es">TABLERO DE PRUEBA — solo trabajadores ficticios.</span><br><small>Online-only test. No real attendance imports. Jobsite time: Eastern.</small></div>
 <div class="sync-account"><span id="syncAccountLabel"></span><button id="syncSignout" type="button">Sign out of test / Cerrar sesión</button></div>
 <div id="syncSetup" class="sync-notice" hidden><b>Start the shared test crew</b><p>This adds only fictional test workers and cost-code descriptions to the separate test area.</p><button id="syncSeed" class="sync-button">Create test crew</button></div>
 <div id="syncMessage" class="sync-notice" role="status" aria-live="polite" hidden></div>
@@ -1772,9 +1772,34 @@ function buildExport(){
   all.sort(function(a,b){ return (a.date+a.agency+a.name)<(b.date+b.agency+b.name)?-1:1; });
   return { kind:"pioneer-signin-export", version:10, mode:PRACTICE?"practice":"live", appVersion:"16.0", exported:iso(new Date()), job:JOB, device:(navigator.userAgent||"").slice(0,80), roster:roster, walkons:walkons, codes:codes, punches:all };
 }
+/* v17.2: CSV-only metadata. Never change a punch, signature, approval, or duration
+   while preparing an export. Preserve existing columns/order and append explicit
+   record statuses so signed-so-far is not mistaken for a completed workday. */
+function csvRecordStatus(p,signatureState){
+  var count=segs(p).length, open=count>0&&isOpen(p);
+  return {
+    attendance:p.voided?"VOIDED":!count?"NO_PUNCHES":open?"ON_SITE":"SIGNED_OUT",
+    minutes:p.voided?"VOIDED_NOT_FOR_TOTALS":!count?"NO_PUNCHES":open?"COMPLETED_BLOCKS_ONLY":"ALL_BLOCKS_CLOSED",
+    signatures:!count?"NO_RECORDED_PUNCHES":signatureState==="full"?
+      (open?"OPEN_RECORD_SIGNED_SO_FAR":"ALL_RECORDED_PUNCHES_SIGNED"):
+      signatureState==="partial"?"MISSING_RECORDED_SIGNATURES":"NO_SIGNATURES"
+  };
+}
 function toCsv(rows){
-  var head=["date","name","agency","job","first_in","last_out","blocks","minutes_on_site","cost_code","attendance_only","note","approved","approved_by","edited_by","orig_blocks","orig_code","walk_on","voided","source","signed","changed_after_sign","approval_exception","approval_exception_reason","approval_exception_by","approval_exception_at","record_mode"];
-  return [head.join(",")].concat(rows.map(function(p){ var o=p.orig||{}; return [p.date,p.name,p.agency,p.job,p.inLocal,p.outLocal,segs(p).map(function(x){ return x.in+"-"+(x.out||""); }).join("|"),onSiteMins(p),codeOf(p),p.noHours?"Y":"",p.note,p.approved?"Y":"",p.approvedBy,p.editedBy,(o.segments||[]).map(function(x){ return x.in+"-"+(x.out||""); }).join("|"),o.code,p.walkOn?"Y":"",p.voided?"Y":"",p.source,sigState(p)==="full"?"Y":sigState(p)==="partial"?"partial":"",editedAfterSign(p)?"Y":"",p.approvalException?"Y":"",p.approvalException&&p.approvalException.reason,p.approvalException&&p.approvalException.by,p.approvalException&&p.approvalException.at,PRACTICE?"practice":"live"].map(csvCell).join(","); })).join("\n");
+  var head=["date","name","agency","job","first_in","last_out","blocks","minutes_on_site","cost_code","attendance_only","note","approved","approved_by","edited_by","orig_blocks","orig_code","walk_on","voided","source","signed","changed_after_sign","approval_exception","approval_exception_reason","approval_exception_by","approval_exception_at","record_mode","attendance_status","minutes_status","signature_status"];
+  return [head.join(",")].concat(rows.map(function(p){
+    var o=p.orig||{}, signatureState=sigState(p), status=csvRecordStatus(p,signatureState);
+    return [p.date,p.name,p.agency,p.job,p.inLocal,p.outLocal,
+      segs(p).map(function(x){return x.in+"-"+(x.out||"");}).join("|"),
+      onSiteMins(p),codeOf(p),p.noHours?"Y":"",p.note,p.approved?"Y":"",p.approvedBy,p.editedBy,
+      (o.segments||[]).map(function(x){return x.in+"-"+(x.out||"");}).join("|"),o.code,
+      p.walkOn?"Y":"",p.voided?"Y":"",p.source,
+      signatureState==="full"?"Y":signatureState==="partial"?"partial":"",editedAfterSign(p)?"Y":"",
+      p.approvalException?"Y":"",p.approvalException&&p.approvalException.reason,
+      p.approvalException&&p.approvalException.by,p.approvalException&&p.approvalException.at,
+      "cloud-test-only",status.attendance,status.minutes,status.signatures
+    ].map(csvCell).join(",");
+  })).join("\n");
 }
 function markSent(){
   var now=iso(new Date()); LAST_SENT=now; LS.set("lastSent",now);
