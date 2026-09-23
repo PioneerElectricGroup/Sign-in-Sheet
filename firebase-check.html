@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0E1929">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>Pioneer — Firebase Connection Check</title>
+<style>
+:root{color-scheme:dark;--bg:#0E1929;--card:#162640;--field:#20334F;--edge:#69809E;--text:#F3F5F8;--muted:#BDCCDF;--blue:#91BDFA;--green:#7FE59B;--red:#FFB8A6;--yellow:#FFE09A}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:18px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}main{max-width:940px;margin:auto;padding:28px 20px 45px}h1{font-size:clamp(28px,5vw,38px);line-height:1.15;margin:8px 0 14px}h2{font-size:23px;margin:0 0 14px}p{margin:8px 0 15px}header{margin-bottom:22px}.eyebrow{font-size:14px;font-weight:750;letter-spacing:.1em;text-transform:uppercase;color:var(--blue)}.muted,small{color:var(--muted)}.card{background:var(--card);border:1px solid var(--edge);border-radius:14px;padding:24px;margin-top:18px}.notice{border-left:5px solid var(--blue);background:#1B2F4E;padding:16px 18px;border-radius:9px;margin:18px 0}.small{font-size:15px}label{font-weight:650;display:block;margin:14px 0 7px}input{font:inherit;width:100%;min-height:54px;border:1px solid var(--edge);border-radius:8px;background:var(--field);color:var(--text);padding:12px}input::placeholder{color:#B2C3D9}input[type=checkbox]{width:24px;height:24px;min-height:24px;accent-color:var(--blue);margin:0;flex:none}.check{display:flex;align-items:center;gap:12px;min-height:46px;font-weight:400}.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:18px}button{min-height:54px;font:inherit;font-weight:700;padding:12px 20px;border:1px solid var(--blue);border-radius:9px;background:var(--blue);color:var(--bg);cursor:pointer}button.secondary{background:var(--field);color:var(--text);border-color:var(--edge)}button:disabled{opacity:.55;cursor:not-allowed}button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(--yellow);outline-offset:3px}button.grow{flex:1}.status{border:1px solid var(--edge);border-radius:9px;padding:13px 15px;margin:12px 0;overflow-wrap:anywhere}.status[data-level=good]{color:var(--green);border-color:var(--green)}.status[data-level=bad]{color:var(--red);border-color:var(--red)}.status[data-level=wait]{color:var(--yellow);border-color:var(--yellow)}.row{display:grid;grid-template-columns:1fr 1.6fr;gap:10px;border-top:1px solid var(--edge);padding:14px 0;overflow-wrap:anywhere}.row:first-child{border-top:0}.who{font-weight:700}.stamp{display:block;color:var(--muted);font-size:14px;margin-top:4px}code{font:15px/1.5 ui-monospace,Consolas,monospace;overflow-wrap:anywhere}a{color:var(--blue)}[hidden]{display:none!important}.password-row{display:flex;gap:9px}.password-row input{min-width:0}.password-row button{padding:10px 14px;font-size:15px}footer{margin-top:24px;font-size:15px;color:var(--muted)}@media(max-width:550px){main{padding:22px 14px}.card{padding:18px}.row{grid-template-columns:1fr}.actions button{flex:1 1 100%}}
+</style>
+</head>
+<body>
+<main>
+<header><div class="eyebrow">Pioneer Electric Group · Setup check 1</div><h1>Check the shared connection</h1><p class="muted">Confirm the two approved logins before connecting the attendance board.</p></header>
+<div class="notice"><strong>TEST PAGE — no employee punches.</strong><br>This is separate from <code>index.html</code>. It does not read or import the attendance saved on your iPad. It only shares short test messages.</div>
+<div id="startup" class="status" data-level="wait" role="status" aria-live="polite">Loading Firebase. An internet connection is required for this check…</div>
+<section id="loginCard" class="card" hidden>
+<h2>Sign in to this test</h2><p class="small muted">Use the Firebase board account you created, not your Outlook password. Use management on your computer and the separate tablet account on the iPad. Keep both passwords private.</p>
+<form id="loginForm">
+<label for="email">Board account email</label><input id="email" type="email" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+<label for="password">Board account password</label><div class="password-row"><input id="password" type="password" autocomplete="current-password" required><button type="button" id="showPassword" class="secondary" aria-pressed="false">Show</button></div>
+<label class="check"><input id="remember" type="checkbox">Remember this test login on this trusted device</label>
+<p class="small muted">Do not remember the management login on a tablet workers share.</p>
+<div id="loginError" class="status" data-level="bad" role="alert" hidden></div>
+<div class="actions"><button id="loginButton" type="submit" class="grow">Sign in</button></div>
+</form>
+</section>
+<section id="connectedCard" class="card" hidden>
+<h2 id="accountTitle">Checking account…</h2><p id="accountEmail" class="muted"></p>
+<div id="connectionStatus" class="status" data-level="wait" role="status" aria-live="polite">Checking the test database…</div>
+<div id="permissionStatus" class="status" data-level="wait" role="status" aria-live="polite">Checking account permissions…</div>
+<form id="sendForm">
+<label for="message">Test message</label><input id="message" maxlength="120" required placeholder="Example: Office test 1" autocomplete="off">
+<div class="actions"><button id="sendButton" class="grow" type="submit" disabled>Send test update</button><button type="button" id="signOutButton" class="secondary">Sign out of this test</button></div>
+</form>
+<div id="sendStatus" class="status" role="status" aria-live="polite" hidden></div>
+<h2 style="margin-top:26px">Latest shared test messages</h2><p class="small muted">Open this same page on a second device. A confirmed message sent here should appear there without refreshing.</p>
+<div id="messages"><p class="muted">No shared test messages yet.</p></div>
+</section>
+<section class="card small">
+<strong>What this check does not prove</strong>
+<p class="muted">This verifies test-message access and communication only. It does not implement attendance syncing, offline punch handling, imports, or final kiosk restrictions. Do not enter employee information here. The actual sign-in board remains unchanged.</p>
+<a href="./index.html">Return to the existing sign-in board</a>
+</section>
+<footer>Project: <code>sign-in-sheet-58d6a</code> · No analytics, email sender, or paid cloud functions in this test.</footer>
+</main>
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore-compat.js"></script>
+<script>
+"use strict";
+(function(){
+  // Public web-app identifiers from Isaac's Firebase configuration screen.
+  // This is NOT a service-account credential. No account password is included.
+  const config = {
+    apiKey: "AIzaSyDRqYBU-U1SJjKXFsvHvQk5fNhvT6HyfqQ",
+    authDomain: "sign-in-sheet-58d6a.firebaseapp.com",
+    projectId: "sign-in-sheet-58d6a",
+    storageBucket: "sign-in-sheet-58d6a.firebasestorage.app",
+    messagingSenderId: "682748387890",
+    appId: "1:682748387890:web:8bf9bcce570d2a513e122b"
+  };
+  const MANAGEMENT = "d3GUR1ht0DQSss1mS5t9jOgChfq2";
+  const TABLET = "hnLcbI2FI1eeQhhmxjxXnVpgwpG2";
+  const $ = id => document.getElementById(id);
+  let auth, db, active = null, role = "", unsubscribe = null, epoch = 0;
+  let readReady = false, permissionsReady = false, writing = false;
+  let permissionFailure = false;
+  function showStatus(id, text, level) {
+    const e = $(id); e.textContent = text; e.dataset.level = level || "wait"; e.hidden = false;
+  }
+  function resetView() {
+    if(unsubscribe) unsubscribe(); unsubscribe = null;
+    readReady = false; permissionsReady = false; permissionFailure = false;
+    $("messages").replaceChildren(); $("connectedCard").hidden = true;
+    $("sendStatus").hidden = true; $("loginCard").hidden = false;
+    $("startup").hidden = true; $("password").value = "";
+    $("password").type = "password"; $("showPassword").textContent = "Show";
+    $("showPassword").setAttribute("aria-pressed", "false");
+    $("loginButton").disabled = false;
+  }
+  function updateSend() {
+    $("sendButton").disabled = !active || !readReady || !permissionsReady || permissionFailure || writing || !navigator.onLine;
+  }
+  function friendly(error) {
+    const c = error && error.code || "unknown";
+    const messages = {
+      "auth/invalid-credential":"The email or board password was not accepted. Use the new Firebase board password, not your Outlook password.",
+      "auth/wrong-password":"The board password was not accepted.",
+      "auth/user-not-found":"No Firebase board account was found for that email.",
+      "auth/invalid-email":"Check the email address and try again.",
+      "auth/user-disabled":"This board account is disabled in Firebase.",
+      "auth/operation-not-allowed":"Enable Email/Password in Firebase Authentication, then try again.",
+      "auth/network-request-failed":"Firebase could not be reached. Check the internet connection and retry.",
+      "auth/too-many-requests":"Firebase temporarily blocked repeated attempts. Wait before trying again.",
+      "auth/invalid-api-key":"The Firebase web configuration needs checking. Send this error code, not your password.",
+      "auth/unauthorized-domain":"Check that this GitHub domain appears in Firebase Authentication → Settings → Authorized domains.",
+      "auth/web-storage-unsupported":"The browser is blocking login storage. Use a normal browser tab with site storage allowed.",
+      "permission-denied":"The database rejected access. Confirm the connection-test rules were published for this project. Do not change the rules to public access.",
+      "unavailable":"The database cannot be reached right now. Check your connection and retry.",
+      "resource-exhausted":"The Firebase usage limit was reached. Stop testing and check usage; do not enable billing just to continue this check."
+    };
+    return (messages[c] || "The connection check could not finish. Share the error code shown here, not a password.") + " [" + c + "]";
+  }
+  function renderMessages(snap) {
+    const host = $("messages"); host.replaceChildren();
+    if(!snap.docs.length){const p=document.createElement("p");p.className="muted";p.textContent="No shared test messages yet. Send the first one above.";host.append(p);return;}
+    const docs = snap.docs.slice().sort((a,b) => a.id === MANAGEMENT ? -1 : b.id === MANAGEMENT ? 1 : a.id.localeCompare(b.id));
+    docs.forEach(doc => {
+      const data = doc.data(); const row = document.createElement("div"); row.className="row";
+      const who = document.createElement("div");who.className="who";who.textContent=doc.id===MANAGEMENT?"Management account":doc.id===TABLET?"Jobsite iPad account":"Unexpected test record";
+      const content = document.createElement("div");const text=document.createElement("span");text.textContent=String(data.message||"");
+      const when=document.createElement("span");when.className="stamp";
+      const pending=doc.metadata&&doc.metadata.hasPendingWrites;
+      const timestamp=data.updatedAt;
+      when.textContent = pending ? "Not confirmed by server yet" : timestamp&&typeof timestamp.toDate==="function" ? "Server time: "+timestamp.toDate().toLocaleString() : "Server time not available yet";
+      content.append(text,when); row.append(who,content);host.append(row);
+    });
+  }
+  async function verifyPermissions(user, currentEpoch) {
+    try {
+      const ref=db.doc("connectionPrivate/permission-probe");
+      if(role==="management") {
+        // Reading a nonexistent doc is sufficient to test authorization; no write is needed.
+        await ref.get({source:"server"});
+        if(currentEpoch!==epoch)return;
+        permissionsReady=true;
+        showStatus("permissionStatus","Management permission check passed.","good");
+      } else {
+        let readBlocked=false, writeBlocked=false;
+        try { await ref.get({source:"server"}); } catch(e) {if(e.code==="permission-denied")readBlocked=true;else throw e;}
+        // Only harmless diagnostic data is ever attempted, never attendance or a setting.
+        try { await ref.set({diagnostic:"This tablet write should be rejected",senderUid:user.uid,updatedAt:firebase.firestore.FieldValue.serverTimestamp()}); }
+        catch(e) {if(e.code==="permission-denied")writeBlocked=true;else throw e;}
+        if(currentEpoch!==epoch)return;
+        if(!readBlocked||!writeBlocked){
+          permissionFailure=true;
+          showStatus("permissionStatus","STOP: the tablet reached the management-only test area. Restore the supplied rules. Do not enter real attendance.","bad");
+        } else {
+          permissionsReady=true;
+          showStatus("permissionStatus","Tablet restriction check passed: management-only test reads and writes were rejected.","good");
+        }
+      }
+    } catch(e) {if(currentEpoch===epoch)showStatus("permissionStatus",friendly(e),"bad");}
+    if(currentEpoch===epoch)updateSend();
+  }
+  async function signedIn(user) {
+    const currentEpoch=++epoch;resetView();active=user;role="";
+    if(!user){updateSend();return;}
+    role=user.uid===MANAGEMENT?"management":user.uid===TABLET?"kiosk":"";
+    if(!role){
+      await auth.signOut();
+      showStatus("loginError","This is not one of the two approved setup accounts. Use the management account or the separate jobsite tablet account.","bad");
+      return;
+    }
+    $("loginError").hidden=true;$("loginCard").hidden=true;$("connectedCard").hidden=false;
+    $("accountTitle").textContent=role==="management"?"Signed in as management":"Signed in as the jobsite iPad";
+    $("accountEmail").textContent=user.email||"Approved board account";
+    $("message").value=role==="management"?"Office connection test":"iPad connection test";
+    showStatus("connectionStatus","Checking the shared test area…","wait");
+    showStatus("permissionStatus","Checking permissions…","wait");
+    // No persistent Firestore cache; this diagnostic requires an online server result.
+    unsubscribe=db.collection("connectionChecks").onSnapshot({includeMetadataChanges:true}, snap=>{
+      if(currentEpoch!==epoch)return;
+      readReady=!snap.metadata.fromCache;
+      renderMessages(snap);
+      if(readReady && navigator.onLine)showStatus("connectionStatus","Connected to the shared test database.","good");
+      else showStatus("connectionStatus","Waiting for the server. Cached messages are not proof of a live connection.","wait");
+      updateSend();
+    },error=>{
+      if(currentEpoch!==epoch)return;readReady=false;
+      showStatus("connectionStatus",friendly(error),"bad");updateSend();
+    });
+    verifyPermissions(user,currentEpoch);
+  }
+  $("showPassword").addEventListener("click",()=>{
+    const show=$("password").type==="password";$("password").type=show?"text":"password";
+    $("showPassword").textContent=show?"Hide":"Show";$("showPassword").setAttribute("aria-pressed",String(show));
+  });
+  $("loginForm").addEventListener("submit",async e=>{
+    e.preventDefault();if(!auth)return;$("loginButton").disabled=true;$("loginError").hidden=true;
+    try {
+      await auth.setPersistence($("remember").checked?firebase.auth.Auth.Persistence.LOCAL:firebase.auth.Auth.Persistence.SESSION);
+      await auth.signInWithEmailAndPassword($("email").value.trim(),$("password").value);
+    } catch(error) {$("password").value="";showStatus("loginError",friendly(error),"bad");}
+    finally {$("loginButton").disabled=false;}
+  });
+  $("sendForm").addEventListener("submit",async e=>{
+    e.preventDefault();if($("sendButton").disabled||!active)return;
+    const message=$("message").value.trim();if(!message){$("message").focus();return;}
+    const user=active,currentEpoch=epoch;writing=true;updateSend();
+    showStatus("sendStatus","Sending the test message. Waiting for server confirmation…","wait");
+    const timer=setTimeout(()=>{if(currentEpoch===epoch&&writing)showStatus("sendStatus","Not confirmed yet. Check the connection. This test message may still arrive when service returns.","wait");},15000);
+    try {
+      await db.doc("connectionChecks/"+user.uid).set({senderUid:user.uid,role:role,message:message,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+      if(currentEpoch===epoch)showStatus("sendStatus","Test message saved on the server. Look for it on the other device.","good");
+    } catch(error) {if(currentEpoch===epoch)showStatus("sendStatus",friendly(error),"bad");}
+    finally {clearTimeout(timer);writing=false;updateSend();}
+  });
+  $("signOutButton").addEventListener("click",async()=>{
+    if(writing){showStatus("sendStatus","A test message is still waiting for confirmation. Wait for it to finish before signing out.","wait");return;}
+    try {await auth.signOut();}catch(error){showStatus("sendStatus",friendly(error),"bad");}
+  });
+  window.addEventListener("offline",()=>{if(active)showStatus("connectionStatus","No internet connection. This test does not confirm offline attendance saving.","wait");updateSend();});
+  window.addEventListener("online",()=>{if(active){showStatus("connectionStatus","Rechecking the connection…","wait");signedIn(active).catch(error=>showStatus("startup",friendly(error),"bad"));}});
+  try {
+    if(!window.firebase||!firebase.auth||!firebase.firestore)throw {code:"sdk-not-loaded"};
+    const app=firebase.initializeApp(config,"pioneer-connection-check");auth=app.auth();db=app.firestore();
+    auth.onAuthStateChanged(user=>{signedIn(user).catch(error=>showStatus("startup",friendly(error),"bad"));},error=>showStatus("startup",friendly(error),"bad"));
+  } catch(error) {
+    showStatus("startup",error.code==="sdk-not-loaded"?"Firebase could not load. Open this page from GitHub with internet access, then refresh. A content blocker may also prevent Firebase from loading.":friendly(error),"bad");
+  }
+})();
+</script>
+</body>
+</html>
