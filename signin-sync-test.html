@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="17.0-test1 — 2026-09-23">
+<meta name="app-version" content="17.1-pinfix — 2026-09-23">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0E1929">
 <meta name="application-name" content="Sign-In Board">
-<meta name="application-version" content="17.0-test1">
+<meta name="application-version" content="17.1-pinfix">
 <meta name="apple-mobile-web-app-title" content="Sign-In">
 <title>TEST — Pioneer Synced Sign-In Board</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230E1929'/%3E%3Cpath d='M36 6 16 36h14l-4 22 22-32H34z' fill='%236FA6F2'/%3E%3C/svg%3E">
@@ -430,6 +430,15 @@ button,input,select,textarea{touch-action:manipulation}
 body.sync-locked .veil,body.sync-locked .flash{display:none!important}
 body.sync-busy #sheet .acts button{pointer-events:none;opacity:.7}
 @media(max-width:680px){.sync-login{margin:18px 12px;padding:20px}.sync-notice{padding:12px}.sync-account{font-size:15px}}
+
+/* v17.1 test PIN: compact recovery controls; no changes to the worker layout. */
+.pinwrap{max-height:94vh;max-height:94dvh;overflow:auto}
+.pinwrap .pin-action{min-height:46px;padding:10px 14px;border:1px solid var(--control-edge);border-radius:9px;background:var(--surface-2);color:var(--ink);font-size:16px;width:100%}
+.pinwrap .pin-action:disabled,.pinwrap .pad button:disabled{opacity:.55;cursor:wait}
+.pinwrap .pin-help{font-size:13px;line-height:1.35}
+#pinRecoveryVeil form{display:flex;flex-direction:column;gap:12px;text-align:left}
+#pinRecoveryVeil label{font-size:15px}
+@media(max-height:720px){.pinwrap{gap:9px;padding:16px}.pinwrap .pad{gap:7px}.pinwrap .pad button{min-height:46px}.pinwrap .pin-action{min-height:42px}.pinwrap .pin-help{font-size:12px}}
 </style>
 </head>
 <body class="sync-locked">
@@ -450,7 +459,7 @@ body.sync-busy #sheet .acts button{pointer-events:none;opacity:.7}
 <p class="sync-small"><a href="./index.html">Return to your unchanged, existing board</a></p>
 </section>
 <div class="wrap" id="syncedBoard" hidden>
-<div class="sync-notice" id="syncTestBanner"><b>SYNCED TEST BOARD — fictional workers only</b><br><span lang="es">TABLERO DE PRUEBA — solo trabajadores ficticios.</span><br><small>Online-only test. No real attendance imports. Jobsite time: Eastern.</small></div>
+<div class="sync-notice" id="syncTestBanner"><b>SYNCED TEST BOARD — fictional workers only · v17.1 PIN fix</b><br><span lang="es">TABLERO DE PRUEBA — solo trabajadores ficticios.</span><br><small>Online-only test. No real attendance imports. Jobsite time: Eastern.</small></div>
 <div class="sync-account"><span id="syncAccountLabel"></span><button id="syncSignout" type="button">Sign out of test / Cerrar sesión</button></div>
 <div id="syncSetup" class="sync-notice" hidden><b>Start the shared test crew</b><p>This adds only fictional test workers and cost-code descriptions to the separate test area.</p><button id="syncSeed" class="sync-button">Create test crew</button></div>
 <div id="syncMessage" class="sync-notice" role="status" aria-live="polite" hidden></div>
@@ -1234,25 +1243,148 @@ function hideFlash(){ clearTimeout(flashTimer); document.getElementById("flash")
 /* =====================================================================
    PIN
    ===================================================================== */
+/* PIN screen-lock flow, v17.1. Firebase management authentication remains mandatory.
+   Never accept an unsaved PIN or treat a failed security read as an empty PIN list. */
 var pinBuf="",pinMode="check",pinFirst="",pinThen=null,pinSupName=null;
-function pins(){ if(!SEC) return null; if(SEC.pins) return SEC.pins; if(SEC.pin){ var m={}; m[SEC.pin]="Office"; return m; } return null; }
-function openPin(mode,then,forName){ pinBuf=""; pinFirst=""; pinThen=then; pinSupName=forName||null; pinMode=pins()&&Object.keys(pins()).length?mode:"set"; drawPad(); drawPin(pinMsgNow(),false); document.getElementById("pinVeil").hidden=false; }
-function closePin(){ document.getElementById("pinVeil").hidden=true; pinBuf=""; pinFirst=""; }
-function pinMsgNow(){ return pinMode==="set"?(pinFirst?t("pinAgain"):t("pinNew")):t("pinSub"); }
-function drawPin(msg,bad){ document.getElementById("pinTitle").textContent=t("office"); var m=document.getElementById("pinMsg"); m.textContent=msg; m.className=bad?"bad":""; var pp=document.getElementById("pips").children; for(var i=0;i<4;i++) pp[i].className=i<pinBuf.length?"on":""; }
-function drawPad(){ var pad=document.getElementById("pad"); pad.textContent=""; ["1","2","3","4","5","6","7","8","9","clr","0","del"].forEach(function(k){ var b=el("button",k==="clr"||k==="del"?"sm":null,k==="clr"?"C":k==="del"?"←":k); b.addEventListener("click",function(){ pinKey(k); }); pad.appendChild(b); }); }
-function pinKey(k){ if(k==="clr"){ pinBuf=""; drawPin(pinMsgNow(),false); return; } if(k==="del"){ pinBuf=pinBuf.slice(0,-1); drawPin(pinMsgNow(),false); return; } if(pinBuf.length>=4) return; pinBuf+=k; drawPin(pinMsgNow(),false); if(pinBuf.length===4) setTimeout(pinDone,140); }
-function pinDone(){
-  var map=pins()||{};
-  if(pinMode==="set"){
-    if(!pinFirst){ pinFirst=pinBuf; pinBuf=""; drawPin(t("pinAgain"),false); return; }
-    if(pinFirst!==pinBuf){ pinFirst=""; pinBuf=""; drawPin(t("pinNoMatch"),true); return; }
-    var name=pinSupName||SUP||"Office"; Object.keys(map).forEach(function(k){ if(map[k]===name) delete map[k]; }); map[pinBuf]=name;
-    SEC={pins:map}; LS.set("sec",SEC); writeDoc("config/security",SEC,function(){}); SUP=name; closePin(); if(pinThen) pinThen(); return;
-  }
-  if(map[pinBuf]){ SUP=map[pinBuf]; closePin(); if(pinThen) pinThen(); return; }
-  pinBuf=""; drawPin(t("pinBad"),true);
+var PIN_STATE={seq:0,epoch:0,stage:"closed",baseRev:0,busy:false,saving:false,timer:null};
+function pinText(en,es){return en+" · "+es;}
+function pinMapOf(value){
+  var map=Object.create(null),source=value&&value.pins;
+  if(source&&typeof source==="object"&&!Array.isArray(source)) Object.keys(source).forEach(function(k){if(/^\d{4}$/.test(k)&&typeof source[k]==="string"&&source[k].trim())map[k]=source[k];});
+  else if(value&&/^\d{4}$/.test(String(value.pin||"")))map[String(value.pin)]="Office";
+  return map;
 }
+function pins(){return SEC?pinMapOf(SEC):null;}
+function pinAuthorized(){return !!(typeof SYNC!=="undefined"&&SYNC&&SYNC.user&&SYNC.user.uid===SYNC_MANAGER&&SYNC.role==="management");}
+function pinStill(seq,epoch){return seq===PIN_STATE.seq&&epoch===SYNC.epoch&&pinAuthorized()&&!document.getElementById("pinVeil").hidden;}
+function pinSetBusy(on){PIN_STATE.busy=on;document.querySelectorAll("#pad button,#pinReset,#pinRetry").forEach(function(b){b.disabled=on;});var cancel=document.getElementById("pinCancel");if(cancel)cancel.disabled=PIN_STATE.saving;}
+function pinMsgNow(){return pinMode==="set"?(pinFirst?t("pinAgain"):pinText("Set a 4-digit TEST PIN","Cree un PIN de PRUEBA de 4 dígitos")):pinText("Enter the TEST board PIN","Ingrese el PIN del tablero de PRUEBA");}
+function drawPin(msg,bad){
+  document.getElementById("pinTitle").textContent=t("office");var m=document.getElementById("pinMsg");m.textContent=msg;m.className=bad?"bad":"";m.setAttribute("role",bad?"alert":"status");
+  var pp=document.getElementById("pips").children;for(var i=0;i<4;i++)pp[i].className=i<pinBuf.length?"on":"";
+  var retry=document.getElementById("pinRetry");if(retry)retry.hidden=PIN_STATE.stage!=="error";
+  var reset=document.getElementById("pinReset");if(reset)reset.hidden=pinMode!=="check"||!pinAuthorized()||PIN_STATE.stage==="error";
+}
+function drawPad(){var pad=document.getElementById("pad");pad.textContent="";["1","2","3","4","5","6","7","8","9","clr","0","del"].forEach(function(k){var b=el("button",k==="clr"||k==="del"?"sm":null,k==="clr"?"C":k==="del"?"←":k);b.type="button";b.addEventListener("click",function(){pinKey(k);});pad.appendChild(b);});}
+function pinControls(){
+  var host=document.querySelector("#pinVeil .pinwrap");
+  if(document.getElementById("pinReset"))return;
+  var hint=el("p","pin-help",pinText("Separate from your Firebase board password. Management login is still required.","Es distinto de su contraseña de Firebase. Se requiere la cuenta de administración."));host.appendChild(hint);
+  var reset=el("button","pin-action","Forgot / reset test PIN · Restablecer PIN de prueba");reset.id="pinReset";reset.type="button";reset.onclick=pinOpenRecovery;host.appendChild(reset);
+  var retry=el("button","pin-action","Retry loading PIN · Volver a cargar PIN");retry.id="pinRetry";retry.type="button";retry.hidden=true;retry.onclick=function(){openPin("check",pinThen,pinSupName);};host.appendChild(retry);
+  var cancel=el("button","pin-action",t("cancel"));cancel.id="pinCancel";cancel.type="button";cancel.onclick=closePin;host.appendChild(cancel);
+}
+function syncAcceptSecurity(value){
+  SEC=value?cloneRecord(value):null;
+  if(SEC)SYNC.docs["config/security"]=cloneRecord(SEC);else delete SYNC.docs["config/security"];
+  LS.set("sec",SEC);
+}
+async function syncLoadSecurity(){
+  if(!pinAuthorized())throw syncFail("permission-denied");if(!navigator.onLine)throw syncFail("offline");
+  var epoch=SYNC.epoch,uid=SYNC.user.uid,snap=await syncRef("config/security").get({source:"server"});
+  if(epoch!==SYNC.epoch||!pinAuthorized()||SYNC.user.uid!==uid)throw syncFail("auth-changed");
+  if(snap.metadata&&(snap.metadata.fromCache||snap.metadata.hasPendingWrites))throw syncFail("unavailable");
+  var value=snap.exists?syncDecode(snap.data()):null;
+  // A newer confirmed listener update must not be replaced by an older in-flight read.
+  var known=SYNC.docs["config/security"];if(value&&known&&syncRev(known)>syncRev(value))value=cloneRecord(known);
+  syncAcceptSecurity(value);SYNC.flags.security=true;syncReadiness();return value;
+}
+async function syncSaveSecurity(value,expected){
+  syncRequireManager();var map=pinMapOf(value);if(!Object.keys(map).length)throw syncFail("pin-empty");
+  var epoch=SYNC.epoch,uid=SYNC.user.uid;
+  var saved=await SYNC.fs.runTransaction(async function(tx){
+    if(epoch!==SYNC.epoch||!pinAuthorized()||SYNC.user.uid!==uid)throw syncFail("auth-changed");
+    var ref=syncRef("config/security"),snap=await tx.get(ref),old=snap.exists?syncDecode(snap.data()):null;
+    if(syncRev(old)!==expected)throw syncFail("changed");
+    var rec=Object.assign({},old||{},{pins:Object.assign({},map),_rev:expected+1,changedByUid:uid,changedAt:new Date().toISOString()});delete rec.pin;
+    tx.set(ref,syncEncode(rec,false));return rec;
+  });
+  if(epoch!==SYNC.epoch||!pinAuthorized()||SYNC.user.uid!==uid)throw syncFail("auth-changed");
+  // runTransaction resolves after commit; confirm a fresh server read before success.
+  var check=await syncLoadSecurity();
+  if(!check||syncRev(check)!==syncRev(saved)||JSON.stringify(Object.entries(pinMapOf(check)).sort())!==JSON.stringify(Object.entries(pinMapOf(saved)).sort()))throw syncFail("changed");
+  syncAcceptSecurity(check);syncEditVersions["config/security"]=syncRev(check);return cloneRecord(check);
+}
+async function openPin(mode,then,forName){
+  if(!pinAuthorized()){syncNotice("Management login is required. A PIN cannot authorize this tablet for office edits.",true);return;}
+  if(SYNC.busy||PIN_STATE.saving){syncNotice(syncError("busy"),true);return;}
+  closePin();pinControls();var seq=++PIN_STATE.seq,epoch=SYNC.epoch;PIN_STATE.epoch=epoch;PIN_STATE.stage="loading";pinMode=mode||"check";pinThen=then;pinSupName=forName||null;pinBuf="";pinFirst="";
+  document.getElementById("pinVeil").hidden=false;drawPad();pinSetBusy(true);drawPin(pinText("Loading the saved test PIN…","Cargando el PIN guardado…"),false);
+  try{var security=await syncLoadSecurity();if(!pinStill(seq,epoch))return;PIN_STATE.baseRev=syncRev(security);pinMode=Object.keys(pinMapOf(security)).length?(mode||"check"):"set";PIN_STATE.stage="keypad";pinSetBusy(false);drawPin(pinMsgNow(),false);}
+  catch(e){if(!pinStill(seq,epoch))return;PIN_STATE.stage="error";pinSetBusy(true);drawPin(pinText("Could not load the saved PIN. Nothing was reset.","No se pudo cargar el PIN. No se restableció nada.")+" "+syncError(e),true);var retry=document.getElementById("pinRetry");if(retry)retry.disabled=false;}
+}
+function closePin(force){
+  if(PIN_STATE.saving&&!force)return;
+  ++PIN_STATE.seq;clearTimeout(PIN_STATE.timer);PIN_STATE.timer=null;PIN_STATE.stage="closed";PIN_STATE.busy=false;PIN_STATE.saving=false;pinBuf="";pinFirst="";pinThen=null;pinSupName=null;
+  document.getElementById("pinVeil").hidden=true;var rv=document.getElementById("pinRecoveryVeil");if(rv){rv.hidden=true;var pw=document.getElementById("pinRecoveryPassword");if(pw)pw.value="";}
+}
+function pinKey(k){
+  if(PIN_STATE.busy||PIN_STATE.stage!=="keypad"||!pinAuthorized())return;
+  if(k==="clr"||k==="del"){clearTimeout(PIN_STATE.timer);PIN_STATE.timer=null;pinBuf=k==="clr"?"":pinBuf.slice(0,-1);drawPin(pinMsgNow(),false);return;}
+  if(!/^\d$/.test(k)||pinBuf.length>=4)return;pinBuf+=k;drawPin(pinMsgNow(),false);
+  if(pinBuf.length===4){var captured=pinBuf,seq=PIN_STATE.seq;clearTimeout(PIN_STATE.timer);PIN_STATE.timer=setTimeout(function(){if(seq===PIN_STATE.seq&&captured===pinBuf)pinDone();},140);}
+}
+async function pinDone(){
+  if(PIN_STATE.busy||PIN_STATE.stage!=="keypad"||!/^\d{4}$/.test(pinBuf)||!pinAuthorized())return;
+  clearTimeout(PIN_STATE.timer);var entered=pinBuf,seq=PIN_STATE.seq,epoch=SYNC.epoch;
+  if(pinMode==="set"&&!pinFirst){pinFirst=entered;pinBuf="";drawPin(t("pinAgain"),false);return;}
+  if(pinMode==="set"&&pinFirst!==entered){pinFirst="";pinBuf="";drawPin(t("pinNoMatch"),true);return;}
+  var setting=pinMode==="set";PIN_STATE.saving=setting;pinSetBusy(true);if(setting)syncBusy(true);
+  drawPin(setting?pinText("Saving PIN to the server…","Guardando PIN en el servidor…"):pinText("Checking the saved PIN…","Verificando el PIN guardado…"),false);
+  try{
+    var security=await syncLoadSecurity();if(!pinStill(seq,epoch))return;var map=pinMapOf(security),name;
+    if(setting){
+      if(syncRev(security)!==PIN_STATE.baseRev)throw syncFail("changed");
+      name=pinSupName||SYNC.user.email||SUP||"Office";
+      if(Object.prototype.hasOwnProperty.call(map,entered)&&map[entered]!==name)throw syncFail("pin-in-use");
+      Object.keys(map).forEach(function(k){if(map[k]===name)delete map[k];});map[entered]=name;
+      await syncSaveSecurity({pins:map},PIN_STATE.baseRev);if(!pinStill(seq,epoch))return;
+    }else{
+      if(!Object.prototype.hasOwnProperty.call(map,entered)){pinBuf="";pinFirst="";drawPin(pinText("Wrong test PIN. Use Reset PIN below if needed.","PIN de prueba incorrecto. Use Restablecer PIN si es necesario."),true);return;}name=map[entered];
+    }
+    var callback=pinThen;SUP=name;PIN_STATE.saving=false;if(setting)syncBusy(false);closePin();
+    if(setting)syncNotice(pinText("Test PIN saved and confirmed on the server.","PIN de prueba guardado y confirmado en el servidor."));
+    if(callback)callback();
+  }catch(e){if(pinStill(seq,epoch)){
+    pinBuf="";pinFirst="";
+    if(e.code==="changed"){
+      try{var latest=await syncLoadSecurity();PIN_STATE.baseRev=syncRev(latest);pinMode=Object.keys(pinMapOf(latest)).length?"check":"set";}catch(_){}
+      drawPin(pinText("PIN settings changed. The attempted PIN was not accepted. Retry or use Reset PIN.","Cambió la configuración. El PIN intentado no se aceptó. Reintente o restablezca el PIN."),true);
+    }else if(e.code==="pin-in-use")drawPin(pinText("That PIN belongs to another test supervisor. Choose a different PIN.","Ese PIN pertenece a otro supervisor de prueba. Elija otro."),true);
+    else drawPin(pinText(setting?"PIN save was not confirmed. Office screens remain locked.":"Could not check the PIN. This is a connection problem, not a wrong-code result.",setting?"No se confirmó el PIN. La oficina sigue bloqueada.":"No se pudo verificar el PIN. Es un problema de conexión, no un código incorrecto.")+" "+syncError(e),true);
+  }}finally{if(epoch===SYNC.epoch){if(setting)syncBusy(false);if(seq===PIN_STATE.seq){PIN_STATE.saving=false;pinSetBusy(false);}}}
+}
+function pinRecoveryControls(){
+  if(document.getElementById("pinRecoveryVeil"))return;
+  var veil=el("div","veil");veil.id="pinRecoveryVeil";veil.hidden=true;veil.style.zIndex="55";
+  var card=el("div","pinwrap"),title=el("h2",null,"Reset test PIN · Restablecer PIN de prueba");card.setAttribute("role","dialog");card.setAttribute("aria-modal","true");title.id="pinRecoveryTitle";card.setAttribute("aria-labelledby",title.id);card.appendChild(title);
+  card.appendChild(el("p",null,"Enter your MANAGEMENT board password—not your Outlook password. This changes only the test PIN, not attendance. / Ingrese su contraseña de administración del tablero. Solo cambia el PIN de prueba, no la asistencia."));
+  var form=el("form"),lbl=el("label",null,"Management board password / Contraseña del tablero");lbl.htmlFor="pinRecoveryPassword";form.appendChild(lbl);
+  var input=el("input","finput");input.id="pinRecoveryPassword";input.type="password";input.autocomplete="current-password";input.required=true;form.appendChild(input);
+  var err=el("p","bad");err.id="pinRecoveryError";err.setAttribute("role","alert");form.appendChild(err);
+  var go=el("button","pin-action","Verify and choose PIN / Verificar y elegir PIN");go.type="submit";go.id="pinRecoverySubmit";form.appendChild(go);
+  var cancel=el("button","pin-action",t("cancel"));cancel.type="button";cancel.onclick=function(){if(!PIN_STATE.busy){input.value="";veil.hidden=true;PIN_STATE.stage="keypad";}};form.appendChild(cancel);
+  form.onsubmit=pinVerifyRecovery;card.appendChild(form);veil.appendChild(card);document.body.appendChild(veil);
+}
+function pinOpenRecovery(){
+  if(!pinAuthorized()||PIN_STATE.busy||document.getElementById("pinVeil").hidden)return;
+  clearTimeout(PIN_STATE.timer);pinBuf="";pinFirst="";pinRecoveryControls();PIN_STATE.stage="recovery";
+  document.getElementById("pinRecoveryError").textContent="";document.getElementById("pinRecoveryPassword").value="";document.getElementById("pinRecoveryVeil").hidden=false;document.getElementById("pinRecoveryPassword").focus();
+}
+async function pinVerifyRecovery(e){
+  e.preventDefault();if(!pinAuthorized()||PIN_STATE.busy)return;
+  var seq=PIN_STATE.seq,epoch=SYNC.epoch,user=SYNC.auth.currentUser||SYNC.user,inp=document.getElementById("pinRecoveryPassword"),err=document.getElementById("pinRecoveryError"),go=document.getElementById("pinRecoverySubmit");
+  var password=inp.value;inp.value="";if(!password)return;pinSetBusy(true);go.disabled=true;err.textContent="Verifying management login… / Verificando administración…";
+  try{
+    if(!navigator.onLine)throw syncFail("offline");if(user.uid!==SYNC_MANAGER||!user.email)throw syncFail("permission-denied");
+    var credential=firebase.auth.EmailAuthProvider.credential(user.email,password);password="";await user.reauthenticateWithCredential(credential);credential=null;
+    if(!pinStill(seq,epoch))return;var security=await syncLoadSecurity();if(!pinStill(seq,epoch))return;
+    PIN_STATE.baseRev=syncRev(security);PIN_STATE.stage="keypad";pinMode="set";pinFirst="";pinBuf="";pinSupName=user.email;document.getElementById("pinRecoveryVeil").hidden=true;
+    drawPin(pinText("Choose a new 4-digit TEST PIN","Elija un nuevo PIN de PRUEBA de 4 dígitos"),false);
+  }catch(error){if(pinStill(seq,epoch))err.textContent=pinText("Reset not authorized. Use your management board password and check the connection.","Restablecimiento no autorizado. Use la contraseña de administración y revise la conexión.")+" ["+(error.code||"unknown")+"]";}
+  finally{password="";inp.value="";go.disabled=false;if(seq===PIN_STATE.seq&&epoch===SYNC.epoch)pinSetBusy(false);}
+}
+
 
 /* =====================================================================
    CREW MANAGER
@@ -1366,10 +1498,10 @@ function drawCrewForm(s){
     s.appendChild(labelled("sName",t("supName"),nm0,"Test Supervisor")); s.appendChild(labelled("sPin",t("supPin"),e.isNew?"":e.id,"••••",{numeric:true,max:4,type:"password"})); s.appendChild(err);
     var save3=abtn("go","save"); save3.addEventListener("click",function(){ var nm=document.getElementById("sName").value.trim(),pn=document.getElementById("sPin").value.trim();
       if(!nm){ err.textContent=t("nameNeeded"); return; } if(!/^\d{4}$/.test(pn)){ err.textContent=t("pinNeeded"); return; }
-      var m=Object.assign({},map); if(!e.isNew) delete m[e.id]; m[pn]=nm; SEC={pins:m}; LS.set("sec",SEC); if(SUP===nm0) SUP=nm;
-      writeDoc("config/security",SEC,function(bad){ if(bad){ err.textContent=t("saveFailed"); return; } crewEdit=null; drawCrew(); }); });
+      var m=Object.assign({},map); if(m[pn]&&pn!==e.id){err.textContent="That PIN is already assigned. / Ese PIN ya está asignado.";return;} if(!e.isNew) delete m[e.id]; m[pn]=nm; save3.disabled=true;
+      writeDoc("config/security",{pins:m},function(bad){save3.disabled=false; if(bad){ err.textContent="PIN save not confirmed. / No se confirmó el PIN. "+syncError(bad); return; } if(SUP===nm0)SUP=nm;crewEdit=null; drawCrew(); }); });
     acts.appendChild(save3); s.appendChild(acts);
-    if(!e.isNew&&Object.keys(map).length>1){ var rm3=el("button","linkish red",t("remove")); rm3.addEventListener("click",function(){ var m=Object.assign({},map); delete m[e.id]; SEC={pins:m}; LS.set("sec",SEC); writeDoc("config/security",SEC,function(bad){ if(bad){ err.textContent=t("saveFailed"); return; } crewEdit=null; drawCrew(); }); }); s.appendChild(rm3); }
+    if(!e.isNew&&Object.keys(map).length>1){ var rm3=el("button","linkish red",t("remove")); rm3.addEventListener("click",function(){ var m=Object.assign({},map); delete m[e.id]; rm3.disabled=true;writeDoc("config/security",{pins:m},function(bad){rm3.disabled=false; if(bad){ err.textContent=t("saveFailed"); return; } crewEdit=null; drawCrew(); }); }); s.appendChild(rm3); }
   }
 }
 
@@ -1727,7 +1859,7 @@ function exportWeek(){
 }
 
 /* =====================================================================
-   FIREBASE ATTENDANCE PILOT 17.0-test1
+   FIREBASE ATTENDANCE PILOT 17.1-pinfix
    ONLINE ONLY; fake roster; no reads/writes to live browser data or live DB collections.
    All punch and correction saves use transactions. Kiosk is denied all office/config writes.
    ===================================================================== */
@@ -1762,7 +1894,7 @@ function syncPack(p){var r=syncEncode(p,false),map={};(r.segments||[]).forEach(f
 function syncUnpack(raw){if(!raw)return null;var r=syncDecode(raw);if(r.segments&&!Array.isArray(r.segments)){var a=[];for(var i=0;i<(r.segmentCount||0);i++)a.push(r.segments["s"+i]);r.segments=a;}delete r.segmentCount;return r;}
 function syncRev(p){return p&&p._rev||0;}
 function syncExpected(token){if(!token)return 0;try{return JSON.parse(token)._rev||0;}catch(e){return -1;}}
-function syncClear(){SYNC.busy=false;document.body.classList.remove("sync-busy");document.getElementById("syncSignout").disabled=false;SYNC.subs.forEach(function(f){try{f();}catch(e){}});SYNC.subs=[];SYNC.docs={};SYNC.records={};SYNC.flags={};SYNC_MEMORY={};roster=[];walkons=[];codes=[];punches={};recent=[];stale=[];SEC=null;SUP=null;lastAct=null;view={agency:null};SYNC.ready=false;SYNC.error="";closeSheet();hideFlash();closeCrew();closeReview();closePin();}
+function syncClear(){SYNC.busy=false;document.body.classList.remove("sync-busy");document.getElementById("syncSignout").disabled=false;SYNC.subs.forEach(function(f){try{f();}catch(e){}});SYNC.subs=[];SYNC.docs={};SYNC.records={};SYNC.flags={};SYNC_MEMORY={};roster=[];walkons=[];codes=[];punches={};recent=[];stale=[];SEC=null;SUP=null;lastAct=null;view={agency:null};syncEditVersions={};SYNC.ready=false;SYNC.error="";closeSheet();hideFlash();closeCrew();closeReview();closePin(true);}
 function syncApplyPunches(){if(!SYNC)return;var list=[],mine={},old=[];Object.keys(SYNC.records).forEach(function(id){var r=SYNC.records[id];list.push(Object.assign({_id:id},r));if(r.date===today())mine[id]=r;else if(r.date<today()&&!r.voided&&isOpen(r))old.push(r);});punches=mine;recent=list;stale=old.sort(function(a,b){return a.date.localeCompare(b.date);});paint();if(!document.getElementById("revVeil").hidden&&!revEdit)loadReview();}
 function allDays(){return Array.from(new Set(Object.keys(SYNC.records).map(function(k){return SYNC.records[k].date;}))).sort();}
 function allPunches(){return Object.keys(SYNC.records).map(function(id){return Object.assign({_id:id},SYNC.records[id]);});}
@@ -1778,7 +1910,7 @@ function syncStart(user){++SYNC.epoch;syncClear();SYNC.user=user;SYNC.role=user?
  syncListen("punches","punches",function(s){var map={};s.docs.forEach(function(d){var rec=syncUnpack(d.data());map[d.id]=SYNC.records[d.id]&&syncRev(SYNC.records[d.id])>syncRev(rec)?SYNC.records[d.id]:rec;});SYNC.records=map;syncApplyPunches();});
  syncListen("config/job","job",function(s){if(s.exists){JOB=syncDecode(s.data());SYNC.docs["config/job"]=cloneRecord(JOB);}paint();},true);
  syncListen("config/setup","setup",function(s){if(s.exists)SYNC.docs["config/setup"]=syncDecode(s.data());else delete SYNC.docs["config/setup"];syncReadiness();},true);
- if(SYNC.role==="management")syncListen("config/security","security",function(s){SEC=s.exists?syncDecode(s.data()):null;SYNC.docs["config/security"]=SEC;SUP=user.email||"Management";},true);
+ if(SYNC.role==="management")syncListen("config/security","security",function(s){if(s.metadata&&(s.metadata.fromCache||s.metadata.hasPendingWrites)){SYNC.flags.security=false;return;}syncAcceptSecurity(s.exists?syncDecode(s.data()):null);SUP=user.email||"Management";},true);
  paint();
 }
 async function syncVerifyPermissions(epoch){
@@ -1799,7 +1931,7 @@ var syncOldOpenSheet=openSheet;openSheet=function(w){if(!syncCanWrite()||SYNC.bu
 var syncOldCloseSheet=closeSheet;closeSheet=function(){if(SYNC&&SYNC.busy)return;syncOldCloseSheet();};
 var syncOldArmSheet=armSheet;armSheet=function(){if(SYNC&&SYNC.busy){clearTimeout(sheetTimer);return;}syncOldArmSheet();};
 var syncOldGo=syncGo;syncGo=function(){syncOldGo();var b=document.getElementById("goBtn");if(b&&(!syncCanWrite()||SYNC.busy)){b.disabled=true;b.classList.add("dis");var n=document.getElementById("needCode");if(n)n.textContent=SYNC.busy?"Saving to server… / Guardando…":t("offlineMsg");}};
-var syncOldOpenPin=openPin;openPin=function(mode,then,name){if(SYNC.role!=="management"){syncNotice("Management login is required. A PIN cannot authorize this tablet for office edits.",true);return;}syncOldOpenPin(mode,then,name);};
+// v17.1 openPin independently checks management and loads the saved PIN from the server.
 var syncOldCrew=openCrew;openCrew=function(){if(SYNC.role!=="management")return;syncOldCrew();};
 var syncOldReview=openReview;openReview=function(){if(SYNC.role!=="management")return;syncOldReview();};
 var syncOldDrawCrew=drawCrew;drawCrew=function(){if(SYNC.role!=="management")return;syncOldDrawCrew();var s=document.getElementById("crewSheet");s.querySelectorAll(".practice-banner").forEach(function(e){e.remove();});if(!crewEdit){var save=el("button","addbtn","Download full TEST backup (JSON, including signatures)");save.onclick=downloadFullRecord;s.appendChild(save);s.appendChild(el("div","audit","Supervisor PINs only lock screens on an already-authorized management account. They do not grant Firebase access to another person or device."));}};
@@ -1812,7 +1944,7 @@ function flush(){} // No optimistic queue or local-last-write-wins in this onlin
 function savePunch(){throw syncFail("use-transaction");}
 function localWrite(){throw syncFail("local-write-disabled");}
 var syncEditVersions={};var syncOldCrewForm=drawCrewForm;drawCrewForm=function(s){syncEditVersions={};Object.keys(SYNC.docs).forEach(function(k){syncEditVersions[k]=SYNC.docs[k]&&SYNC.docs[k]._rev||0;});syncOldCrewForm(s);};
-async function syncGeneric(path,data,remove){syncRequireManager();if(!/^(roster|codes|config)\/[A-Za-z0-9_-]+$/.test(path))throw syncFail("permission-denied");var expected=Object.prototype.hasOwnProperty.call(syncEditVersions,path)?syncEditVersions[path]:(SYNC.docs[path]&&SYNC.docs[path]._rev||0);await SYNC.fs.runTransaction(async function(tx){var ref=syncRef(path),doc=await tx.get(ref);if((doc.exists?doc.data()._rev||0:0)!==expected)throw syncFail("changed");if(remove)tx.delete(ref);else{var r=syncEncode(data,false);delete r.id;if(path.startsWith("codes/"))delete r.code;r._rev=expected+1;tx.set(ref,r);}});}
+async function syncGeneric(path,data,remove){syncRequireManager();if(!/^(roster|codes|config)\/[A-Za-z0-9_-]+$/.test(path))throw syncFail("permission-denied");var expected=Object.prototype.hasOwnProperty.call(syncEditVersions,path)?syncEditVersions[path]:(SYNC.docs[path]&&SYNC.docs[path]._rev||0);if(path==="config/security"){if(remove)throw syncFail("permission-denied");return syncSaveSecurity(data,expected);}await SYNC.fs.runTransaction(async function(tx){var ref=syncRef(path),doc=await tx.get(ref);if((doc.exists?doc.data()._rev||0:0)!==expected)throw syncFail("changed");if(remove)tx.delete(ref);else{var r=syncEncode(data,false);delete r.id;if(path.startsWith("codes/"))delete r.code;r._rev=expected+1;tx.set(ref,r);}});}
 function writeDoc(path,data,done){syncGeneric(path,data,false).then(function(){done&&done(null);}).catch(function(e){syncNotice(syncError(e),true);done&&done(e.code||"failed");});}
 function deleteDoc(path,done){syncGeneric(path,null,true).then(function(){done&&done(null);}).catch(function(e){syncNotice(syncError(e),true);done&&done(e.code||"failed");});}
 async function syncPunchTransaction(id,expected,createOnly,event,mutate){if(!syncCanWrite())throw syncFail("offline");var uid=SYNC.user.uid,op=syncOp(),clientMs=Date.now(),actor=SYNC.role,epoch=SYNC.epoch;var result=await SYNC.fs.runTransaction(async function(tx){if(epoch!==SYNC.epoch)throw syncFail("auth-changed");var ref=syncRef("punches/"+id),snap=await tx.get(ref),raw=snap.exists?snap.data():null,old=syncUnpack(raw);if(createOnly&&old)throw syncFail("exists");if(expected!==null&&syncRev(old)!==expected)throw syncFail("changed");var workerId=old?old.workerId:id.split("__").slice(1).join("__");var wr=await tx.get(syncRef("roster/"+workerId));var hs=await tx.get(syncRef("state/"+workerId));var head=hs.exists?hs.data():null;
@@ -1909,6 +2041,7 @@ window.addEventListener("beforeunload",function(e){
   if(!n) return;
   e.preventDefault(); e.returnValue="";
 });
+document.addEventListener("keydown",function(e){if(document.getElementById("pinVeil").hidden||PIN_STATE.stage!=="keypad"||PIN_STATE.busy||e.ctrlKey||e.metaKey||e.altKey)return;if(/^\d$/.test(e.key)){e.preventDefault();pinKey(e.key);}else if(e.key==="Backspace"||e.key==="Delete"){e.preventDefault();pinKey(e.key==="Backspace"?"del":"clr");}});
 syncBoot();
 </script>
 </body></html>
