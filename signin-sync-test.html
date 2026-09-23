@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="17.2-csvfix — 2026-09-23">
+<meta name="app-version" content="18.0-offline-test — 2026-09-23">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0E1929">
 <meta name="application-name" content="Sign-In Board">
-<meta name="application-version" content="17.2-csvfix">
+<meta name="application-version" content="18.0-offline-test">
 <meta name="apple-mobile-web-app-title" content="Sign-In">
 <title>TEST — Pioneer Synced Sign-In Board</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230E1929'/%3E%3Cpath d='M36 6 16 36h14l-4 22 22-32H34z' fill='%236FA6F2'/%3E%3C/svg%3E">
@@ -439,6 +439,13 @@ body.sync-busy #sheet .acts button{pointer-events:none;opacity:.7}
 #pinRecoveryVeil form{display:flex;flex-direction:column;gap:12px;text-align:left}
 #pinRecoveryVeil label{font-size:15px}
 @media(max-height:720px){.pinwrap{gap:9px;padding:16px}.pinwrap .pad{gap:7px}.pinwrap .pad button{min-height:46px}.pinwrap .pin-action{min-height:42px}.pinwrap .pin-help{font-size:12px}}
+
+/* v18 status controls; worker picker/order/size and navy palette are unchanged. */
+.off-actions{display:flex;gap:10px;flex-wrap:wrap}.off-actions button{min-height:46px;max-width:100%;font-size:16px;white-space:normal}
+#offPanel p{margin:8px 0;line-height:1.45}#offIssues p{line-height:1.45}.off-issue{border-top:1px solid var(--control-edge);margin-top:12px;padding-top:12px}
+.off-pending-tag{display:block;color:#FFE09A;font-size:15px;font-weight:700;border-top:1px dashed #9B8341;padding-top:8px}
+.flash[data-off-op] .flashin{flex-wrap:wrap}.flash.off-local-flash .flashin{background:#2C281A;border-color:#FFE09A;flex-wrap:wrap}.off-flash-label{flex-basis:100%;font-size:15px;font-weight:700;color:#FFE09A}
+@media(max-width:600px){.off-actions button{width:100%}}
 </style>
 </head>
 <body class="sync-locked">
@@ -447,7 +454,7 @@ body.sync-busy #sheet .acts button{pointer-events:none;opacity:.7}
 <div class="eyebrow">Pioneer Electric Group · Synced attendance test</div>
 <h1>Open the test board</h1>
 <p>Use your existing Firebase board login, not your Outlook password. Management on your computer; the separate tablet account on the second device.</p>
-<div class="sync-notice"><b>TEST ONLY — fictional workers.</b><br>No records are read from or imported into your existing sign-in board. This first test requires internet.</div>
+<div class="sync-notice"><b>TEST ONLY — fictional workers.</b><br>No records are read from or imported into your existing sign-in board. First login and tablet preparation require internet. Prepared tablets can record offline.</div>
 <form id="syncLoginForm">
 <label for="syncEmail">Board account email</label><input id="syncEmail" class="finput" type="email" autocomplete="username" autocapitalize="none" required>
 <label for="syncPassword">Board account password</label><input id="syncPassword" class="finput" type="password" autocomplete="current-password" required>
@@ -459,7 +466,7 @@ body.sync-busy #sheet .acts button{pointer-events:none;opacity:.7}
 <p class="sync-small"><a href="./index.html">Return to your unchanged, existing board</a></p>
 </section>
 <div class="wrap" id="syncedBoard" hidden>
-<div class="sync-notice" id="syncTestBanner"><b>SYNCED TEST BOARD — fictional workers only · v17.2 CSV fix (PIN fix retained)</b><br><span lang="es">TABLERO DE PRUEBA — solo trabajadores ficticios.</span><br><small>Online-only test. No real attendance imports. Jobsite time: Eastern.</small></div>
+<div class="sync-notice" id="syncTestBanner"><b>SYNCED TEST BOARD — fictional workers only · v18.0 Offline test (PIN + CSV fixes retained)</b><br><span lang="es">TABLERO DE PRUEBA — solo trabajadores ficticios.</span><br><small>Offline-capable TEST. Prepare the authorized tablet while online. No real attendance imports. Eastern time.</small></div>
 <div class="sync-account"><span id="syncAccountLabel"></span><button id="syncSignout" type="button">Sign out of test / Cerrar sesión</button></div>
 <div id="syncSetup" class="sync-notice" hidden><b>Start the shared test crew</b><p>This adds only fictional test workers and cost-code descriptions to the separate test area.</p><button id="syncSeed" class="sync-button">Create test crew</button></div>
 <div id="syncMessage" class="sync-notice" role="status" aria-live="polite" hidden></div>
@@ -1892,8 +1899,8 @@ var SYNC={root:"attendanceTests/v17",user:null,role:"",auth:null,fs:null,ready:f
 var SYNC_MANAGER="d3GUR1ht0DQSss1mS5t9jOgChfq2",SYNC_TABLET="hnLcbI2FI1eeQhhmxjxXnVpgwpG2";
 var SYNC_CONFIG={apiKey:"AIzaSyDRqYBU-U1SJjKXFsvHvQk5fNhvT6HyfqQ",authDomain:"sign-in-sheet-58d6a.firebaseapp.com",projectId:"sign-in-sheet-58d6a",storageBucket:"sign-in-sheet-58d6a.firebasestorage.app",messagingSenderId:"682748387890",appId:"1:682748387890:web:8bf9bcce570d2a513e122b"};
 var TEST_CREW=[{id:"test-hourly",name:"Test Hourly",agency:"PEG",trade:"Fictional hourly worker",noHours:false,sortOrder:1},{id:"test-salary",name:"Test Salary",agency:"PEG",trade:"Fictional attendance-only worker",noHours:true,sortOrder:2},{id:"test-knp",name:"Test KNP",agency:"KNP",trade:"Fictional hourly worker",noHours:false,sortOrder:3},{id:"test-abg",name:"Test ABG",agency:"ABG",trade:"Fictional hourly worker",noHours:false,sortOrder:4}];
-Object.assign(T.en,{foot:"SYNCED TEST ONLY. Eastern jobsite time. One cost code per day. Internet is required for this test.",notOnListSub:"Find your name or ask management to add you.",noRoster:"Management: click Create test crew above. Tablet: wait for management to create it.",saveFailed:"Not saved. Check the connection/status above and try again.",offlineMsg:"Internet is required in this first synced test. Do not assume a punch saved until the green server confirmation appears."});
-Object.assign(T.es,{foot:"SOLO PRUEBA. Hora del Este. Un código por día. Esta prueba requiere internet.",notOnListSub:"Busque su nombre o pida a la oficina que lo agregue.",noRoster:"La oficina debe crear el personal de prueba.",saveFailed:"No se guardó. Revise la conexión y el aviso arriba.",offlineMsg:"Esta primera prueba requiere internet. Espere la confirmación verde del servidor."});
+Object.assign(T.en,{foot:"SYNCED TEST ONLY. Eastern time. One cost code per day. Offline records stay on the prepared tablet until synced. Office screens require internet.",notOnListSub:"Find your name or ask management to add you.",noRoster:"Management: click Create test crew above. Tablet: wait for management to create it.",saveFailed:"Not saved. Check the connection/status above and try again.",offlineMsg:"Connection interrupted. Prepared tablets can save punches locally. Waiting-to-sync records are not yet confirmed by the office."});
+Object.assign(T.es,{foot:"SOLO PRUEBA. Hora del Este. Un código por día. Las marcas sin conexión quedan en la tableta hasta sincronizar.",notOnListSub:"Busque su nombre o pida a la oficina que lo agregue.",noRoster:"La oficina debe crear el personal de prueba.",saveFailed:"No se guardó. Revise la conexión y el aviso arriba.",offlineMsg:"La primera preparación requiere internet. Espere la confirmación verde del servidor."});
 function syncParts(d){var out={};new Intl.DateTimeFormat("en-US",{timeZone:"America/New_York",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"}).formatToParts(d).forEach(function(p){out[p.type]=p.value;});return out;}
 function today(){var p=syncParts(new Date());return p.year+"-"+p.month+"-"+p.day;}
 function hhmm(d){var p=syncParts(d);return p.hour+":"+p.minute;}
@@ -1927,12 +1934,12 @@ function rebuildRecent(){syncApplyPunches();}
 function cachedPunch(id){return SYNC.records[id]?Object.assign({_id:id},cloneRecord(SYNC.records[id])):null;}
 function paintSync(){if(!SYNC)return;var d=document.getElementById("syncDot"),t0=document.getElementById("syncTxt"),b=document.getElementById("offlineBar");if(!d)return;var ok=syncCanWrite();d.className="dot"+(!ok?" bad":SYNC.busy?" warn":"");t0.textContent=SYNC.busy?"Waiting for server… / Esperando…":ok?"Connected / Conectado":"Not ready / Sin conexión";b.hidden=!SYNC.user||ok||SYNC.busy;if(!b.hidden)document.getElementById("offlineTxt").textContent=t("offlineMsg");}
 function syncReadiness(){SYNC.ready=["roster","codes","punches","job","permissions"].every(function(k){return SYNC.flags[k]===true;});if(SYNC.role==="management")SYNC.ready=SYNC.ready&&SYNC.flags.security===true;document.getElementById("syncSetup").hidden=SYNC.role!=="management"||!!SYNC.docs["config/setup"];document.getElementById("syncSeed").disabled=!syncCanWrite()||SYNC.seeding;paintSync();syncGo();}
-function syncListen(path,key,fn,isDoc){var epoch=SYNC.epoch,ref=isDoc?syncRef(path):SYNC.fs.collection(SYNC.root+"/"+path);SYNC.subs.push(ref.onSnapshot({includeMetadataChanges:true},function(s){if(epoch!==SYNC.epoch)return;SYNC.flags[key]=!s.metadata.fromCache;try{fn(s);}catch(e){SYNC.error="decode";syncNotice("Could not read the shared test data. "+syncError(e),true);}syncReadiness();},function(e){if(epoch!==SYNC.epoch)return;SYNC.flags[key]=false;SYNC.error=e.code||"read";syncNotice(syncError(e),true);syncReadiness();}));}
+function syncListen(path,key,fn,isDoc){var epoch=SYNC.epoch,ref=isDoc?syncRef(path):SYNC.fs.collection(SYNC.root+"/"+path);SYNC.subs.push(ref.onSnapshot({includeMetadataChanges:true},function(s){if(epoch!==SYNC.epoch)return;SYNC.flags[key]=!s.metadata.fromCache&&!s.metadata.hasPendingWrites;if(s.metadata.fromCache||s.metadata.hasPendingWrites){syncReadiness();return;}try{fn(s);}catch(e){SYNC.error="decode";syncNotice("Could not read the shared test data. "+syncError(e),true);}syncReadiness();},function(e){if(epoch!==SYNC.epoch)return;SYNC.flags[key]=false;SYNC.error=e.code||"read";syncNotice(syncError(e),true);syncReadiness();}));}
 function syncStart(user){++SYNC.epoch;syncClear();SYNC.user=user;SYNC.role=user?(user.uid===SYNC_MANAGER?"management":user.uid===SYNC_TABLET?"kiosk":""):"";document.getElementById("syncedBoard").hidden=!SYNC.role;document.getElementById("syncLogin").hidden=!!SYNC.role;document.body.classList.toggle("sync-locked",!SYNC.role);if(!user){paint();return;}if(!SYNC.role){SYNC.auth.signOut();document.getElementById("syncLoginMessage").textContent=syncError("unauthorized");return;}
  document.getElementById("syncAccountLabel").textContent=(SYNC.role==="management"?"Management":"Jobsite tablet account")+" · "+(user.email||"");document.getElementById("syncPassword").value="";syncNotice("");
  ["roster","codes"].forEach(function(col){syncListen(col,col,function(s){var list=[];s.docs.forEach(function(doc){var r=syncDecode(doc.data());SYNC.docs[col+"/"+doc.id]=r;r[col==="codes"?"code":"id"]=doc.id;list.push(r);});Object.keys(SYNC.docs).filter(function(p){return p.startsWith(col+"/")&&!s.docs.some(function(d){return p===col+"/"+d.id;});}).forEach(function(p){delete SYNC.docs[p];});if(col==="roster"){roster=list.sort(function(a,b){return (a.sortOrder||0)-(b.sortOrder||0)||a.name.localeCompare(b.name);});}else codes=list.sort(function(a,b){return a.code.localeCompare(b.code);});paint();refreshOffice();syncGo();});});
  syncVerifyPermissions(SYNC.epoch);
- syncListen("punches","punches",function(s){var map={};s.docs.forEach(function(d){var rec=syncUnpack(d.data());map[d.id]=SYNC.records[d.id]&&syncRev(SYNC.records[d.id])>syncRev(rec)?SYNC.records[d.id]:rec;});SYNC.records=map;syncApplyPunches();});
+ syncListen("punches","punches",function(s){var map={};s.docs.forEach(function(d){var rec=syncUnpack(d.data());map[d.id]=OFF.server[d.id]&&syncRev(OFF.server[d.id])>syncRev(rec)?OFF.server[d.id]:rec;});OFF.server=map;OFF.serverSeen=true;syncApplyPunches();});
  syncListen("config/job","job",function(s){if(s.exists){JOB=syncDecode(s.data());SYNC.docs["config/job"]=cloneRecord(JOB);}paint();},true);
  syncListen("config/setup","setup",function(s){if(s.exists)SYNC.docs["config/setup"]=syncDecode(s.data());else delete SYNC.docs["config/setup"];syncReadiness();},true);
  if(SYNC.role==="management")syncListen("config/security","security",function(s){if(s.metadata&&(s.metadata.fromCache||s.metadata.hasPendingWrites)){SYNC.flags.security=false;return;}syncAcceptSecurity(s.exists?syncDecode(s.data()):null);SUP=user.email||"Management";},true);
@@ -1946,7 +1953,7 @@ async function syncVerifyPermissions(epoch){
      for(var i=0;i<probes.length;i++){var blocked=false;try{await probes[i]();}catch(e){if(e.code==="permission-denied")blocked=true;else throw e;}if(!blocked)throw syncFail("unsafe-rules");}
    }
    if(epoch===SYNC.epoch){SYNC.flags.permissions=true;syncReadiness();}
- }catch(e){if(epoch===SYNC.epoch){SYNC.error=e.code||"permissions";syncNotice(e.code==="unsafe-rules"?"STOP: a forbidden tablet action was allowed. Restore the supplied test rules; do not use real attendance.":syncError(e),true);syncReadiness();}}
+ }catch(e){if(epoch===SYNC.epoch){if(!navigator.onLine||["unavailable","offline","deadline-exceeded"].includes(e.code)){SYNC.flags.permissions=false;syncReadiness();return;}SYNC.error=e.code||"permissions";syncNotice(e.code==="unsafe-rules"?"STOP: a forbidden tablet action was allowed. Restore the supplied test rules; do not use real attendance.":syncError(e),true);syncReadiness();}}
 }
 async function syncSeed(){if(SYNC.seeding)return;try{syncRequireManager();SYNC.seeding=true;syncReadiness();await SYNC.fs.runTransaction(async function(tx){var marker=await tx.get(syncRef("config/setup"));if(marker.exists)return;var rs=await Promise.all(TEST_CREW.map(function(w){return tx.get(syncRef("roster/"+w.id));}));var cs=await Promise.all(DEFAULT_CODES.map(function(c){return tx.get(syncRef("codes/"+c[0]));}));var job=await tx.get(syncRef("config/job"));TEST_CREW.forEach(function(w,i){if(!rs[i].exists){var r=Object.assign({active:true,job:"TEST-17",defaultCode:"",_rev:1},w);delete r.id;tx.set(syncRef("roster/"+w.id),r);}});DEFAULT_CODES.forEach(function(c,i){if(!cs[i].exists)tx.set(syncRef("codes/"+c[0]),{label:c[1],labelEs:c[2],_rev:1});});if(!job.exists)tx.set(syncRef("config/job"),{code:"TEST-17",name:"Oyster TEST",sub:"Pioneer Electric Group — Shared test only",timeZone:"America/New_York",_rev:1});tx.set(syncRef("config/setup"),{schema:17,mode:"test",createdBy:SYNC.user.uid,createdAt:syncStamp()});});syncNotice("Test crew created. Open this same test page on the second device with the tablet account.");}catch(e){syncNotice(syncError(e),true);}finally{SYNC.seeding=false;syncReadiness();}}
 function syncBusy(on){SYNC.busy=on;document.body.classList.toggle("sync-busy",on);if(on)clearTimeout(sheetTimer);document.getElementById("syncSignout").disabled=on;paintSync();syncGo();}
@@ -1982,7 +1989,7 @@ async function syncPunchTransaction(id,expected,createOnly,event,mutate){if(!syn
  var history={recordId:id,before:raw,after:enc,byUid:uid,event:event,createdAt:syncStamp()};if(new TextEncoder().encode(JSON.stringify(history)).length>750000)throw syncFail("too-large");tx.set(ref,enc);tx.set(syncRef("audit/"+op),history);
  // Do not let correction of an older closed day overwrite a newer/current open-state pointer.
  if(!head||head.recordId===id||rec.date>=head.date||(!rec.voided&&isOpen(rec))){if(head&&head.open&&head.recordId!==id&&!rec.voided&&isOpen(rec))throw syncFail("open-day");tx.set(syncRef("state/"+workerId),{recordId:id,date:rec.date,open:!rec.voided&&isOpen(rec),revision:rec._rev,op:op});}
- return {rec:rec,before:old,op:op,event:event};});if(epoch!==SYNC.epoch)throw syncFail("auth-changed");if(!SYNC.records[id]||syncRev(SYNC.records[id])<=syncRev(result.rec))SYNC.records[id]=result.rec;syncApplyPunches();return result;}
+ return {rec:rec,before:old,op:op,event:event};});if(epoch!==SYNC.epoch)throw syncFail("auth-changed");if(!SYNC.records[id]||syncRev(SYNC.records[id])<=syncRev(result.rec))SYNC.records[id]=result.rec;if(OFF&&(!OFF.server[id]||syncRev(OFF.server[id])<=syncRev(result.rec)))OFF.server[id]=cloneRecord(result.rec);syncApplyPunches();return result;}
 async function commit(){var d=draft;if(!d||SYNC.busy||!d.sig||!d.sig.hasInk())return;if(d.mode==="out"&&!d.w.noHours&&(!d.code||!codeObj(d.code)))return;if(d.date!==today()){syncNotice(t("newDay"),true);closeSheet();return;}
  var captured=cloneRecord(d.sig.data()),id=keyFor(d.w.id),expected=syncExpected(d.baseToken),event="worker_"+d.mode;syncBusy(true);syncNotice("");try{var result=await syncPunchTransaction(id,expected,false,event,function(old,w,ms){var now=new Date(ms);if(today()!==d.date)throw syncFail("clock");var p=livePunch(old);if(old&&old.voided&&segs(old).length)throw syncFail("changed");if(d.mode==="in"&&isOpen(p)||d.mode==="out"&&!isOpen(p))throw syncFail("changed");var list=cloneRecord(segs(p)),r=p?cloneRecord(p):{workerId:d.w.id,name:w.name,agency:w.agency,job:JOB.code,jobName:JOB.name,date:d.date,noHours:!!w.noHours,code:null,note:"",tz:offsetStr(now),source:"kiosk",approved:false};var sig=Object.assign({at:iso(now)},captured);
  if(d.mode==="in"){list.push({in:hhmm(now),inAt:iso(now),inMs:ms,out:null,outAt:null,sigIn:sig});}else{var last=list[list.length-1];last.out=hhmm(now);last.outAt=iso(now);last.outMs=ms;last.sigOut=Object.assign({for:{blocks:list.map(function(x){return [x.in,x.out];}),code:d.w.noHours?null:d.code}},sig);r.code=d.w.noHours?null:d.code;}
@@ -1995,7 +2002,7 @@ function commitRev(id,rec,done,options){options=options||{};try{syncRequireManag
 // Exports query the server explicitly. No dependence on a particular laptop's visit history.
 async function exportWeek(){try{syncRequireManager();var to=revDay,from=shiftDay(to,-6);var snap=await SYNC.fs.collection(SYNC.root+"/punches").where("date",">=",from).where("date","<=",to).get({source:"server"});var rows=snap.docs.map(function(d){return syncUnpack(d.data());}).sort(function(a,b){return (a.date+a.agency+a.name).localeCompare(b.date+b.agency+b.name);});downloadBlob("TEST-signins-"+from+"-to-"+to+".csv",new Blob(["\ufeff"+toCsv(rows)],{type:"text/csv;charset=utf-8"}));syncNotice("TEST CSV saved for "+from+" through "+to+" (7 calendar days). No email was sent.");}catch(e){syncNotice(syncError(e),true);}}
 function csvCell(v){var s=v==null?"":String(v);if(/^[\s]*[=+@-]/.test(s))s="'"+s;return /[",\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
-async function downloadFullRecord(){try{syncRequireManager();var ps=await SYNC.fs.collection(SYNC.root+"/punches").get({source:"server"});var hist=await SYNC.fs.collection(SYNC.root+"/audit").get({source:"server"});var ex={kind:"pioneer-sync-test-export",mode:"cloud-test-only",version:17,exported:new Date().toISOString(),job:JOB,roster:roster,codes:codes,punches:ps.docs.map(function(d){return syncUnpack(d.data());}),audit:hist.docs.map(function(d){return Object.assign({id:d.id},syncDecode(d.data()));})};downloadBlob("TEST-signed-records-"+today()+".json",new Blob([JSON.stringify(ex)],{type:"application/json"}));syncNotice("Full signed TEST record downloaded. Do not restore it into the live board.");}catch(e){syncNotice(syncError(e),true);}}
+async function downloadFullRecord(){try{syncRequireManager();var ps=await SYNC.fs.collection(SYNC.root+"/punches").get({source:"server"});var hist=await SYNC.fs.collection(SYNC.root+"/audit").get({source:"server"});var ex={kind:"pioneer-sync-test-export",mode:"cloud-test-only",version:17,exported:new Date().toISOString(),job:JOB,roster:roster,codes:codes,punches:ps.docs.map(function(d){return syncUnpack(d.data());}),audit:hist.docs.map(function(d){return Object.assign({id:d.id},syncDecode(d.data()));}),syncIssues:syncDecode(OFF.issues),appVersion:"18.0-offline-test"};downloadBlob("TEST-signed-records-"+today()+".json",new Blob([JSON.stringify(ex)],{type:"application/json"}));syncNotice("Full signed TEST record downloaded. Do not restore it into the live board.");}catch(e){syncNotice(syncError(e),true);}}
 function restoreFromFile(){syncNotice("Live-record import is disabled in this test.",true);}
 function loadDefaults(){syncNotice("Real Oyster roster loading is disabled in this test.",true);}
 function sendToOffice(){syncNotice("Automatic/manual email sending is disabled in this test. Use Review → Export this week (CSV).");}
@@ -2003,8 +2010,333 @@ function markSent(){}
 async function syncBoot(){var btn=document.getElementById("syncLoginBtn");try{if(!window.firebase||!firebase.auth||!firebase.firestore)throw syncFail("sdk-not-loaded");var app=firebase.initializeApp(SYNC_CONFIG,"pioneer-attendance-sync-test-v17");SYNC.auth=app.auth();SYNC.fs=app.firestore();db={};btn.disabled=false;btn.textContent="Sign in / Iniciar sesión";SYNC.auth.onAuthStateChanged(syncStart,function(e){document.getElementById("syncLoginMessage").textContent=syncError(e);});}catch(e){document.getElementById("syncLoginMessage").textContent="Firebase could not load. Open this page from GitHub with internet, then refresh. "+syncError(e);return;}
  document.getElementById("syncLoginForm").addEventListener("submit",async function(e){e.preventDefault();btn.disabled=true;document.getElementById("syncLoginMessage").textContent="Signing in…";try{await SYNC.auth.setPersistence(document.getElementById("syncRemember").checked?firebase.auth.Auth.Persistence.LOCAL:firebase.auth.Auth.Persistence.SESSION);await SYNC.auth.signInWithEmailAndPassword(document.getElementById("syncEmail").value.trim(),document.getElementById("syncPassword").value);document.getElementById("syncLoginMessage").textContent="";}catch(err){document.getElementById("syncPassword").value="";document.getElementById("syncLoginMessage").textContent=syncError(err);}finally{btn.disabled=false;}});
  document.getElementById("syncSeed").onclick=syncSeed;document.getElementById("syncSignout").onclick=async function(){if(SYNC.busy)return;await SYNC.auth.signOut();};
- window.addEventListener("offline",function(){paintSync();syncGo();syncNotice(t("offlineMsg"),true);});window.addEventListener("online",function(){if(SYNC.user){syncNotice("Rechecking the shared connection…");syncRef("config/job").get({source:"server"}).then(function(){SYNC.flags.job=true;syncReadiness();syncNotice("Connection restored. / Conexión restablecida.");}).catch(function(e){SYNC.flags.job=false;syncReadiness();syncNotice(syncError(e),true);});}});
+ window.addEventListener("offline",function(){paintSync();syncGo();syncNotice(t("offlineMsg"),true);});window.addEventListener("online",function(){if(SYNC.user){syncNotice("Rechecking the shared connection…");syncRef("config/job").get({source:"server"}).then(function(){SYNC.flags.job=true;syncVerifyPermissions(SYNC.epoch);syncReadiness();syncNotice("Connection restored. / Conexión restablecida.");}).catch(function(e){SYNC.flags.job=false;syncReadiness();syncNotice(syncError(e),true);});}});
  window.addEventListener("beforeunload",function(e){if(SYNC.busy){e.preventDefault();e.returnValue="";}});
+}
+
+/* v18 offline pilot. Application-owned IndexedDB outbox, NOT Firestore last-write-wins.
+   Only an explicitly prepared, signed-in kiosk may capture offline. Office writes stay online.
+   A queued event contains its original time/signature and expected record revision. */
+var OFF = {version:'18.0', db:null, ready:false, prepared:false, preparing:false, server:{}, events:[],
+  uid:null, device:null, verifiedAt:0, saving:false, flushing:false, storageError:'', assetReady:false,
+  issues:{}, timer:null, snapshotTimer:null, tab:syncOp(), owner:false, ttl:7*24*60*60*1000,
+  channel:null, reloadSeq:0, nextRetry:0, retryMs:3000, serverSeen:false, assetError:'', storeSerial:Promise.resolve()};
+function offText(en,es){return en+' · '+es;}
+function offKey(uid){return SYNC.root+'|'+uid;}
+function offIdb(){
+  if(OFF.db)return Promise.resolve(OFF.db);
+  return new Promise(function(resolve,reject){
+    if(!window.indexedDB){reject(syncFail('storage-unavailable'));return;}
+    var r=indexedDB.open('pioneer-offline-test-v18',1);
+    r.onupgradeneeded=function(){var d=r.result;['cache','events','meta'].forEach(function(s){if(!d.objectStoreNames.contains(s))d.createObjectStore(s,{keyPath:'key'});});};
+    r.onerror=function(){reject(r.error||syncFail('storage-unavailable'));};
+    r.onblocked=function(){reject(syncFail('storage-blocked'));};
+    r.onsuccess=function(){OFF.db=r.result;OFF.db.onversionchange=function(){OFF.db.close();OFF.db=null;OFF.ready=false;offPaint();};resolve(OFF.db);};
+  });
+}
+function offReq(r){return new Promise(function(ok,bad){r.onsuccess=function(){ok(r.result);};r.onerror=function(){bad(r.error);};});}
+async function offTx(names,mode,fn){
+  var d=await offIdb(),tx;try{tx=d.transaction(names,mode,{durability:'strict'});}catch(_){tx=d.transaction(names,mode);}
+  var complete=new Promise(function(ok,bad){tx.oncomplete=ok;tx.onabort=function(){bad(tx.error||syncFail('storage-write-failed'));};tx.onerror=function(){};});
+  var result;try{result=await fn(tx);await complete;return result;}catch(e){try{tx.abort();}catch(_){}try{await complete;}catch(_){}throw e;}
+}
+function offPending(e){return e.status==='pending'||e.status==='conflict';}
+function offActive(){return OFF.events.filter(offPending);}
+function offStorageFailure(e){OFF.storageError=(e&&e.name||e&&e.code||'storage-write-failed');offPaint();syncNotice(offText('This device could not save. Do not assume this punch was recorded. Keep this page open and tell management.','Este equipo no pudo guardar. No se registró esta marca. Avise a la oficina.'),true);}
+function offBroadcast(){try{if(OFF.channel)OFF.channel.postMessage({uid:OFF.uid});}catch(_){} }
+async function offReload(){
+  if(!SYNC.user||SYNC.role!=='kiosk')return;var uid=SYNC.user.uid,epoch=SYNC.epoch,key=offKey(uid),seq=++OFF.reloadSeq;
+  var v=await offTx(['cache','events','meta'],'readonly',async function(tx){return {cache:await offReq(tx.objectStore('cache').get(key)),events:await offReq(tx.objectStore('events').getAll()),meta:await offReq(tx.objectStore('meta').get('device'))};});
+  if(seq!==OFF.reloadSeq||epoch!==SYNC.epoch||!SYNC.user||SYNC.user.uid!==uid)return;
+  OFF.uid=uid;OFF.device=v.meta&&v.meta.id||OFF.device;OFF.events=v.events.filter(function(e){return e.account===key;}).sort(function(a,b){return a.sequence-b.sequence;});
+  if(v.cache){OFF.prepared=!!v.cache.prepared;OFF.verifiedAt=v.cache.verifiedAt||0;if(!OFF.serverSeen){OFF.server=cloneRecord(v.cache.records||{});roster=cloneRecord(v.cache.roster||[]);codes=cloneRecord(v.cache.codes||[]);JOB=cloneRecord(v.cache.job||JOB);if(v.cache.setup)SYNC.docs['config/setup']=v.cache.setup;}}
+  OFF.ready=true;syncApplyPunches();offPaint();
+}
+function offCompose(){
+  var merged=cloneRecord(OFF.server||{});
+  if(SYNC.role==='kiosk')OFF.events.filter(offPending).forEach(function(e){
+    // Keep the complete local signed draft visible, but never label it server-confirmed.
+    var p=cloneRecord(e.after);p._localPending=e.op;p._localConflict=e.status==='conflict';merged[e.recordId]=p;
+  });
+  return merged;
+}
+function offValidPrepared(){return !['permission-denied','unsafe-rules','unauthorized','auth/user-disabled'].includes(SYNC.error)&&SYNC.role==='kiosk'&&OFF.ready&&OFF.prepared&&OFF.uid===SYNC.user.uid&&Date.now()-OFF.verifiedAt<=OFF.ttl&&Date.now()>=OFF.verifiedAt-120000;}
+function offCanCapture(){return !!(SYNC.user&&SYNC.role==='kiosk'&&offValidPrepared()&&OFF.owner&&!OFF.storageError&&!OFF.saving);}
+function offHasWorkerConflict(id){return OFF.events.some(function(e){return e.workerId===id&&e.status==='conflict';});}
+async function offLease(){
+  if(!SYNC.user||SYNC.role!=='kiosk')return false;
+  var key='lease|'+offKey(SYNC.user.uid),now=Date.now();
+  OFF.owner=await offTx(['meta'],'readwrite',async function(tx){var s=tx.objectStore('meta'),old=await offReq(s.get(key));if(old&&old.owner!==OFF.tab&&old.until>now)return false;s.put({key:key,owner:OFF.tab,until:now+15000});return true;});return OFF.owner;
+}
+async function offReleaseLease(){if(!OFF.db||!OFF.uid)return;var key='lease|'+offKey(OFF.uid);await offTx(['meta'],'readwrite',async function(tx){var s=tx.objectStore('meta'),v=await offReq(s.get(key));if(v&&v.owner===OFF.tab)s.delete(key);});OFF.owner=false;}
+function offSnapshot(){
+  if(!OFF.prepared||SYNC.role!=='kiosk'||!syncCanWrite()||!OFF.ready)return;
+  clearTimeout(OFF.snapshotTimer);OFF.snapshotTimer=setTimeout(function(){offWriteSnapshot().catch(offStorageFailure);},200);
+}
+async function offWriteSnapshot(){
+  if(SYNC.role!=='kiosk'||!syncCanWrite()||!OFF.prepared)return;
+  var key=offKey(SYNC.user.uid),epoch=SYNC.epoch,data={key:key,prepared:true,verifiedAt:Date.now(),records:cloneRecord(OFF.server),roster:cloneRecord(roster),codes:cloneRecord(codes),job:cloneRecord(JOB),setup:cloneRecord(SYNC.docs['config/setup']||null),appVersion:'18.0'};
+  await offTx(['cache'],'readwrite',async function(tx){var old=await offReq(tx.objectStore('cache').get(key));if(old&&old.records)Object.keys(old.records).forEach(function(id){if(data.records[id]&&syncRev(old.records[id])>syncRev(data.records[id]))data.records[id]=old.records[id];});tx.objectStore('cache').put(data);});
+  if(epoch===SYNC.epoch){OFF.verifiedAt=data.verifiedAt;OFF.storageError='';offPaint();}
+}
+async function offServiceWorker(){
+  if(!('serviceWorker' in navigator)||!window.isSecureContext)throw syncFail('offline-page-unavailable');
+  var reg=await navigator.serviceWorker.register('./pioneer-offline-sw-v18.js',{scope:'./',updateViaCache:'none'});
+  await Promise.race([navigator.serviceWorker.ready,new Promise(function(_,bad){setTimeout(function(){bad(syncFail('offline-page-timeout'));},30000);})]);
+  var worker=reg.active||navigator.serviceWorker.controller;if(!worker)throw syncFail('offline-page-unavailable');
+  await new Promise(function(ok,bad){var channel=new MessageChannel(),timer=setTimeout(function(){bad(syncFail('offline-page-timeout'));},15000);channel.port1.onmessage=function(e){clearTimeout(timer);if(e.data&&e.data.ready)ok();else bad(syncFail('offline-page-incomplete'));};worker.postMessage({type:'PIONEER_OFFLINE_CHECK'},[channel.port2]);});
+  OFF.assetReady=true;OFF.assetError='';return true;
+}
+async function offPrepare(){
+  if(OFF.preparing)return;OFF.preparing=true;offPaint();
+  try{
+    if(SYNC.role!=='kiosk'||!syncCanWrite())throw syncFail('offline');
+    await offIdb();await SYNC.auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+    // A remembered limited login is intentional on this trusted kiosk, never management.
+    OFF.prepared=true;OFF.ready=true;OFF.uid=SYNC.user.uid;
+    await offTx(['meta'],'readwrite',async function(tx){var s=tx.objectStore('meta'),m=await offReq(s.get('device'));if(!m){m={key:'device',id:syncOp()};s.put(m);}OFF.device=m.id;});
+    await offWriteSnapshot();await offLease();await offServiceWorker();
+    try{if(navigator.storage&&navigator.storage.persist)await navigator.storage.persist();}catch(_){}
+    syncNotice(offText('Offline setup complete on this device. Keep using this test address.','Preparación sin conexión completa en este equipo. Use esta dirección de prueba.'));
+  }catch(e){OFF.assetError=e.code||e.message;syncNotice(offText('Offline preparation did not finish. Keep internet on and check the status below.','No terminó la preparación. Mantenga internet y revise el estado.')+' ['+OFF.assetError+']',true);}
+  finally{OFF.preparing=false;offPaint();}
+}
+function offInstallUI(){
+  if(document.getElementById('offPanel'))return;
+  var panel=el('section','sync-notice');panel.id='offPanel';panel.hidden=true;
+  var title=el('b',null,offText('Offline recording','Registro sin conexión'));panel.appendChild(title);
+  var status=el('p');status.id='offStatus';status.setAttribute('aria-live','polite');panel.appendChild(status);
+  var actions=el('div','off-actions');
+  [['offPrepare','Prepare this trusted tablet / Preparar esta tableta',offPrepare],['offRetry','Sync now / Sincronizar',function(){OFF.nextRetry=0;offFlush();}],['offBackup','Save pending backup / Guardar respaldo pendiente',offDownloadQueue]].forEach(function(a){var b=el('button','sync-button',a[1]);b.id=a[0];b.type='button';b.onclick=a[2];actions.appendChild(b);});panel.appendChild(actions);
+  document.getElementById('syncMessage').after(panel);
+  var errors=el('section','sync-notice sync-error');errors.id='offIssues';errors.hidden=true;panel.after(errors);
+}
+function offPaint(){
+  if(!OFF)return;offInstallUI();var panel=document.getElementById('offPanel');panel.hidden=SYNC.role!=='kiosk';
+  if(SYNC.role==='kiosk'){
+    var n=offActive().length,c=OFF.events.filter(function(e){return e.status==='conflict';}).length,s;
+    if(OFF.storageError)s=offText('Storage error: new punches are blocked. Pending data has not been deliberately cleared.','Error de almacenamiento: no registre nuevas marcas. Los datos pendientes no se borraron.')+' ['+OFF.storageError+']';
+    else if(!OFF.prepared)s=offText('One-time setup: prepare this management-authorized device while online.','Prepare este equipo autorizado una vez, con internet.');
+    else if(!offValidPrepared())s=offText('Reconnect to renew offline preparation (valid for 7 days after the last confirmed connection).','Reconecte para renovar la preparación (válida por 7 días).');
+    else if(!OFF.owner)s=offText('Another tab is using this device’s board. Close the other test tab, then wait a few seconds.','Otra pestaña está usando el tablero. Cierre la otra pestaña y espere.');
+    else s=offText('Punches can be saved on this device.','Las marcas se pueden guardar aquí.')+' '+(OFF.assetReady?offText('Offline page ready.','Página sin conexión lista.'):offText('Offline reopening not confirmed—tap Prepare.','No se confirmó la reapertura sin internet—pulse Preparar.'));
+    if(n)s+=' '+n+' '+offText('pending on this device; not all are on the shared board yet.','pendientes aquí; aún no todos están en el tablero compartido.');
+    if(c)s+=' '+c+' '+offText('need management review; no office record was overwritten.','requieren revisión; no se sobrescribió la oficina.');
+    document.getElementById('offStatus').textContent=s;
+    document.getElementById('offPrepare').hidden=OFF.prepared&&OFF.assetReady&&offValidPrepared();document.getElementById('offPrepare').disabled=OFF.preparing||!syncCanWrite();
+    document.getElementById('offRetry').hidden=!n;document.getElementById('offRetry').disabled=OFF.flushing||!syncCanWrite();document.getElementById('offBackup').hidden=!n;
+  }
+  offPaintIssues();
+}
+function offPaintIssues(){
+  var p=document.getElementById('offIssues');if(!p)return;p.textContent='';
+  var unresolved=Object.keys(OFF.issues).map(function(k){return Object.assign({id:k},OFF.issues[k]);}).filter(function(x){return x.status==='pending';});
+  p.hidden=SYNC.role!=='management'||!unresolved.length;if(p.hidden)return;
+  p.appendChild(el('b',null,unresolved.length+' '+offText('delayed punches need review','marcas demoradas requieren revisión')));
+  p.appendChild(el('p',null,offText('The saved office record was not replaced. Compare the original captured punch below before correcting attendance.','No se reemplazó el registro de oficina. Compare la marca original antes de corregir.')));
+  unresolved.forEach(function(issue){var e=issue.payload||{},row=el('div','off-issue');row.appendChild(el('b',null,(e.name||e.workerId||'Worker')+' · '+e.date+' · '+e.mode+' '+(e.capturedIso?new Date(e.capturedIso).toLocaleTimeString('en-US',{timeZone:'America/New_York'}):'')));row.appendChild(el('p',null,'Reason / Motivo: '+issue.reason));var b=el('button','sync-button',offText('Review saved punch','Revisar marca guardada'));b.onclick=function(){openPin('check',function(){offShowIssue(issue);});};row.appendChild(b);p.appendChild(row);});
+}
+function offShowIssue(issue){
+  if(SYNC.role!=='management')return;var e=issue.payload,s=document.getElementById('revSheet');revEdit={offlineIssue:issue.id};document.getElementById('revVeil').hidden=false;s.textContent='';
+  s.appendChild(el('h2','md',offText('Delayed punch—review required','Marca demorada—revisión')));
+  s.appendChild(el('p',null,e.name+' · '+e.date+' · '+e.mode+' · '+e.capturedIso));s.appendChild(el('p',null,offText('Original device time, not independently verified. This has NOT replaced the office record.','Hora original del equipo, no verificada independientemente. NO reemplazó el registro.')));
+  s.appendChild(el('p',null,'Code / Código: '+(e.code||'Attendance only / Solo asistencia')));if(e.signature)s.appendChild(sigSvg(e.signature,240));
+  var existing=OFF.server[e.recordId];s.appendChild(el('div','audit','Current shared record / Registro actual: '+(existing?segText(existing)+' · '+codeOf(existing):'None / Ninguno')));
+  s.appendChild(el('p',null,offText('Correct the record in Review if necessary. Then return here and document how you handled this captured punch. Marking handled does not apply its time or signature automatically.','Corrija el registro en Revisar si hace falta. Luego documente cómo resolvió esta marca. Resolver no aplica automáticamente la hora ni la firma.')));
+  var note=el('textarea','finput');note.placeholder='Reason / verification (required) · Motivo / verificación';s.appendChild(note);var msg=el('p','err');s.appendChild(msg);
+  var acts=el('div','acts'),done=el('button','go',offText('Mark handled','Marcar resuelto')),back=el('button','no',t('cancel'));
+  back.onclick=function(){revEdit=null;loadReview();};done.onclick=async function(){if(note.value.trim().length<10){msg.textContent=offText('Enter a verification reason (at least 10 characters).','Ingrese un motivo de al menos 10 caracteres.');return;}done.disabled=true;try{syncRequireManager();await SYNC.fs.runTransaction(async function(tx){var ref=syncRef('syncIssues/'+issue.id),d=await tx.get(ref);if(!d.exists||d.data().status!=='pending')throw syncFail('changed');tx.update(ref,{status:'handled',resolution:note.value.trim(),resolvedBy:SYNC.user.uid,resolvedAt:syncStamp()});});revEdit=null;loadReview();}catch(err){msg.textContent=syncError(err);}finally{done.disabled=false;}};
+  acts.append(back,done);s.appendChild(acts);
+}
+async function offDownloadQueue(){
+  if(SYNC.role!=='kiosk')return;var records=offActive();
+  downloadBlob('TEST-pending-punches-'+today()+'.json',new Blob([JSON.stringify({kind:'pioneer-offline-recovery',mode:'cloud-test-only',version:18,deviceId:OFF.device,exported:new Date().toISOString(),events:records},null,2)],{type:'application/json'}));
+  syncNotice(offText('Recovery backup downloaded. It contains signatures. Keep it private and do not import it into the live board.','Respaldo descargado con firmas. Manténgalo privado; no lo importe al tablero real.'));
+}
+function offProjection(server,events){var result=cloneRecord(server||{});events.filter(offPending).sort(function(a,b){return a.sequence-b.sequence;}).forEach(function(e){var p=cloneRecord(e.after);p._localPending=e.op;p._localConflict=e.status==='conflict';result[e.recordId]=p;});return result;}
+function offSameBase(a,b){return syncRev(a)===syncRev(b)&&(a&&a._op||'')===(b&&b._op||'');}
+function offCleanRecord(p){if(!p)return p;var x=cloneRecord(p);delete x._id;delete x._localPending;delete x._localConflict;return x;}
+function offBuildRecord(old,w,e){
+  if(e.mode==='undo'){
+    if(!old||old._op!==e.undoTarget||old._writer!==e.uid||!['worker_in','worker_out'].includes(old._event))throw syncFail('changed');
+    var r=e.undoBefore?offCleanRecord(e.undoBefore):offCleanRecord(old);
+    if(!e.undoBefore){withSegs(r,[]);r.code=null;r.note='';r.voided=true;}
+    if(r.approved)r.reviewRequired=true;r.approved=false;
+    ['approvedBy','approvedAt','approvalException','sentAt','_serverAt'].forEach(function(k){delete r[k];});
+    r._rev=syncRev(old)+1;r._op=e.op;r._writer=e.uid;r._event='undo';r._capturedMs=e.capturedMs;r._clientMs=e.capturedMs;r._offset=e.offset;r._deviceId=e.deviceId;r._captureMode=e.captureMode;r.updatedAt=e.capturedIso;return r;
+  }
+  var p=livePunch(old),list=cloneRecord(segs(p));if(old&&old.voided&&list.length)throw syncFail('changed');
+  if(e.mode==='in'&&isOpen(p)||e.mode==='out'&&!isOpen(p))throw syncFail('changed');
+  var r=p?offCleanRecord(p):{workerId:e.workerId,name:w.name,agency:w.agency,job:JOB.code,jobName:JOB.name,date:e.date,noHours:!!w.noHours,code:null,note:'',tz:offsetStr(new Date(e.capturedMs)),source:'kiosk',approved:false};
+  var sig=Object.assign({at:e.capturedIso},cloneRecord(e.signature));
+  if(e.mode==='in'){
+    if(list.length&&list[list.length-1].outAt&&e.capturedMs<new Date(list[list.length-1].outAt).getTime())throw syncFail('clock');
+    list.push({in:hhmm(new Date(e.capturedMs)),inAt:e.capturedIso,inMs:e.capturedMs,out:null,outAt:null,sigIn:sig});
+  }else{
+    var last=list[list.length-1];if(e.capturedMs<new Date(last.inAt).getTime())throw syncFail('clock');last.out=hhmm(new Date(e.capturedMs));last.outAt=e.capturedIso;last.outMs=e.capturedMs;
+    last.sigOut=Object.assign({for:{blocks:list.map(function(s){return [s.in,s.out];}),code:e.noHours?null:e.code}},sig);r.code=e.noHours?null:e.code;
+  }
+  withSegs(r,list);r.note=e.note||r.note||'';r.noHours=!!w.noHours;r.approved=false;if(p&&p.approved)r.reviewRequired=true;
+  ['approvedBy','approvedAt','approvalException','sentAt','voided','codes','_serverAt'].forEach(function(k){delete r[k];});
+  r._rev=syncRev(old)+1;r._op=e.op;r._writer=e.uid;r._event='worker_'+e.mode;r._capturedMs=e.capturedMs;r._clientMs=e.capturedMs;r._offset=e.offset;r._deviceId=e.deviceId;r._captureMode=e.captureMode;r.updatedAt=e.capturedIso;return r;
+}
+async function offCapture(d){
+  if(!SYNC.user||!offValidPrepared()||!OFF.owner||OFF.storageError)throw syncFail('offline-not-prepared');if(offHasWorkerConflict(d.w.id))throw syncFail('pending-conflict');
+  var ms=Date.now(),uid=SYNC.user.uid,key=offKey(uid),epoch=SYNC.epoch,id=keyFor(d.w.id,d.date),sig=cloneRecord(d.sig.data());
+  if(d.date!==today()||!signatureValid(sig))throw syncFail('clock');if(d.mode==='out'&&!d.w.noHours&&(!d.code||!codeObj(d.code)))throw syncFail('invalid-code');
+  if(JSON.stringify(sig).length>150000)throw syncFail('too-large');
+  var e={key:key+'|'+syncOp(),account:key,uid:uid,op:syncOp(),deviceId:OFF.device,workerId:d.w.id,name:d.w.name,date:d.date,recordId:id,mode:d.mode,capturedMs:ms,capturedIso:new Date(ms).toISOString(),offset:syncOffset(new Date(ms)),code:d.w.noHours?null:d.code||null,noHours:!!d.w.noHours,note:d.note||'',signature:sig,captureMode:syncCanWrite()?'online':'offline',status:'pending',error:'',reported:false,createdAt:ms};
+  var saved=await offTx(['cache','events','meta'],'readwrite',async function(tx){
+    var lease=await offReq(tx.objectStore('meta').get('lease|'+key));if(!lease||lease.owner!==OFF.tab||lease.until<Date.now())throw syncFail('another-tab');
+    var cache=await offReq(tx.objectStore('cache').get(key));if(!cache||!cache.prepared||ms-cache.verifiedAt>OFF.ttl)throw syncFail('offline-not-prepared');
+    var all=(await offReq(tx.objectStore('events').getAll())).filter(function(x){return x.account===key;});if(all.filter(offPending).length>=500)throw syncFail('queue-full');
+    var view=offProjection(cache.records,all),old=view[id]||null,shown;try{shown=d.baseToken?JSON.parse(d.baseToken):null;}catch(_){throw syncFail('changed');}
+    if(!offSameBase(old,shown))throw syncFail('changed');
+    if(all.some(function(x){return x.workerId===e.workerId&&x.status==='conflict';}))throw syncFail('pending-conflict');
+    var w=cache.roster.filter(function(x){return x.id===e.workerId&&x.active!==false;})[0];if(!w)throw syncFail('changed');
+    if(Object.keys(view).some(function(k){var p=view[k];return p.workerId===e.workerId&&p.date<e.date&&!p.voided&&isOpen(p);}))throw syncFail('open-day');
+    e.sequence=all.reduce(function(n,x){return Math.max(n,x.sequence||0);},0)+1;e.expectedRev=syncRev(old);e.before=offCleanRecord(old);e.parentOp=old&&old._localPending||null;e.after=offBuildRecord(old,w,e);
+    if(new TextEncoder().encode(JSON.stringify(e)).length>600000)throw syncFail('too-large');tx.objectStore('events').add(e);return e;
+  });
+  if(epoch!==SYNC.epoch)throw syncFail('auth-changed');await offReload();offBroadcast();return saved;
+}
+async function offFinishEvent(e,result){
+  var key=offKey(e.uid);await offTx(['events','cache'],'readwrite',async function(tx){var s=tx.objectStore('events'),stored=await offReq(s.get(e.key));if(!stored)return;stored.status='synced';stored.syncedAt=Date.now();stored.receipt=result.receipt||null;s.put(stored);var cache=await offReq(tx.objectStore('cache').get(key));if(cache&&result.rec){if(!cache.records[e.recordId]||syncRev(cache.records[e.recordId])<=syncRev(result.rec))cache.records[e.recordId]=offCleanRecord(result.rec);tx.objectStore('cache').put(cache);}});
+  if(result.rec&&(!OFF.server[e.recordId]||syncRev(OFF.server[e.recordId])<=syncRev(result.rec)))OFF.server[e.recordId]=offCleanRecord(result.rec);
+  await offReload();offBroadcast();
+  var flash=document.getElementById('flash');if(flash&&!flash.hidden&&flash.dataset.offOp===e.op){flash.classList.remove('off-local-flash');var tag=flash.querySelector('.off-flash-label');if(tag){tag.textContent=offText('SAVED TO THE SHARED BOARD','GUARDADO EN EL TABLERO COMPARTIDO');tag.style.color='var(--ink)';}}
+}
+async function offFlag(e,reason){await offTx(['events'],'readwrite',async function(tx){var s=tx.objectStore('events'),v=await offReq(s.get(e.key));if(v&&v.status!=='synced'){v.status='conflict';v.error=String(reason);s.put(v);}});await offReload();offBroadcast();}
+function offReceiptMatches(r,e){return r&&r.uid===e.uid&&r.recordId===e.recordId&&r.op===e.op&&r.capturedMs===e.capturedMs;}
+async function offReplay(e){
+  if(!syncCanWrite()||SYNC.user.uid!==e.uid)throw syncFail('offline');
+  return SYNC.fs.runTransaction(async function(tx){
+    if(!SYNC.user||SYNC.user.uid!==e.uid)throw syncFail('auth-changed');
+    var rr=syncRef('receipts/'+e.op),receiptDoc=await tx.get(rr),ref=syncRef('punches/'+e.recordId),snap=await tx.get(ref),raw=snap.exists?snap.data():null,old=syncUnpack(raw);
+    if(receiptDoc.exists){var receipt=syncDecode(receiptDoc.data());if(!offReceiptMatches(receipt,e))throw syncFail('receipt-mismatch');return {rec:old,receipt:receipt};}
+    if(syncRev(old)!==e.expectedRev)throw syncFail('changed');
+    if(e.before&&e.before._op&&(old&&old._op||'')!==e.before._op)throw syncFail('changed');
+    var wd=await tx.get(syncRef('roster/'+e.workerId)),hd=await tx.get(syncRef('state/'+e.workerId)),head=hd.exists?hd.data():null;
+    if(!wd.exists||wd.data().active===false||!!wd.data().noHours!==e.noHours)throw syncFail('changed');
+    if(head&&(head.date>e.date||(head.open&&head.recordId!==e.recordId)))throw syncFail('open-day');
+    if(e.mode==='out'&&!e.noHours){var cd=await tx.get(syncRef('codes/'+e.code));if(!cd.exists)throw syncFail('invalid-code');}
+    if(Date.now()-e.capturedMs>OFF.ttl||e.capturedMs>Date.now()+120000)throw syncFail('captured-time-review');
+    var r=offBuildRecord(old,syncDecode(wd.data()),e);r._clientMs=Date.now();var enc=syncPack(r);enc._serverAt=syncStamp();
+    var history={recordId:e.recordId,before:raw,after:enc,byUid:e.uid,event:r._event,createdAt:syncStamp()};
+    if(new TextEncoder().encode(JSON.stringify(history)).length>750000)throw syncFail('too-large');
+    var receipt={op:e.op,uid:e.uid,deviceId:e.deviceId,recordId:e.recordId,capturedMs:e.capturedMs,revision:r._rev,receivedAt:syncStamp()};
+    tx.set(ref,enc);tx.set(syncRef('audit/'+e.op),history);tx.set(syncRef('state/'+e.workerId),{recordId:e.recordId,date:e.date,open:!r.voided&&isOpen(r),revision:r._rev,op:e.op});tx.set(rr,receipt);
+    return {rec:r,receipt:{op:e.op,uid:e.uid,recordId:e.recordId,capturedMs:e.capturedMs,revision:r._rev}};
+  });
+}
+async function offReport(e){
+  if(!syncCanWrite())return;var ref=syncRef('syncIssues/'+e.op),doc=await ref.get({source:'server'});
+  if(!doc.exists)await ref.set({uid:e.uid,deviceId:e.deviceId,recordId:e.recordId,op:e.op,status:'pending',reason:e.error||'changed',payload:syncEncode(e,false),receivedAt:syncStamp()});
+  await offTx(['events'],'readwrite',async function(tx){var s=tx.objectStore('events'),v=await offReq(s.get(e.key));if(v){v.reported=true;s.put(v);}});
+}
+async function offFlush(){
+  if(OFF.flushing||OFF.saving||!syncCanWrite()||SYNC.role!=='kiosk'||!OFF.ready||Date.now()<OFF.nextRetry)return;
+  if(!await offLease())return;OFF.flushing=true;offPaint();
+  try{
+    await offReload();var list=OFF.events.filter(offPending),blocked={};if(!list.length)return;
+    for(var i=0;i<list.length;i++){
+      if(!syncCanWrite())break;var e=list[i];
+      if(e.status==='conflict'||blocked[e.workerId]){if(e.status!=='conflict')await offFlag(e,'earlier-punch-needs-review');blocked[e.workerId]=true;await offReport(OFF.events.find(function(x){return x.key===e.key;})||e);continue;}
+      try{var result=await offReplay(e);await offFinishEvent(e,result);OFF.retryMs=3000;OFF.nextRetry=0;}
+      catch(error){var c=error.code||error.name||'unknown';
+        if(['unavailable','offline','deadline-exceeded','network-request-failed','auth/network-request-failed','aborted','resource-exhausted','auth-changed'].includes(c)){OFF.nextRetry=Date.now()+OFF.retryMs;OFF.retryMs=Math.min(60000,OFF.retryMs*2);break;}
+        await offFlag(e,c);blocked[e.workerId]=true;
+        try{await offReport(OFF.events.find(function(x){return x.key===e.key;})||e);}catch(_){}
+      }
+    }
+    await offReload();if(!offActive().length)syncNotice(offText('All saved punches from this device are confirmed on the shared server.','Todas las marcas guardadas aquí están confirmadas en el servidor.'));
+  }catch(e){OFF.nextRetry=Date.now()+10000;if(!['offline','unavailable','permission-denied'].includes(e.code))offStorageFailure(e);}
+  finally{OFF.flushing=false;offPaint();paintSync();}
+}
+async function offHandleResolutions(){
+  var resolved=OFF.events.filter(function(e){return offPending(e)&&OFF.issues[e.op]&&OFF.issues[e.op].status==='handled';});if(!resolved.length)return;
+  await offTx(['events'],'readwrite',async function(tx){for(var i=0;i<resolved.length;i++){var e=await offReq(tx.objectStore('events').get(resolved[i].key));if(e){e.status='handled';e.handledAt=Date.now();tx.objectStore('events').put(e);}}});await offReload();offBroadcast();
+}
+/* Hook the existing v17.2 board, preserving its PIN and CSV logic. */
+var offOldSyncApply=syncApplyPunches;syncApplyPunches=function(){if(!OFF)return offOldSyncApply();SYNC.records=offCompose();offOldSyncApply();offPaint();};
+var offOldSyncClear=syncClear;syncClear=function(){if(OFF){clearTimeout(OFF.snapshotTimer);OFF.server={};OFF.events=[];OFF.uid=null;OFF.prepared=false;OFF.ready=false;OFF.verifiedAt=0;OFF.serverSeen=false;OFF.owner=false;OFF.issues={};OFF.storageError='';}offOldSyncClear();};
+var offOldReadiness=syncReadiness;syncReadiness=function(){offOldReadiness();if(OFF&&SYNC.role==='kiosk'&&SYNC.ready)offSnapshot();if(OFF)offPaint();};
+var offOldNotice=syncNotice; // Fixed strings above remain visible until superseded by another completed operation.
+var offOldPaintSync=paintSync;paintSync=function(){
+  if(!OFF||SYNC.role!=='kiosk'){offOldPaintSync();if(OFF)offPaint();return;}
+  var d=document.getElementById('syncDot'),txt=document.getElementById('syncTxt'),bar=document.getElementById('offlineBar');if(!d)return;
+  var n=offActive().length,c=OFF.events.some(function(e){return e.status==='conflict';}),online=syncCanWrite();
+  d.className='dot'+(c||OFF.storageError?' bad':n||!online?' warn':'');
+  txt.textContent=c?offText('Sync review needed','Revisión de sincronización'):n?n+' '+offText('waiting to sync','por sincronizar'):online?offText('Connected','Conectado'):offText('Offline','Sin conexión');
+  bar.hidden=online&&!n&&!OFF.storageError;
+  if(!bar.hidden)document.getElementById('offlineTxt').textContent=OFF.storageError?offText('Cannot save on this device. Ask management.','No se puede guardar. Avise a la oficina.'):c?offText('A delayed punch needs management review. It was not used to overwrite the office record.','Una marca demorada necesita revisión; no reemplazó el registro de oficina.'):offValidPrepared()?offText('Saved punches stay on this device until confirmed by the server. The office may not have them yet.','Las marcas quedan aquí hasta confirmación del servidor. La oficina puede no tenerlas aún.'):offText('Offline recording is not ready. Reconnect and prepare this tablet.','No está listo sin conexión. Reconecte y prepare la tableta.');
+  offPaint();
+};
+var offOldPaint=paint;paint=function(){offOldPaint();if(SYNC.role==='kiosk')document.querySelectorAll('#main .tile[data-id]').forEach(function(tile){var id=tile.getAttribute('data-id'),p=punches[keyFor(id)];if(p&&p._localPending){var b=el('span','off-pending-tag',p._localConflict?offText('Needs sync review','Revisión pendiente'):offText('Saved here—pending sync','Guardado aquí—pendiente'));tile.appendChild(b);}});};
+var offOriginalOpen=syncOldOpenSheet;openSheet=function(w){
+  if(SYNC.role!=='kiosk'){if(!syncCanWrite()||SYNC.busy){syncNotice(syncError('offline'),true);return;}offOriginalOpen(w);return;}
+  if(!offCanCapture()){syncNotice(offText('This device is not ready for offline recording. Prepare it while online, or close another open test tab.','Prepare el equipo con internet o cierre otra pestaña de prueba.'),true);return;}
+  if(offHasWorkerConflict(w.id)){syncNotice(offText('This worker has a delayed punch awaiting management review. No office record was overwritten.','Esta persona tiene una marca pendiente de revisión.'),true);return;}
+  if(stale.some(function(r){return r.workerId===w.id;})){syncNotice(syncError('open-day'),true);return;}
+  var old=punches[keyFor(w.id)];if(old&&old.voided&&segs(old).length){syncNotice(syncError('changed'),true);return;}offOriginalOpen(w);
+};
+var offOriginalGo=syncOldGo;syncGo=function(){offOriginalGo();var b=document.getElementById('goBtn');if(!b)return;var ok=SYNC.role==='kiosk'?offCanCapture():syncCanWrite();if(!ok||SYNC.busy){b.disabled=true;b.classList.add('dis');var n=document.getElementById('needCode');if(n)n.textContent=OFF.saving?offText('Saving on this device…','Guardando aquí…'):offText('Not ready to save—check status above.','No está listo para guardar—revise el estado.');}};
+var offOnlineCommit=commit;commit=async function(){
+  if(SYNC.role!=='kiosk')return offOnlineCommit();var d=draft;if(!d||OFF.saving||!d.sig||!d.sig.hasInk())return;
+  if(d.mode==='out'&&!d.w.noHours&&(!d.code||!codeObj(d.code)))return;
+  OFF.saving=true;syncBusy(true);var event;
+  try{event=await offCapture(d);syncBusy(false);lastAct={op:event.op,eventKey:event.key,at:event.capturedMs,label:d.w.name+' '+clockFace(new Date(event.capturedMs))};closeSheet();syncApplyPunches();armHome();
+    showFlash(d.w.name,d.mode==='out'?'okOut':d.again?'okBack':'okIn',clockFace(new Date(event.capturedMs)),d.mode==='out',event.code);
+    var f=document.getElementById('flash'),box=document.getElementById('flashIn');f.classList.add('off-local-flash');f.dataset.offOp=event.op;var label=el('div','off-flash-label',offText('SAVED ON THIS DEVICE — WAITING TO SYNC','GUARDADO AQUÍ — PENDIENTE DE SINCRONIZAR'));box.appendChild(label);
+    syncNotice(offText('Saved on this device—waiting to sync. The recorded time will not change when uploaded.','Guardado aquí—pendiente de sincronizar. La hora registrada no cambiará.'));
+  }catch(e){syncBusy(false);if(['QuotaExceededError','UnknownError','InvalidStateError','storage-write-failed','storage-unavailable'].includes(e.name||e.code))offStorageFailure(e);else syncNotice(offText('Not saved. Close and reopen the form, or ask management.','No guardado. Cierre y abra el formulario o avise a la oficina.')+' ['+(e.code||e.name)+']',true);}
+  finally{OFF.saving=false;syncBusy(false);offPaint();if(event){OFF.nextRetry=0;offFlush();}}
+};
+/* Undo is a second durable event, not deletion of a possibly already-uploaded punch. */
+var offOnlineUndo=undoLast;undoLast=async function(){
+  if(SYNC.role!=='kiosk')return offOnlineUndo();var a=lastAct;if(!a||OFF.saving)return;
+  if(Date.now()-a.at>UNDO_MS){syncNotice(syncError('undo-expired'),true);return;}
+  OFF.saving=true;syncBusy(true);
+  try{
+    if(!offValidPrepared()||!await offLease())throw syncFail('offline-not-prepared');
+    var key=offKey(SYNC.user.uid),now=Date.now();
+    await offTx(['events','cache'],'readwrite',async function(tx){
+      var store=tx.objectStore('events'),all=(await offReq(store.getAll())).filter(function(x){return x.account===key;}),original=all.find(function(x){return x.op===a.op;});
+      if(!original||original.status==='conflict')throw syncFail('changed');
+      var cache=await offReq(tx.objectStore('cache').get(key)),map=offProjection(cache.records,all),old=map[original.recordId];
+      if(!old||old._op!==original.op)throw syncFail('changed');
+      var e={key:key+'|'+syncOp(),account:key,uid:SYNC.user.uid,op:syncOp(),deviceId:OFF.device,workerId:original.workerId,name:original.name,date:original.date,recordId:original.recordId,mode:'undo',capturedMs:now,capturedIso:new Date(now).toISOString(),offset:syncOffset(new Date(now)),code:null,noHours:original.noHours,note:'',captureMode:syncCanWrite()?'online':'offline',status:'pending',error:'',reported:false,createdAt:now,
+        sequence:all.reduce(function(n,x){return Math.max(n,x.sequence||0);},0)+1,expectedRev:syncRev(old),before:offCleanRecord(old),parentOp:old._localPending||null,undoTarget:original.op,undoBefore:original.before};
+      var w=cache.roster.find(function(x){return x.id===e.workerId;});e.after=offBuildRecord(old,w,e);store.add(e);
+    });
+    await offReload();offBroadcast();lastAct=null;hideFlash();syncNotice(offText('Undo saved on this device—waiting to sync. Both original and undo remain in the audit trail.','Deshacer guardado aquí—pendiente de sincronizar. Ambas acciones quedan en el historial.'));
+  }catch(e){syncNotice(syncError(e),true);}finally{OFF.saving=false;syncBusy(false);OFF.nextRetry=0;offFlush();}
+};
+var offOldSyncStart=syncStart;syncStart=function(user){
+  offOldSyncStart(user);if(!user||!SYNC.role){offPaint();return;}
+  var epoch=SYNC.epoch;
+  syncListen('syncIssues','issues',function(s){var m={};s.docs.forEach(function(d){m[d.id]=syncDecode(d.data());});OFF.issues=m;offPaint();if(SYNC.role==='kiosk')offHandleResolutions().catch(offStorageFailure);});
+  if(SYNC.role==='kiosk')offIdb().then(offReload).then(async function(){if(epoch!==SYNC.epoch)return;await offLease();offPaint();if(OFF.prepared){offServiceWorker().then(offPaint).catch(function(e){OFF.assetError=e.code||e.message;offPaint();});}}).catch(offStorageFailure);
+};
+var offOldExport=exportWeek;exportWeek=async function(){
+  var n=Object.keys(OFF.issues).filter(function(k){return OFF.issues[k].status==='pending';}).length;
+  if(n&&!confirm(n+' delayed punches need review and are not included as accepted attendance. Export only the currently confirmed records? / Hay marcas pendientes. ¿Exportar solo registros confirmados?'))return;
+  return offOldExport();
+};
+function offStart(){
+  offInstallUI();try{OFF.channel=new BroadcastChannel('pioneer-offline-test-v18');OFF.channel.onmessage=function(){if(SYNC.role==='kiosk')offReload().catch(offStorageFailure);};}catch(_){}
+  OFF.timer=setInterval(function(){if(SYNC.role==='kiosk'){offLease().then(function(){offPaint();if(syncCanWrite())offFlush();}).catch(offStorageFailure);}},5000);
+  window.addEventListener('offline',function(){offPaint();paintSync();syncGo();});
+  window.addEventListener('online',function(){OFF.nextRetry=0;setTimeout(offFlush,1000);});
+  window.addEventListener('pagehide',function(){offReleaseLease().catch(function(){});});
+  window.addEventListener('focus',function(){if(SYNC.role==='kiosk')offReload().then(offFlush).catch(offStorageFailure);});
+  document.addEventListener('visibilitychange',function(){if(!document.hidden&&SYNC.role==='kiosk'){OFF.nextRetry=0;offReload().then(offFlush).catch(offStorageFailure);}});
+  var signout=document.getElementById('syncSignout');signout.onclick=async function(){
+    if(OFF.saving||SYNC.busy)return;
+    if(SYNC.role==='kiosk'&&offActive().length){syncNotice(offText('Pending punches remain on this device. Sync or save a recovery backup before signing out.','Hay marcas pendientes aquí. Sincronice o guarde un respaldo antes de cerrar sesión.'),true);return;}
+    await offReleaseLease();if(SYNC.role==='kiosk'&&OFF.uid){await offTx(['cache'],'readwrite',function(tx){tx.objectStore('cache').delete(offKey(OFF.uid));});}
+    await SYNC.auth.signOut();
+  };
 }
 
 /* =====================================================================
@@ -2068,5 +2400,6 @@ window.addEventListener("beforeunload",function(e){
 });
 document.addEventListener("keydown",function(e){if(document.getElementById("pinVeil").hidden||PIN_STATE.stage!=="keypad"||PIN_STATE.busy||e.ctrlKey||e.metaKey||e.altKey)return;if(/^\d$/.test(e.key)){e.preventDefault();pinKey(e.key);}else if(e.key==="Backspace"||e.key==="Delete"){e.preventDefault();pinKey(e.key==="Backspace"?"del":"clr");}});
 syncBoot();
+offStart();
 </script>
 </body></html>
