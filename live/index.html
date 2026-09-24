@@ -9,6 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0E1929">
 <meta name="application-name" content="Sign-In Board">
+<meta name="diagnostic-build" content="v19-DIAG1-2026-09-24">
 <meta name="application-version" content="19.0-rc1-live">
 <meta name="apple-mobile-web-app-title" content="Sign-In">
 <title>Pioneer Sign-In Board · Live setup</title>
@@ -2212,7 +2213,9 @@ async function offFlag(e,reason){await offTx(['events'],'readwrite',async functi
 function offReceiptMatches(r,e){return r&&r.uid===e.uid&&r.recordId===e.recordId&&r.op===e.op&&r.capturedMs===e.capturedMs;}
 async function offReplay(e){
   if(!syncCanWrite()||SYNC.user.uid!==e.uid)throw syncFail('offline');
+  var diagnosticTrace=liveDiagnosticTrace(e);
   return SYNC.fs.runTransaction(async function(tx){
+    tx=liveDiagnosticTransaction(tx,diagnosticTrace);
     if(!SYNC.user||SYNC.user.uid!==e.uid)throw syncFail('auth-changed');
     var rr=syncRef('receipts/'+e.op),receiptDoc=await tx.get(rr),ref=syncRef('punches/'+e.recordId),snap=await tx.get(ref),raw=snap.exists?snap.data():null,old=syncUnpack(raw);
     if(receiptDoc.exists){var receipt=syncDecode(receiptDoc.data());if(!offReceiptMatches(receipt,e))throw syncFail('receipt-mismatch');return {rec:old,receipt:receipt};}
@@ -2229,6 +2232,10 @@ async function offReplay(e){
     var receipt={op:e.op,uid:e.uid,deviceId:e.deviceId,recordId:e.recordId,capturedMs:e.capturedMs,revision:r._rev,receivedAt:syncStamp()};
     tx.set(ref,enc);tx.set(syncRef('audit/'+e.op),history);tx.set(syncRef('state/'+e.workerId),{recordId:e.recordId,date:e.date,open:!r.voided&&isOpen(r),revision:r._rev,op:e.op});tx.set(rr,receipt);
     return {rec:r,receipt:{op:e.op,uid:e.uid,recordId:e.recordId,capturedMs:e.capturedMs,revision:r._rev}};
+  }).then(function(result){
+    if(diagnosticTrace){diagnosticTrace.status='confirmed';diagnosticTrace.finishedAt=new Date().toISOString();}return result;
+  },function(error){
+    if(diagnosticTrace){diagnosticTrace.status='rejected';diagnosticTrace.error=liveDiagnosticError(error);diagnosticTrace.finishedAt=new Date().toISOString();}throw error;
   });
 }
 async function offReport(e){
@@ -2485,7 +2492,7 @@ function livePaintGate(){
  if(!document.getElementById('liveGate')){var p=el('section','sync-notice');p.id='liveGate';document.getElementById('syncSetup').after(p);}
  var p=document.getElementById('liveGate'),m=SYNC.docs['config/setup'],active=liveEnabled();
  var label=LAUNCH_CHECK?'LAUNCH CHECK — FICTIONAL RECORDS ONLY':'OYSTER — '+(active?'LIVE ATTENDANCE':'SETUP · NOT YET ACTIVE');
- document.getElementById('syncTestBanner').textContent=label+' · v19.0-rc1 · '+(LAUNCH_CHECK?'PRUEBA — solo registros ficticios':'25-013 · Hora del Este');
+ document.getElementById('syncTestBanner').textContent=label+' · v19.0-rc1'+(LAUNCH_CHECK?' · DIAGNOSTIC 1':'')+' · '+(LAUNCH_CHECK?'PRUEBA — solo registros ficticios':'25-013 · Hora del Este');
  document.getElementById('loginTitle').textContent=LAUNCH_CHECK?'Open the launch-check board':'Open the Oyster sign-in board';
  if(LAUNCH_CHECK)document.getElementById('loginMode').textContent='LAUNCH CHECK · v19.0-rc1. Fictional records only, stored separately from real attendance. Same authorized board accounts.';
  document.getElementById('setupTitle').textContent=LAUNCH_CHECK?'Initialize launch checks':'Initialize Oyster live board';
@@ -2496,7 +2503,7 @@ function livePaintGate(){
  if(LAUNCH_CHECK){
   p.appendChild(el('b',null,'Launch checks stay separate from payroll / Pruebas separadas'));
   p.appendChild(el('p',null,SYNC.role==='management'?'Initialize this validation area first. Use the tablet account in another browser/device to run the checks below; then verify its offline sign-out on your actual iPad.':'Prepare this tablet online first. This button runs synthetic server-rule checks only in the validation area. It does not certify hardware or prove physical attendance.'));
-  if(SYNC.role==='kiosk'&&m){var b=el('button','sync-button','Run server-rule checks / Ejecutar pruebas');b.id='runLaunchChecks';b.disabled=LIVE.checking||!syncCanWrite();b.onclick=liveRunServerChecks;p.appendChild(b);}
+  if(SYNC.role==='kiosk'&&m){var b=el('button','sync-button','Run detailed server checks / Ejecutar diagnóstico');b.id='runLaunchChecks';b.disabled=LIVE.checking||!syncCanWrite();b.onclick=liveRunServerChecks;p.appendChild(b);}
   var log=el('pre');log.id='launchResults';log.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;';p.appendChild(log);livePaintResults();return;
  }
  if(!m){p.appendChild(el('p',null,'Management must initialize this live area first. / La oficina debe preparar el tablero.'));return;}
@@ -2655,20 +2662,108 @@ drawCrew=function(){
  controls.appendChild(el('p','audit','Manual CSV export remains in Review. Save signed JSON archives privately each week. No cloud attendance is automatically deleted. PINs lock office screens; they do not grant new account access.'));
  s.insertBefore(controls,s.children[2]||null);
 };
+
+/* v19 DIAGNOSTIC 1: only launch-check evidence; no new permissions or writes.
+   Deliberately retains LIVE_VERSION, Auth identity, storage and server schema. */
+var LIVE_DIAGNOSTIC_BUILD='v19-DIAG1-2026-09-24';
+var LIVE_DIAG=null;
+function liveDiagnosticError(e){
+ var code=String(e&&e.code||'unknown'),message=String(e&&e.message||e||'Unknown failure');
+ // Never put credentials or auth tokens into a downloadable diagnostic report.
+ message=message.replace(/Bearer\s+\S+/gi,'Bearer [REDACTED]').replace(/AIza[A-Za-z0-9_-]{20,}/g,'[API KEY REDACTED]').replace(/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g,'[TOKEN REDACTED]');
+ return {code:code,message:message.slice(0,6000)};
+}
+function liveDiagnosticValue(value,depth){
+ if(depth>16)return '[DEPTH LIMIT]';
+ if(value==null||typeof value!=='object')return value;
+ if(typeof value.toMillis==='function')return {timestampMillis:value.toMillis()};
+ if(value._methodName==='FieldValue.serverTimestamp'||value._delegate&&value._delegate._methodName==='serverTimestamp')return '[SERVER TIMESTAMP TRANSFORM]';
+ if(value.constructor&&/FieldValue|ServerTimestamp/i.test(value.constructor.name))return '[SERVER TIMESTAMP TRANSFORM]';
+ if(Array.isArray(value))return value.map(function(x){return liveDiagnosticValue(x,(depth||0)+1);});
+ var out={};Object.keys(value).forEach(function(k){
+  if(/token|password|credential|apiKey|refreshToken/i.test(k))return;
+  out[k]=liveDiagnosticValue(value[k],(depth||0)+1);
+ });return out;
+}
+function liveDiagnosticTrace(e){
+ if(!LAUNCH_CHECK||LIVE_SITE!=='launch-check-v19'||!LIVE.checking||!LIVE_DIAG||!/^check-(hourly|salary)$/.test(e.workerId||''))return null;
+ var trace={workerId:e.workerId,mode:e.mode,recordId:e.recordId,operation:e.op,capturedIso:e.capturedIso,
+  capturedMs:e.capturedMs,offset:e.offset,deviceIdLength:String(e.deviceId||'').length,expectedRevision:e.expectedRev,
+  status:'running',stage:'Starting transaction',attempts:[]};
+ LIVE_DIAG.transactions.push(trace);return trace;
+}
+function liveDiagnosticTransaction(tx,trace){
+ if(!trace)return tx;
+ var attempt={number:trace.attempts.length+1,startedAt:new Date().toISOString(),reads:[],writes:[]};trace.attempts.push(attempt);
+ function shortPath(ref){return String(ref&&ref.path||'unknown').replace(SYNC.root+'/','');}
+ function recordWrite(kind,args){
+  var path=shortPath(args[0]);
+  if(!/^(punches\/[0-9-]+__check-(hourly|salary)|audit\/|state\/check-(hourly|salary)|receipts\/)/.test(path))throw new Error('Diagnostic refused an unexpected write path.');
+  attempt.writes.push({kind:kind,path:path,data:liveDiagnosticValue(args[1],0)});
+  trace.stage='Committing the attendance, audit, state and receipt writes';
+ }
+ var wrapped={
+  get:async function(ref){
+   var read={path:shortPath(ref),status:'waiting'};attempt.reads.push(read);trace.stage='Reading '+read.path;
+   try{var snap=await tx.get(ref);read.status='read';read.exists=snap.exists;return snap;}
+   catch(e){read.status='rejected';read.error=liveDiagnosticError(e);throw e;}
+  },
+  set:function(){var a=[].slice.call(arguments);recordWrite('set',a);tx.set.apply(tx,a);return wrapped;},
+  update:function(){var a=[].slice.call(arguments);recordWrite('update',a);tx.update.apply(tx,a);return wrapped;},
+  delete:function(){var a=[].slice.call(arguments);recordWrite('delete',a);tx.delete.apply(tx,a);return wrapped;}
+ };return wrapped;
+}
+async function liveDiagnosticPreflight(){
+ if(!LIVE_DIAG||!LAUNCH_CHECK||LIVE_SITE!=='launch-check-v19')return;
+ var p=LIVE_DIAG.preflight;
+ p.note='Read-only preflight. These are observed values, not a Google Security Rules evaluation or independent clock check.';
+ p.projectId=SYNC_CONFIG.projectId;p.databaseRoot=SYNC.root;p.role=SYNC.role;p.expectedTabletUid=SYNC.user.uid===SYNC_TABLET;
+ p.deviceTime=new Date().toISOString();p.easternOffset=syncOffset(new Date());p.deviceIdLength=String(OFF.device||'').length;
+ p.prepared=!!OFF.prepared;p.offlineAssetsReady=!!OFF.assetReady;p.pendingCount=offActive().length;
+ p.appVersion=LIVE_VERSION;p.diagnosticBuild=LIVE_DIAGNOSTIC_BUILD;
+ p.documents={};
+ for(var path of ['config/setup','config/job','roster/check-hourly','roster/check-salary','codes/1000']){
+  try{var snap=await syncRef(path).get({source:'server'});p.documents[path]={exists:snap.exists,data:snap.exists?liveDiagnosticValue(snap.data(),0):null};}
+  catch(e){p.documents[path]={error:liveDiagnosticError(e)};}
+ }
+ var entry=p.documents['config/setup'],m=entry&&entry.data;
+ p.setupMatchesExpected=!!(m&&m.enabled===true&&m.schema===19&&m.site===LIVE_SITE);
+}
+function liveDiagnosticText(){
+ if(!LIVE_DIAG)return '';
+ var lines=['DIAGNOSTIC 1 — '+LIVE_DIAGNOSTIC_BUILD,'Started: '+LIVE_DIAG.startedAt,
+  'Finished: '+(LIVE_DIAG.finishedAt||'still running'),
+  'Checks completed: '+LIVE.checkResults.length+' / 15; not run: '+Math.max(0,15-LIVE.checkResults.length)];
+ if(LIVE_DIAG.preflight&&LIVE_DIAG.preflight.setupMatchesExpected!==undefined){
+  var p=LIVE_DIAG.preflight;lines.push('Fresh server setup enabled/schema/site: '+(p.setupMatchesExpected?'MATCH':'MISMATCH'));
+  lines.push('Tablet UID: '+(p.expectedTabletUid?'MATCH':'MISMATCH')+'; device ID length: '+p.deviceIdLength);
+ }
+ lines.push('');
+ LIVE.checkResults.forEach(function(r){lines.push(r.result.toUpperCase()+' — '+r.name);if(r.detail)lines.push('  '+r.detail);if(r.stage)lines.push('  Stage: '+r.stage);});
+ return lines.join('\n');
+}
+
 // Automated tests below are disabled on the live namespace and use synthetic signatures.
-function livePaintResults(){var p=document.getElementById('launchResults');if(p)p.textContent=LIVE.checkResults.map(function(r){return r.result.toUpperCase()+' — '+r.name+(r.detail?' · '+r.detail:'');}).join('\n');}
+function livePaintResults(){var p=document.getElementById('launchResults');if(p)p.textContent=liveDiagnosticText()||LIVE.checkResults.map(function(r){return r.result.toUpperCase()+' — '+r.name+(r.detail?' · '+r.detail:'');}).join('\n');}
 async function liveRunServerChecks(){
  if(!LAUNCH_CHECK||LIVE_SITE!=='launch-check-v19'){syncNotice(syncError('launch-check-only'),true);return;}
  if(LIVE.checking)return;if(SYNC.role!=='kiosk'||!syncCanWrite()||!offCanCapture()){syncNotice('Use the tablet account and prepare this validation board online first.',true);return;}
  if(offActive().length||draft){syncNotice('Finish/sync any validation punch and close its form first.',true);return;}
- LIVE.checking=true;LIVE.checkResults=[];livePaintGate();
+ LIVE.checking=true;LIVE.checkResults=[];LIVE_DIAG={build:LIVE_DIAGNOSTIC_BUILD,startedAt:new Date().toISOString(),finishedAt:null,preflight:{},transactions:[]};livePaintGate();
  var good=0,bad=0,uid=SYNC.user.uid,last=null,lastEvent=null;
- async function test(name,fn){try{await fn();LIVE.checkResults.push({name:name,result:'pass'});good++;}catch(e){LIVE.checkResults.push({name:name,result:'FAIL',detail:e.code||e.message});bad++;}livePaintResults();}
+ async function test(name,fn){
+  var first=LIVE_DIAG.transactions.length;
+  try{await fn();LIVE.checkResults.push({name:name,result:'pass'});good++;}
+  catch(e){var error=liveDiagnosticError(e),traces=LIVE_DIAG.transactions.slice(first),lastTrace=traces[traces.length-1];
+   LIVE.checkResults.push({name:name,result:'FAIL',detail:error.code+' — '+error.message,stage:lastTrace?lastTrace.stage:'Outside the attendance transaction',error:error});bad++;}
+  livePaintResults();
+ }
  async function denied(fn){try{await fn();}catch(e){if(e.code==='permission-denied')return;throw e;}throw Error('FORBIDDEN ACTION WAS ALLOWED');}
  async function eventFor(mode,workerId){var id=keyFor(workerId),snap=await syncRef('punches/'+id).get({source:'server'}),old=snap.exists?syncUnpack(snap.data()):null,w=roster.find(function(w){return w.id===workerId;});if(!w)throw Error('Initialize the check crew first');
   if(mode==='in'&&isOpen(old))throw Error('CHECK worker is already on site. Close that validation record before rerunning.');
   var ms=Date.now();return {key:'synthetic-'+syncOp(),account:offKey(uid),uid:uid,op:syncOp(),deviceId:OFF.device,workerId:workerId,name:w.name,date:today(),recordId:id,mode:mode,capturedMs:ms,capturedIso:new Date(ms).toISOString(),offset:syncOffset(new Date(ms)),noHours:!!w.noHours,code:mode==='out'&&!w.noHours?'1000':null,note:'SYNTHETIC v19 server-rule verification; not real attendance',signature:{w:400,h:160,strokes:[[10,10,120,80,240,20]]},captureMode:'online',status:'pending',expectedRev:syncRev(old),before:old,parentOp:null};}
  try{
+  await liveDiagnosticPreflight();livePaintResults();
   await test('Tablet cannot read office PIN configuration',function(){return denied(function(){return syncRef('config/security').get({source:'server'});});});
   await test('Tablet cannot add a crew member',function(){return denied(function(){return syncRef('roster/__launch_permission_probe').set({name:'DIAGNOSTIC ONLY',agency:'PEG',active:true,noHours:false});});});
   await test('Tablet cannot write malformed attendance',function(){return denied(function(){return syncRef('punches/__launch_permission_probe').set({approved:true});});});
@@ -2687,10 +2782,15 @@ async function liveRunServerChecks(){
   await test('Attendance-only arrival and departure need no cost code',async function(){var e=await eventFor('in','check-salary');await offReplay(e);var out=await eventFor('out','check-salary'),r=await offReplay(out);if(isOpen(r.rec)||r.rec.code!==null||!r.rec.noHours||sigState(r.rec)!=='full')throw Error('attendance-only mismatch');});
   await test('Unauthenticated browser cannot read this roster',async function(){var a=firebase.initializeApp(SYNC_CONFIG,'pioneer-anonymous-rule-check-'+syncOp());try{await denied(function(){return a.firestore().collection(SYNC.root+'/roster').limit(1).get({source:'server'});});}finally{await a.delete();}});
  }finally{
-  LIVE.checking=false;LIVE.gateKey='';livePaintGate();livePaintResults();
-  var summary={kind:'pioneer-live-server-checks',appVersion:LIVE_VERSION,site:LIVE_SITE,executedAt:new Date().toISOString(),passed:good,failed:bad,checks:LIVE.checkResults,limitations:'Real Firebase rules exercised using current authorized tablet and unauthenticated clients, with synthetic validation records. Not an independent audit, malicious-manager test, other-UID test, browser offline test or exhaustive rule coverage.'};
-  var saveResults=function(){downloadBlob('Pioneer-v19-server-checks-'+today()+'.json',new Blob([JSON.stringify(summary,null,2)],{type:'application/json'}));};
-  saveResults();var saveButton=el('button','sync-button','Download check results again');saveButton.onclick=saveResults;document.getElementById('liveGate').appendChild(saveButton);
+  LIVE_DIAG.finishedAt=new Date().toISOString();LIVE.checking=false;LIVE.gateKey='';livePaintGate();livePaintResults();
+  var summary={kind:'pioneer-live-server-checks',appVersion:LIVE_VERSION,site:LIVE_SITE,executedAt:new Date().toISOString(),startedAt:LIVE_DIAG.startedAt,diagnosticBuild:LIVE_DIAGNOSTIC_BUILD,expectedChecks:15,notRun:Math.max(0,15-good-bad),passed:good,failed:bad,checks:LIVE.checkResults,diagnostics:LIVE_DIAG,limitations:'Real Firebase rules exercised using current authorized tablet and unauthenticated clients, with synthetic validation records. Not an independent audit, malicious-manager test, other-UID test, browser offline test or exhaustive rule coverage.'};
+  var saveResults=function(){downloadBlob('Pioneer-v19-DIAG1-results-'+today()+'.json',new Blob([JSON.stringify(summary,null,2)],{type:'application/json'}));};
+  saveResults();var saveButton=el('button','sync-button','Download detailed results again');saveButton.onclick=saveResults;document.getElementById('liveGate').appendChild(saveButton);
+  var copyButton=el('button','sync-button','Show / copy detailed results');copyButton.style.marginLeft='8px';copyButton.onclick=function(){
+   var area=document.getElementById('diagnosticCopy');if(!area){area=el('textarea','finput');area.id='diagnosticCopy';area.readOnly=true;area.style.minHeight='260px';area.setAttribute('aria-label','Detailed diagnostic report');document.getElementById('liveGate').appendChild(area);}
+   area.value=JSON.stringify(summary,null,2);area.focus();area.select();
+   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(area.value).then(function(){copyButton.textContent='Copied — paste into the chat';}).catch(function(){copyButton.textContent='Select the text below and copy';});
+  };document.getElementById('liveGate').appendChild(copyButton);
   syncNotice(bad?'STOP: '+bad+' launch checks failed. Keep real attendance disabled and send the downloaded results.':good+' server-rule checks passed on this validation area. Now confirm one offline iPad sign-out/reconnect in this v19 validation board. Real attendance is still separate.',!!bad);
  }
 }
