@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0E1929">
+<title>Pioneer v19 Salary Validation</title>
+<style>
+:root{color-scheme:dark;--bg:#0E1929;--card:#162640;--card2:#20334F;--line:#455D7F;--ink:#F3F5F8;--muted:#B5C3D6;--blue:#6FA6F2;--green:#5FD37A;--red:#F0684A}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;font-size:17px;line-height:1.45}.wrap{max-width:900px;margin:0 auto;padding:20px}.card{background:var(--card);border:1px solid var(--line);border-top:4px solid var(--blue);border-radius:12px;padding:20px;margin-bottom:16px}h1{font-size:30px;line-height:1.1;margin:0 0 8px}h2{font-size:21px;margin:0 0 10px}.sub,.muted{color:var(--muted)}.notice{background:var(--card2);border:1px solid var(--line);border-radius:9px;padding:14px;margin:14px 0}.ok{border-color:var(--green);color:#D9FFE2}.bad{border-color:var(--red);color:#FFDCD2}.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.field{display:flex;flex-direction:column;gap:6px;margin:10px 0}.field label{font-size:14px;color:var(--muted)}input{width:100%;min-height:52px;padding:10px 12px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--ink);font:inherit}button{min-height:54px;border:0;border-radius:9px;padding:10px 18px;font:inherit;font-weight:700;cursor:pointer;background:var(--blue);color:#0E1929}button.secondary{background:var(--card2);color:var(--ink);border:1px solid var(--line)}button:disabled{opacity:.55;cursor:not-allowed}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#09111E;border:1px solid var(--line);border-radius:9px;padding:14px;max-height:48vh;overflow:auto;font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.status{font-weight:700}.en-es{display:block;font-size:.92em;color:var(--muted);font-weight:600;margin-top:3px}.steps{padding-left:22px}.steps li{margin:7px 0}.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section class="card">
+    <h1>Pioneer v19 — focused salary validation<span class="en-es">Validación enfocada de empleado asalariado</span></h1>
+    <p class="sub">Synthetic validation only. This page is locked to <b>launch-check-v19</b>, the Jake tablet UID, and worker <b>CHECK Salary</b>. It cannot write to real Oyster attendance.</p>
+    <p class="sub">Solo validación sintética. Esta página está limitada al área de prueba, a la cuenta de tableta de Jake y al trabajador CHECK Salary. No puede escribir en la asistencia real de Oyster.</p>
+    <div id="bootStatus" class="notice">Loading Firebase… / Cargando Firebase…</div>
+  </section>
+
+  <section id="loginCard" class="card hidden">
+    <h2>Tablet sign-in required<span class="en-es">Se requiere iniciar sesión de la tableta</span></h2>
+    <p class="muted">Use Jake’s Firebase app password on this page. It is not displayed, downloaded, or included in the report.</p>
+    <div class="field"><label>Email</label><input id="email" type="email" value="jake@pioneerelectricgrp.com" autocomplete="username"></div>
+    <div class="field"><label>Firebase app password / Contraseña de la aplicación Firebase</label><input id="password" type="password" autocomplete="current-password"></div>
+    <div class="row"><button id="loginBtn">Sign in / Iniciar sesión</button></div>
+    <div id="loginMsg" class="notice hidden"></div>
+  </section>
+
+  <section id="runCard" class="card hidden">
+    <h2>Focused server check<span class="en-es">Prueba enfocada del servidor</span></h2>
+    <p>This performs a signed, attendance-only arrival and departure with <b>no cost code</b>, using four atomic writes per operation: punch, private audit, worker state, and immutable receipt. It leaves CHECK Salary signed out.</p>
+    <p class="muted">If an earlier synthetic salary record is still open, the verifier closes it first, then performs a fresh arrival/departure cycle. It never deletes or rewrites prior blocks.</p>
+    <div class="row">
+      <button id="runBtn">Run salary validation / Ejecutar validación</button>
+      <button id="signOutBtn" class="secondary">Sign out of verifier</button>
+    </div>
+    <div id="runStatus" class="notice">Ready. Do not close this tab while the check is running.</div>
+  </section>
+
+  <section id="reportCard" class="card hidden">
+    <h2>Result / Resultado</h2>
+    <div class="row"><button id="copyBtn">Copy report / Copiar informe</button><button id="downloadBtn" class="secondary">Download JSON / Descargar JSON</button></div>
+    <pre id="report"></pre>
+  </section>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore-compat.js"></script>
+<script>
+"use strict";
+(function(){
+  var CONFIG={apiKey:"AIzaSyDRqYBU-U1SJjKXFsvHvQk5fNhvT6HyfqQ",authDomain:"sign-in-sheet-58d6a.firebaseapp.com",projectId:"sign-in-sheet-58d6a",storageBucket:"sign-in-sheet-58d6a.firebasestorage.app",messagingSenderId:"682748387890",appId:"1:682748387890:web:8bf9bcce570d2a513e122b"};
+  var EXPECTED_UID="hnLcbI2FI1eeQhhmxjxXnVpgwpG2";
+  var ROOT="attendanceSites/launch-check-v19";
+  var WORKER_ID="check-salary";
+  var BUILD="v19-SALARY-FOCUSED-2026-09-24-r1";
+  var app,auth,fs,lastReport=null,running=false;
+  var bootStatus=document.getElementById("bootStatus"),loginCard=document.getElementById("loginCard"),runCard=document.getElementById("runCard"),reportCard=document.getElementById("reportCard"),runStatus=document.getElementById("runStatus"),reportBox=document.getElementById("report");
+
+  function errCode(e){return (e&&e.code)||e&&e.name||"unknown";}
+  function errMessage(e){return (e&&e.message)||String(e||"Unknown error");}
+  function show(el,msg,bad){el.textContent=msg;el.classList.remove("hidden","ok","bad");el.classList.add(bad?"bad":"ok");}
+  function uuid(){return self.crypto&&crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2);}
+  function clone(v){return v==null?v:JSON.parse(JSON.stringify(v));}
+  function fieldDelete(o,k){if(Object.prototype.hasOwnProperty.call(o,k))delete o[k];}
+  function ref(path){return fs.doc(ROOT+"/"+path);}
+  function serverStamp(){return firebase.firestore.FieldValue.serverTimestamp();}
+
+  function eastParts(ms){
+    var d=new Date(ms),out={};
+    new Intl.DateTimeFormat("en-US",{timeZone:"America/New_York",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"}).formatToParts(d).forEach(function(p){out[p.type]=p.value;});
+    var wall=Date.UTC(+out.year,+out.month-1,+out.day,+out.hour,+out.minute,+out.second);
+    var offset=Math.round((wall-Math.floor(ms/1000)*1000)/60000);
+    return {date:out.year+"-"+out.month+"-"+out.day,time:out.hour+":"+out.minute,offset:offset};
+  }
+  function offsetText(n){var s=n<0?"-":"+",a=Math.abs(n),h=String(Math.floor(a/60)).padStart(2,"0"),m=String(a%60).padStart(2,"0");return s+h+":"+m;}
+  function signature(at){return {at:at,w:400,h:160,strokes:[[10,10,120,80,240,20]]};}
+  function isOpen(rec){return !!(rec&&rec.segments&&rec.segments.length&&rec.segments[rec.segments.length-1].out==null);}
+  function rev(rec){return rec&&rec._rev||0;}
+
+  function encode(v,inArray){
+    if(v===undefined)return null;
+    if(v===null||typeof v!=="object")return v;
+    if(Array.isArray(v)){var a=v.map(function(x){return encode(x,true);});return inArray?{__pegArray:a}:a;}
+    var o={};Object.keys(v).forEach(function(k){if(k!=="_id")o[k]=encode(v[k],false);});return o;
+  }
+  function decode(v){
+    if(v===null||typeof v!=="object")return v;
+    if(typeof v.toMillis==="function")return v.toDate().toISOString();
+    if(Array.isArray(v))return v.map(decode);
+    if(Object.keys(v).length===1&&Array.isArray(v.__pegArray))return v.__pegArray.map(decode);
+    var o={};Object.keys(v).forEach(function(k){o[k]=decode(v[k]);});return o;
+  }
+  function pack(rec){var r=encode(rec,false),map={};(r.segments||[]).forEach(function(s,i){map["s"+i]=s;});r.segmentCount=(r.segments||[]).length;r.segments=map;return r;}
+  function unpack(raw){if(!raw)return null;var r=decode(raw);if(r.segments&&!Array.isArray(r.segments)){var a=[];for(var i=0;i<(r.segmentCount||0);i++)a.push(r.segments["s"+i]);r.segments=a;}delete r.segmentCount;return r;}
+  function summaries(rec){var list=rec.segments||[],last=list[list.length-1];rec.inLocal=list.length?list[0].in:null;rec.inAt=list.length?list[0].inAt:null;rec.outLocal=last&&last.out?last.out:null;rec.outAt=last&&last.outAt?last.outAt:null;return rec;}
+  function compact(rec){if(!rec)return null;var list=rec.segments||[];return {revision:rev(rec),segmentCount:list.length,open:isOpen(rec),noHours:rec.noHours,code:rec.code,last:list.length?{in:list[list.length-1].in,out:list[list.length-1].out,hasSigIn:!!list[list.length-1].sigIn,hasSigOut:!!list[list.length-1].sigOut}:null};}
+
+  async function preflight(){
+    if(!navigator.onLine)throw Object.assign(new Error("Browser reports offline"),{code:"offline"});
+    var user=auth.currentUser;if(!user||user.uid!==EXPECTED_UID)throw Object.assign(new Error("Jake tablet account is not signed in"),{code:"wrong-account"});
+    var setup=await ref("config/setup").get({source:"server"});
+    var job=await ref("config/job").get({source:"server"});
+    var worker=await ref("roster/"+WORKER_ID).get({source:"server"});
+    if(!setup.exists||setup.data().enabled!==true||setup.data().schema!==19||setup.data().site!=="launch-check-v19")throw Object.assign(new Error("Validation setup does not match"),{code:"setup-mismatch"});
+    if(!job.exists)throw Object.assign(new Error("Validation job is missing"),{code:"job-missing"});
+    if(!worker.exists||worker.data().active===false||worker.data().noHours!==true)throw Object.assign(new Error("CHECK Salary roster entry is missing/inactive/not attendance-only"),{code:"roster-mismatch"});
+    return {uid:user.uid,email:user.email||"",setup:decode(setup.data()),job:decode(job.data()),worker:decode(worker.data())};
+  }
+
+  async function readCurrent(date){
+    var id=date+"__"+WORKER_ID;
+    var p=await ref("punches/"+id).get({source:"server"}),s=await ref("state/"+WORKER_ID).get({source:"server"});
+    return {id:id,raw:p.exists?p.data():null,rec:p.exists?unpack(p.data()):null,state:s.exists?decode(s.data()):null};
+  }
+
+  async function operation(mode,deviceId){
+    var capturedMs=Date.now(),timeInfo=eastParts(capturedMs),capturedIso=new Date(capturedMs).toISOString(),op=uuid(),id=timeInfo.date+"__"+WORKER_ID;
+    var result=await fs.runTransaction(async function(tx){
+      var receiptRef=ref("receipts/"+op),punchRef=ref("punches/"+id),workerRef=ref("roster/"+WORKER_ID),stateRef=ref("state/"+WORKER_ID),jobRef=ref("config/job");
+      var receiptSnap=await tx.get(receiptRef);
+      var punchSnap=await tx.get(punchRef);
+      var workerSnap=await tx.get(workerRef);
+      var stateSnap=await tx.get(stateRef);
+      var jobSnap=await tx.get(jobRef);
+      if(receiptSnap.exists)throw Object.assign(new Error("Operation receipt already exists"),{code:"receipt-exists"});
+      if(!workerSnap.exists||workerSnap.data().active===false||workerSnap.data().noHours!==true)throw Object.assign(new Error("Salary roster changed"),{code:"roster-mismatch"});
+      if(!jobSnap.exists)throw Object.assign(new Error("Job configuration missing"),{code:"job-missing"});
+      var raw=punchSnap.exists?punchSnap.data():null,old=punchSnap.exists?unpack(raw):null,worker=decode(workerSnap.data()),job=decode(jobSnap.data()),head=stateSnap.exists?decode(stateSnap.data()):null;
+      if(old&&old.get)throw Object.assign(new Error("Unexpected record shape"),{code:"record-shape"});
+      if(old&&old.voided)throw Object.assign(new Error("Synthetic salary record is voided; stop for review"),{code:"voided-record"});
+      if(old&&(old.workerId!==WORKER_ID||old.name!==worker.name||old.agency!==worker.agency||old.job!==job.code||old.jobName!==job.name||old.noHours!==true))throw Object.assign(new Error("Existing salary record identity no longer matches setup"),{code:"identity-mismatch"});
+      if(mode==="in"&&isOpen(old))throw Object.assign(new Error("Salary record is already open"),{code:"already-open"});
+      if(mode==="out"&&!isOpen(old))throw Object.assign(new Error("Salary record is not open"),{code:"not-open"});
+      if(mode==="in"&&old&&old.segments.length>=40)throw Object.assign(new Error("Salary record already has 40 segments"),{code:"segment-limit"});
+      if(mode==="out"&&head&&head.open&&head.recordId!==id)throw Object.assign(new Error("Worker state points to another open record"),{code:"open-day"});
+      var rec=old?clone(old):{workerId:WORKER_ID,name:worker.name,agency:worker.agency,job:job.code,jobName:job.name,date:timeInfo.date,noHours:true,code:null,note:"SYNTHETIC v19 focused salary verification; not real attendance",tz:offsetText(timeInfo.offset),source:"kiosk",approved:false,segments:[]};
+      var list=clone(rec.segments||[]),sig=signature(capturedIso);
+      if(mode==="in")list.push({in:timeInfo.time,inAt:capturedIso,inMs:capturedMs,out:null,outAt:null,sigIn:sig});
+      else{var last=list[list.length-1];last.out=timeInfo.time;last.outAt=capturedIso;last.outMs=capturedMs;last.sigOut={for:{blocks:list.map(function(x){return [x.in,x.out];}),code:null},at:sig.at,w:sig.w,h:sig.h,strokes:sig.strokes};rec.code=null;}
+      rec.segments=list;summaries(rec);rec.noHours=true;rec.approved=false;if(old&&old.approved)rec.reviewRequired=true;
+      ["approvedBy","approvedAt","approvalException","sentAt"].forEach(function(k){fieldDelete(rec,k);});
+      rec._rev=rev(old)+1;rec._writer=auth.currentUser.uid;rec._op=op;rec._event="worker_"+mode;rec._clientMs=Date.now();rec._capturedMs=capturedMs;rec._deviceId=deviceId;rec._captureMode="online";rec._offset=timeInfo.offset;rec.updatedAt=capturedIso;fieldDelete(rec,"_serverAt");fieldDelete(rec,"_id");
+      var enc=pack(rec);enc._serverAt=serverStamp();
+      var history={recordId:id,date:timeInfo.date,before:raw,after:enc,byUid:auth.currentUser.uid,event:rec._event,createdAt:serverStamp()};
+      var receipt={op:op,uid:auth.currentUser.uid,deviceId:deviceId,recordId:id,capturedMs:capturedMs,revision:rec._rev,receivedAt:serverStamp()};
+      tx.set(punchRef,enc);tx.set(ref("audit/"+op),history);tx.set(stateRef,{recordId:id,date:timeInfo.date,open:isOpen(rec),revision:rec._rev,op:op});tx.set(receiptRef,receipt);
+      return {op:op,mode:mode,recordId:id,beforeRevision:rev(old),afterRevision:rec._rev,capturedIso:capturedIso,offset:timeInfo.offset};
+    });
+    return result;
+  }
+
+  async function verifyFinal(date,ops){
+    var current=await readCurrent(date);
+    if(!current.rec)throw Object.assign(new Error("Final salary punch is missing"),{code:"verify-missing"});
+    var last=current.rec.segments[current.rec.segments.length-1];
+    if(isOpen(current.rec)||current.rec.noHours!==true||current.rec.code!==null||!last.sigIn||!last.sigOut)throw Object.assign(new Error("Final attendance-only record is not closed/signed/no-code"),{code:"verify-record"});
+    if(!current.state||current.state.recordId!==current.id||current.state.open!==false||current.state.revision!==current.rec._rev||current.state.op!==current.rec._op)throw Object.assign(new Error("Final worker state does not match salary punch"),{code:"verify-state"});
+    for(var i=0;i<ops.length;i++){var r=await ref("receipts/"+ops[i].op).get({source:"server"});if(!r.exists)throw Object.assign(new Error("Receipt missing for "+ops[i].op),{code:"verify-receipt"});}
+    return {recordId:current.id,record:compact(current.rec),state:current.state,receiptCountVerified:ops.length,auditNote:"Audit documents are intentionally unreadable to the tablet; atomic commit success and the rules enforce their creation."};
+  }
+
+  async function run(){
+    if(running)return;running=true;document.getElementById("runBtn").disabled=true;reportCard.classList.add("hidden");show(runStatus,"Running direct server validation… / Ejecutando validación directa…",false);
+    var started=new Date().toISOString(),report={kind:"pioneer-v19-focused-salary-live-check",build:BUILD,site:"launch-check-v19",workerId:WORKER_ID,startedAt:started,result:"FAIL",operations:[]};
+    try{
+      var pf=await preflight();report.preflight={projectId:CONFIG.projectId,uidMatch:pf.uid===EXPECTED_UID,email:pf.email,setupMatches:true,workerActive:pf.worker.active!==false,noHours:pf.worker.noHours===true,online:navigator.onLine};
+      var now=eastParts(Date.now()),before=await readCurrent(now.date);report.before={recordId:before.id,record:compact(before.rec),state:before.state};
+      var deviceId;try{deviceId=localStorage.getItem("pioneer.v19.salaryVerifier.device")||"";}catch(_){deviceId="";}if(!/^[A-Za-z0-9_-]{10,100}$/.test(deviceId))deviceId=uuid();try{localStorage.setItem("pioneer.v19.salaryVerifier.device",deviceId);}catch(_){}
+      if(before.rec&&isOpen(before.rec)){show(runStatus,"Closing the existing synthetic salary segment first…",false);report.operations.push(await operation("out",deviceId));}
+      show(runStatus,"Testing a fresh attendance-only arrival…",false);report.operations.push(await operation("in",deviceId));
+      show(runStatus,"Testing its signed attendance-only departure with no cost code…",false);report.operations.push(await operation("out",deviceId));
+      report.final=await verifyFinal(now.date,report.operations);report.result="PASS";report.finishedAt=new Date().toISOString();
+      show(runStatus,"PASS — salary arrival and signed departure were accepted with no cost code. CHECK Salary is signed out. / APROBADO.",false);
+    }catch(e){report.result="FAIL";report.finishedAt=new Date().toISOString();report.error={code:errCode(e),message:errMessage(e)};show(runStatus,"FAIL — "+errCode(e)+": "+errMessage(e),true);}
+    lastReport=report;reportBox.textContent=JSON.stringify(report,null,2);reportCard.classList.remove("hidden");running=false;document.getElementById("runBtn").disabled=false;
+  }
+
+  function authPaint(user){
+    if(user&&user.uid===EXPECTED_UID){loginCard.classList.add("hidden");runCard.classList.remove("hidden");show(bootStatus,"Authorized Jake tablet account: "+(user.email||user.uid)+" / Cuenta autorizada",false);}
+    else{runCard.classList.add("hidden");loginCard.classList.remove("hidden");show(bootStatus,user?"Wrong Firebase account. Sign out, then use Jake’s tablet account. / Cuenta incorrecta.":"No matching Firebase session found. Sign in locally below. / Inicie sesión abajo.",true);if(user)auth.signOut();}
+  }
+
+  document.getElementById("loginBtn").onclick=async function(){var btn=this,msg=document.getElementById("loginMsg");btn.disabled=true;try{await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);await auth.signInWithEmailAndPassword(document.getElementById("email").value.trim(),document.getElementById("password").value);document.getElementById("password").value="";msg.classList.add("hidden");}catch(e){show(msg,errCode(e)+": "+errMessage(e),true);}finally{btn.disabled=false;}};
+  document.getElementById("runBtn").onclick=run;
+  document.getElementById("signOutBtn").onclick=function(){auth.signOut();};
+  document.getElementById("copyBtn").onclick=async function(){if(!lastReport)return;var text=JSON.stringify(lastReport,null,2);try{await navigator.clipboard.writeText(text);this.textContent="Copied / Copiado";}catch(_){reportBox.focus();var range=document.createRange();range.selectNodeContents(reportBox);var sel=getSelection();sel.removeAllRanges();sel.addRange(range);this.textContent="Selected / Seleccionado";}};
+  document.getElementById("downloadBtn").onclick=function(){if(!lastReport)return;var blob=new Blob([JSON.stringify(lastReport,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="Pioneer-v19-salary-live-check-"+new Date().toISOString().replace(/[:.]/g,"-")+".json";a.click();setTimeout(function(){URL.revokeObjectURL(a.href);},1000);};
+
+  try{app=firebase.initializeApp(CONFIG);auth=app.auth();fs=app.firestore();auth.onAuthStateChanged(authPaint,function(e){show(bootStatus,"Firebase auth error: "+errMessage(e),true);});}
+  catch(e){show(bootStatus,"Firebase could not start: "+errMessage(e),true);}
+})();
+</script>
+</body>
+</html>
