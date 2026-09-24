@@ -4,13 +4,14 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import {PROJECT,HOST,PORT,ROOT,TABLET,MANAGER,clone,assertIsolation,docPath,rebaseFixture,convertValues,isolateRules,helperChecks} from './support.mjs';
 assertIsolation();
+const {makeExtraCases} = await import('./patch3-cases.mjs');
 const {initializeTestEnvironment} = await import('@firebase/rules-unit-testing');
 const {doc,getDoc,setDoc,updateDoc,deleteDoc,runTransaction,writeBatch,serverTimestamp,Timestamp} = await import('firebase/firestore');
 const baseline=fs.readFileSync('emulator-only.rules','utf8');
 const fixture=JSON.parse(fs.readFileSync('fixtures.json','utf8'));
 const out='results';fs.mkdirSync(out,{recursive:true});
 const report={kind:'pioneer-native-engine-diagnostic',project:PROJECT,emulatorHost:`${HOST}:${PORT}`,startedAt:new Date().toISOString(),
-  sourceRulesSha256:fixture.sourceRulesSha256,emulatorRulesSha256:crypto.createHash('sha256').update(baseline).digest('hex'),
+  candidateRevision:fixture.sourceRulesRevision,sourceRulesSha256:fixture.sourceRulesSha256,emulatorRulesSha256:crypto.createHash('sha256').update(baseline).digest('hex'),
   sourceReportStartedAt:fixture.sourceReportStartedAt,productionContacted:false,productionRulesChanged:false,websiteChanged:false,
   note:'Native emulator, fictional UIDs, timestamp-rebased synthetic payloads. Isolated-validator cases intentionally bypass only supporting writes in this demo emulator. They are not release acceptance tests. A green diagnostic workflow is not launch approval.',cases:[]};
 function save(){fs.writeFileSync(path.join(out,'native-report.json'),JSON.stringify(report,null,2)+'\n');}
@@ -36,7 +37,7 @@ async function seed(env,c){
       const r=convert(c.before);batch.set(ref(db,`punches/${c.day}__${c.workerId}`),r);
       batch.set(ref(db,`state/${c.workerId}`),{recordId:`${c.day}__${c.workerId}`,date:c.day,open:r.outLocal===null,revision:r._rev,op:r._op});
       batch.set(ref(db,`receipts/${r._op}`),{op:r._op,uid:TABLET,deviceId:r._deviceId,recordId:`${c.day}__${c.workerId}`,capturedMs:r._capturedMs,revision:r._rev,receivedAt:r._serverAt});
-      batch.set(ref(db,`audit/${r._op}`),{recordId:`${c.day}__${c.workerId}`,date:c.day,before:null,after:r,byUid:TABLET,event:r._event,createdAt:r._serverAt});
+      batch.set(ref(db,`audit/${r._op}`),{recordId:`${c.day}__${c.workerId}`,date:c.day,before:c.priorAuditBefore?convert(c.priorAuditBefore):null,after:r,byUid:TABLET,event:r._event,createdAt:r._serverAt});
     }
     await batch.commit();
   });
@@ -107,6 +108,8 @@ try{
     ['other-uid-roster','deny',(_db,_c,env)=>getDoc(ref(env.authenticatedContext('native-unapproved-person').firestore(),'roster/check-hourly'))],
   ];
   for(const [name,expected,fn] of negatives)await oneCase(name,baseline,h,expected,'full-rules',fn);
+  // PATCH 3 acceptance cases use the complete unmodified candidate rules.
+  for(const c of makeExtraCases(fixture))await oneCase(c.name,baseline,c,c.expected,'full-rules');
   // Isolation is forensic only. The four related records are still submitted
   // together, but just one collection's original validator controls permission.
   for(const name of ['hourly-departure','salary-departure']){
@@ -129,7 +132,7 @@ finally{
   report.harnessErrors=report.cases.filter(c=>c.observed==='harness-error'||c.observed==='error').length;
   save();
   const summary=['# Pioneer native rules diagnostic','',
-    '**This run does not deploy or activate anything. A green workflow only means the diagnostic completed.**','',
+    '**PATCH 3 CANDIDATE — no deployment or activation. Review the full-rule acceptance count below.**','',
     '| Case | Scope | Intended | Observed |','|---|---|---|---|',
     ...report.cases.map(c=>`| ${c.label} | ${c.scope} | ${c.expected} | ${c.observed} |`),
     '',`Full-rule cases matching intended behavior: ${report.fullRules.matchedIntended}/${full.length}.`,
@@ -138,5 +141,5 @@ finally{
   fs.writeFileSync(path.join(out,'SUMMARY.md'),summary);
   if(process.env.GITHUB_STEP_SUMMARY)fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,summary);
   console.log(summary);
-  if(report.fatal||report.harnessErrors)process.exitCode=2;
+  if(report.fatal||report.harnessErrors||report.fullRules.mismatchedOrError)process.exitCode=2;
 }

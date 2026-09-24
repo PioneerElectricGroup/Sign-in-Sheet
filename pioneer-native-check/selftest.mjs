@@ -28,8 +28,8 @@ test('Code retained on hourly record',()=>assert.equal(punch(h).code,'1000'));
 test('Salary record remains attendance-only',()=>assert.ok(punch(salary).code===null&&punch(salary).noHours));
 test('Uploaded report source summary identified',()=>assert.equal(fixtures.sourceReportStartedAt,'2026-09-24T14:02:24.590Z'));
 test('No diagnostic truncation markers in generated fixtures',()=>assert.ok(!JSON.stringify(fixtures).includes('[DEPTH LIMIT]')));
-test('No original account UID in generated rules',()=>assert.ok(!/d3GUR1ht0DQSss1mS5t9jOgChfq2|hnLcbI2FI1eeQhhmxjxXnVpgwpG2/.test(rules)));
-test('No original account UID or device ID in generated fixtures',()=>assert.ok(!/d3GUR1ht0DQSss1mS5t9jOgChfq2|hnLcbI2FI1eeQhhmxjxXnVpgwpG2|63ed00e2/.test(JSON.stringify(fixtures))));
+test('No original account UID in generated rules',()=>assert.deepEqual([...new Set([...rules.matchAll(/request\.auth\.uid == '([^']+)'/g)].map(m=>m[1]))].sort(),[MANAGER,TABLET].sort()));
+test('No original account UID or device ID in generated fixtures',()=>assert.ok(fixtures.cases.every(c=>punch(c)._writer===TABLET&&punch(c)._deviceId.startsWith('native-device-'))));
 test('Mock rule UIDs present',()=>assert.ok(rules.includes(TABLET)&&rules.includes(MANAGER)));
 for(const c of fixtures.cases){
  test(c.name+': four linked writes',()=>assert.equal(c.writes.length,4));
@@ -70,3 +70,6 @@ test('Native runner checks isolation before loading the SDK',()=>{
 });
 const result={kind:'package-selftest-only',nativeFirestoreExecuted:false,passed:checks.length,failed:0,checks};
 console.log(JSON.stringify(result,null,2));
+
+// Source/fixture checks for the expression-budget candidate; still not native execution.
+await import('./patch3-selftest.mjs');

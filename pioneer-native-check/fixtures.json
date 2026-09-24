@@ -2,7 +2,7 @@
   "kind": "synthetic-pioneer-native-fixtures",
   "sourceReportStartedAt": "2026-09-24T14:02:24.590Z",
   "sourceReportSha256": "c61c245bce3103614a8fd6a67a0ac19c087ce783d0846e99c2a071f702b44e22",
-  "sourceRulesSha256": "b0c0a27f2ecba660bbf5cb85d7eaf79e58c4775eb5ff923a4065f28040c7f7b9",
+  "sourceRulesSha256": "049858671bdd76d30162ae91e842e0270b89b97dfcb63e11a008021cca0658df",
   "anchorMs": 1790258545762,
   "originalDate": "2026-09-24",
   "originalLocalTime": "10:02",
@@ -1416,5 +1416,6 @@
         }
       }
     }
-  ]
+  ],
+  "sourceRulesRevision": "v19-PATCH3-CANDIDATE-2026-09-24"
 }

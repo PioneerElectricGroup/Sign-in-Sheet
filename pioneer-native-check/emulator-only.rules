@@ -1,7 +1,7 @@
 rules_version = '2';
-// EMULATOR ONLY: fictional UIDs; do NOT publish this file to Firebase.
-// The v19 Patch 2 validators are unchanged. This package has no deploy command.
-// EMULATOR COPY of v19.0-rc1 evaluation-efficiency patch 2 (2026-09-24). Includes timestamp patch 1.
+// EMULATOR ONLY. Fictional accounts. DO NOT PUBLISH THIS FILE TO FIREBASE.
+// v19 PATCH 3 CANDIDATE: expression-budget correction; native verification required.
+// v19.0-rc1 Patch 3 candidate, based on Patch 2 and its timestamp correction.
 // Equivalent v19 checks with less repeated work; no new access grants; v18 scope unchanged.
 // Only prepared clients use delayed captures. Client capture time is NOT a trusted server time.
 // Real attendance uses attendanceSites/oyster-25-013; v18 test records are never migrated.
@@ -247,9 +247,11 @@ service cloud.firestore {
         let secondOfMinute = int((ms % 60000) / 1000);
         return string(x.year()) + '-' + pad(x.month()) + '-' + pad(x.day()) + 'T'
           + pad(x.hours()) + ':' + pad(x.minutes()) + ':' + pad(secondOfMinute) + '.'
-          + (n < 10 ? '00' + string(n) : (n < 100 ? '0' + string(n) : string(n))) + 'Z';
+          + string(1000 + n)[1:4] + 'Z';
       }
-      function pad(n) { return n < 10 ? '0' + string(n) : string(n); }
+      // Calendar/time components here are integers in 0..99. Preserve zero-padding
+      // without evaluating both sides of a formatting conditional.
+      function pad(n) { return string(100 + n)[1:3]; }
       function localTime(ms, offset) {
         let x = timestamp.value(ms + offset * 60000);
         return pad(x.hours()) + ':' + pad(x.minutes());
@@ -364,10 +366,28 @@ service cloud.firestore {
           && metadata(r) && identity(r) && summaries(r) && newIn(r.segments.s0,r)
           && noOtherOpen(r,id) && headMatches(id,r) && auditMatches(id,r) && receiptRequired(id,r);
       }
-      function punchUpdate(id, r, old) {
+      // Operation-specific helpers keep the other operation's expression tree out
+      // of a legitimate update. All original arrival/departure predicates remain.
+      function appendArrival(id, r, old) {
         let n = old.segmentCount;
         let lastKey = 's'+string(n-1);
         let nextKey = 's'+string(n);
+        return (n == 0 || old.outLocal != null)
+          && r.segmentCount == n+1 && r.code == old.code
+          && r.segments.diff(old.segments).affectedKeys().hasOnly([nextKey])
+          && newIn(r.segments[nextKey],r)
+          && (n == 0 || r._capturedMs >= old.segments[lastKey].get('outMs',0))
+          && noOtherOpen(r,id);
+      }
+      function closeDeparture(r, old) {
+        let n = old.segmentCount;
+        let lastKey = 's'+string(n-1);
+        return n > 0 && old.outLocal == null
+          && r.segmentCount == n && validCode(r)
+          && r.segments.diff(old.segments).affectedKeys().hasOnly([lastKey])
+          && newOut(r.segments[lastKey],old.segments[lastKey],r);
+      }
+      function punchUpdate(id, r, old) {
         return metadata(r) && r._rev == old._rev+1
           && r.diff(old).affectedKeys().hasOnly(['segments','segmentCount','inLocal','inAt','outLocal','outAt','code','note','approved','approvedBy','approvedAt','approvalException','reviewRequired','sentAt','voided','updatedAt','_rev','_writer','_op','_event','_clientMs','_capturedMs','_deviceId','_captureMode','_offset','_serverAt'])
           && (!old.get('voided',false) || (old.segmentCount == 0 && old._event == 'undo'))
@@ -376,16 +396,10 @@ service cloud.firestore {
           && (old.get('approved',false) ? r.reviewRequired == true : r.get('reviewRequired',false) == old.get('reviewRequired',false))
           && r.note is string && r.note.size() <= 2000
           && r.date == localDate(r._capturedMs,r._offset) && activeWorker(r) && summaries(r)
-          && (
-            (r._event == 'worker_in' && (n == 0 || old.outLocal != null)
-              && r.segmentCount == n+1 && r.code == old.code
-              && r.segments.diff(old.segments).affectedKeys().hasOnly([nextKey])
-              && newIn(r.segments[nextKey],r) && (n == 0 || r._capturedMs >= old.segments[lastKey].get('outMs',0)) && noOtherOpen(r,id))
-            || (r._event == 'worker_out' && n > 0 && old.outLocal == null
-              && r.segmentCount == n && validCode(r)
-              && r.segments.diff(old.segments).affectedKeys().hasOnly([lastKey])
-              && newOut(r.segments[lastKey],old.segments[lastKey],r))
-          ) && headMatches(id,r) && auditMatches(id,r) && receiptRequired(id,r);
+          && (r._event == 'worker_out'
+            ? closeDeparture(r,old)
+            : (r._event == 'worker_in' && appendArrival(id,r,old)))
+          && headMatches(id,r) && auditMatches(id,r) && receiptRequired(id,r);
       }
       function undoUpdate(id, r, old) {
         let a = get(/databases/$(database)/documents/attendanceSites/$(siteId)/audit/$(old._op)).data;

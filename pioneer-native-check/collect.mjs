@@ -4,7 +4,11 @@ import path from 'node:path';
 const dir='results';
 if(!fs.existsSync(dir)){console.log('No results folder. Review earlier job steps. No production changes were made.');process.exit(0);}
 const primary=['native-report.json','SUMMARY.md','dependency-versions.txt','NOT_FINISHED.txt'];
-const coverage=fs.readdirSync(dir).filter(n=>/^\d+-.*-coverage\.json$/.test(n)).sort();
+let report={};try{report=JSON.parse(fs.readFileSync(path.join(dir,'native-report.json'),'utf8'));}catch{}
+// Preserve complete failed native coverage, without printing hundreds of MB of passing data.
+const failed=(report.cases||[]).filter(c=>c.scope==='full-rules'&&c.matchesIntended!==true);
+const coverage=failed.map(c=>c.coverage?.file).filter(Boolean);
+console.log('Full rule coverage included for failing acceptance cases: '+coverage.length);
 for(const name of [...primary,...coverage,'firestore-debug.log']){
  const file=path.join(dir,name);if(!fs.existsSync(file))continue;
  let text=fs.readFileSync(file,'utf8');
