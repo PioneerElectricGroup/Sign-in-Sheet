@@ -1,0 +1,1420 @@
+{
+  "kind": "synthetic-pioneer-native-fixtures",
+  "sourceReportStartedAt": "2026-09-24T14:02:24.590Z",
+  "sourceReportSha256": "c61c245bce3103614a8fd6a67a0ac19c087ce783d0846e99c2a071f702b44e22",
+  "sourceRulesSha256": "b0c0a27f2ecba660bbf5cb85d7eaf79e58c4775eb5ff923a4065f28040c7f7b9",
+  "anchorMs": 1790258545762,
+  "originalDate": "2026-09-24",
+  "originalLocalTime": "10:02",
+  "offset": -240,
+  "note": "Only synthetic CHECK records. Account/device/operation identifiers replaced. audit.after reconstructed from the matching top-level punch payload because the source app assigns that same object; diagnostic depth markers are NOT data sent to Firestore. Test times are rebased at runtime.",
+  "seed": {
+    "config/setup": {
+      "site": "launch-check-v19",
+      "mode": "validation",
+      "enabled": true,
+      "schema": 19
+    },
+    "config/job": {
+      "name": "Oyster LAUNCH CHECK",
+      "timeZone": "America/New_York",
+      "_rev": 1,
+      "sub": "Pioneer Electric Group",
+      "code": "CHECK-19"
+    },
+    "roster/check-hourly": {
+      "noHours": false,
+      "active": true,
+      "name": "CHECK Hourly",
+      "agency": "PEG",
+      "job": "CHECK-19",
+      "_rev": 1
+    },
+    "roster/check-salary": {
+      "noHours": true,
+      "active": true,
+      "name": "CHECK Salary",
+      "agency": "PEG",
+      "job": "CHECK-19",
+      "_rev": 1
+    },
+    "codes/1000": {
+      "label": "General Labor for Projects",
+      "labelEs": "Mano de obra general",
+      "_rev": 1
+    }
+  },
+  "cases": [
+    {
+      "name": "hourly-arrival",
+      "expected": "allow",
+      "sourceObserved": "confirmed",
+      "workerId": "check-hourly",
+      "readPaths": [
+        "receipts/native-operation-001",
+        "punches/2026-09-24__check-hourly",
+        "roster/check-hourly",
+        "state/check-hourly"
+      ],
+      "writes": [
+        {
+          "kind": "set",
+          "path": "punches/2026-09-24__check-hourly",
+          "data": {
+            "workerId": "check-hourly",
+            "name": "CHECK Hourly",
+            "agency": "PEG",
+            "job": "CHECK-19",
+            "jobName": "Oyster LAUNCH CHECK",
+            "date": "2026-09-24",
+            "noHours": false,
+            "code": null,
+            "note": "SYNTHETIC v19 server-rule verification; not real attendance",
+            "tz": "-04:00",
+            "source": "kiosk",
+            "approved": false,
+            "segments": {
+              "s0": {
+                "in": "10:02",
+                "inAt": "2026-09-24T14:02:25.762Z",
+                "inMs": 1790258545762,
+                "out": null,
+                "outAt": null,
+                "sigIn": {
+                  "at": "2026-09-24T14:02:25.762Z",
+                  "w": 400,
+                  "h": 160,
+                  "strokes": [
+                    {
+                      "__pegArray": [
+                        10,
+                        10,
+                        120,
+                        80,
+                        240,
+                        20
+                      ]
+                    }
+                  ]
+                }
+              }
+            },
+            "inLocal": "10:02",
+            "inAt": "2026-09-24T14:02:25.762Z",
+            "outLocal": null,
+            "outAt": null,
+            "_rev": 1,
+            "_op": "native-operation-001",
+            "_writer": "native-test-tablet",
+            "_event": "worker_in",
+            "_capturedMs": 1790258545762,
+            "_clientMs": 1790258546252,
+            "_offset": -240,
+            "_deviceId": "native-device-00000000000000000000001",
+            "_captureMode": "online",
+            "updatedAt": "2026-09-24T14:02:25.762Z",
+            "segmentCount": 1,
+            "_serverAt": {
+              "__serverTimestamp": true
+            }
+          }
+        },
+        {
+          "kind": "set",
+          "path": "audit/native-operation-001",
+          "data": {
+            "recordId": "2026-09-24__check-hourly",
+            "date": "2026-09-24",
+            "before": null,
+            "after": {
+              "workerId": "check-hourly",
+              "name": "CHECK Hourly",
+              "agency": "PEG",
+              "job": "CHECK-19",
+              "jobName": "Oyster LAUNCH CHECK",
+              "date": "2026-09-24",
+              "noHours": false,
+              "code": null,
+              "note": "SYNTHETIC v19 server-rule verification; not real attendance",
+              "tz": "-04:00",
+              "source": "kiosk",
+              "approved": false,
+              "segments": {
+                "s0": {
+                  "in": "10:02",
+                  "inAt": "2026-09-24T14:02:25.762Z",
+                  "inMs": 1790258545762,
+                  "out": null,
+                  "outAt": null,
+                  "sigIn": {
+                    "at": "2026-09-24T14:02:25.762Z",
+                    "w": 400,
+                    "h": 160,
+                    "strokes": [
+                      {
+                        "__pegArray": [
+                          10,
+                          10,
+                          120,
+                          80,
+                          240,
+                          20
+                        ]
+                      }
+                    ]
+                  }
+                }
+              },
+              "inLocal": "10:02",
+              "inAt": "2026-09-24T14:02:25.762Z",
+              "outLocal": null,
+              "outAt": null,
+              "_rev": 1,
+              "_op": "native-operation-001",
+              "_writer": "native-test-tablet",
+              "_event": "worker_in",
+              "_capturedMs": 1790258545762,
+              "_clientMs": 1790258546252,
+              "_offset": -240,
+              "_deviceId": "native-device-00000000000000000000001",
+              "_captureMode": "online",
+              "updatedAt": "2026-09-24T14:02:25.762Z",
+              "segmentCount": 1,
+              "_serverAt": {
+                "__serverTimestamp": true
+              }
+            },
+            "byUid": "native-test-tablet",
+            "event": "worker_in",
+            "createdAt": {
+              "__serverTimestamp": true
+            }
+          }
+        },
+        {
+          "kind": "set",
+          "path": "state/check-hourly",
+          "data": {
+            "recordId": "2026-09-24__check-hourly",
+            "date": "2026-09-24",
+            "open": true,
+            "revision": 1,
+            "op": "native-operation-001"
+          }
+        },
+        {
+          "kind": "set",
+          "path": "receipts/native-operation-001",
+          "data": {
+            "op": "native-operation-001",
+            "uid": "native-test-tablet",
+            "deviceId": "native-device-00000000000000000000001",
+            "recordId": "2026-09-24__check-hourly",
+            "capturedMs": 1790258545762,
+            "revision": 1,
+            "receivedAt": {
+              "__serverTimestamp": true
+            }
+          }
+        }
+      ],
+      "before": null
+    },
+    {
+      "name": "hourly-departure",
+      "expected": "allow",
+      "sourceObserved": "rejected",
+      "workerId": "check-hourly",
+      "readPaths": [
+        "receipts/native-operation-003",
+        "punches/2026-09-24__check-hourly",
+        "roster/check-hourly",
+        "state/check-hourly",
+        "codes/1000"
+      ],
+      "writes": [
+        {
+          "kind": "set",
+          "path": "punches/2026-09-24__check-hourly",
+          "data": {
+            "workerId": "check-hourly",
+            "name": "CHECK Hourly",
+            "agency": "PEG",
+            "job": "CHECK-19",
+            "jobName": "Oyster LAUNCH CHECK",
+            "date": "2026-09-24",
+            "noHours": false,
+            "code": "1000",
+            "note": "SYNTHETIC v19 server-rule verification; not real attendance",
+            "tz": "-04:00",
+            "source": "kiosk",
+            "approved": false,
+            "segments": {
+              "s0": {
+                "in": "10:02",
+                "inAt": "2026-09-24T14:02:25.762Z",
+                "inMs": 1790258545762,
+                "out": "10:02",
+                "outAt": "2026-09-24T14:02:29.014Z",
+                "sigIn": {
+                  "at": "2026-09-24T14:02:25.762Z",
+                  "w": 400,
+                  "h": 160,
+                  "strokes": [
+                    {
+                      "__pegArray": [
+                        10,
+                        10,
+                        120,
+                        80,
+                        240,
+                        20
+                      ]
+                    }
+                  ]
+                },
+                "outMs": 1790258549014,
+                "sigOut": {
+                  "for": {
+                    "blocks": [
+                      {
+                        "__pegArray": [
+                          "10:02",
+                          "10:02"
+                        ]
+                      }
+                    ],
+                    "code": "1000"
+                  },
+                  "at": "2026-09-24T14:02:29.014Z",
+                  "w": 400,
+                  "h": 160,
+                  "strokes": [
+                    {
+                      "__pegArray": [
+                        10,
+                        10,
+                        120,
+                        80,
+                        240,
+                        20
+                      ]
+                    }
+                  ]
+                }
+              }
+            },
+            "inLocal": "10:02",
+            "inAt": "2026-09-24T14:02:25.762Z",
+            "outLocal": "10:02",
+            "outAt": "2026-09-24T14:02:29.014Z",
+            "_rev": 2,
+            "_op": "native-operation-003",
+            "_writer": "native-test-tablet",
+            "_event": "worker_out",
+            "_capturedMs": 1790258549014,
+            "_clientMs": 1790258549450,
+            "_offset": -240,
+            "_deviceId": "native-device-00000000000000000000001",
+            "_captureMode": "online",
+            "updatedAt": "2026-09-24T14:02:29.014Z",
+            "segmentCount": 1,
+            "_serverAt": {
+              "__serverTimestamp": true
+            }
+          }
+        },
+        {
+          "kind": "set",
+          "path": "audit/native-operation-003",
+          "data": {
+            "recordId": "2026-09-24__check-hourly",
+            "date": "2026-09-24",
+            "before": {
+              "workerId": "check-hourly",
+              "name": "CHECK Hourly",
+              "agency": "PEG",
+              "job": "CHECK-19",
+              "jobName": "Oyster LAUNCH CHECK",
+              "date": "2026-09-24",
+              "noHours": false,
+              "code": null,
+              "note": "SYNTHETIC v19 server-rule verification; not real attendance",
+              "tz": "-04:00",
+              "source": "kiosk",
+              "approved": false,
+              "segments": {
+                "s0": {
+                  "in": "10:02",
+                  "inAt": "2026-09-24T14:02:25.762Z",
+                  "inMs": 1790258545762,
+                  "out": null,
+                  "outAt": null,
+                  "sigIn": {
+                    "at": "2026-09-24T14:02:25.762Z",
+                    "w": 400,
+                    "h": 160,
+                    "strokes": [
+                      {
+                        "__pegArray": [
+                          10,
+                          10,
+                          120,
+                          80,
+                          240,
+                          20
+                        ]
+                      }
+                    ]
+                  }
+                }
+              },
+              "inLocal": "10:02",
+              "inAt": "2026-09-24T14:02:25.762Z",
+              "outLocal": null,
+              "outAt": null,
+              "_rev": 1,
+              "_op": "native-operation-001",
+              "_writer": "native-test-tablet",
+              "_event": "worker_in",
+              "_capturedMs": 1790258545762,
+              "_clientMs": 1790258546252,
+              "_offset": -240,
+              "_deviceId": "native-device-00000000000000000000001",
+              "_captureMode": "online",
+              "updatedAt": "2026-09-24T14:02:25.762Z",
+              "segmentCount": 1,
+              "_serverAt": {
+                "__timestampMillis": 1790258546385
+              }
+            },
+            "after": {
+              "workerId": "check-hourly",
+              "name": "CHECK Hourly",
+              "agency": "PEG",
+              "job": "CHECK-19",
+              "jobName": "Oyster LAUNCH CHECK",
+              "date": "2026-09-24",
+              "noHours": false,
+              "code": "1000",
+              "note": "SYNTHETIC v19 server-rule verification; not real attendance",
+              "tz": "-04:00",
+              "source": "kiosk",
+              "approved": false,
+              "segments": {
+                "s0": {
+                  "in": "10:02",
+                  "inAt": "2026-09-24T14:02:25.762Z",
+                  "inMs": 1790258545762,
+                  "out": "10:02",
+                  "outAt": "2026-09-24T14:02:29.014Z",
+                  "sigIn": {
+                    "at": "2026-09-24T14:02:25.762Z",
+                    "w": 400,
+                    "h": 160,
+                    "strokes": [
+                      {
+                        "__pegArray": [
+                          10,
+                          10,
+                          120,
+                          80,
+                          240,
+                          20
+                        ]
+                      }
+                    ]
+                  },
+                  "outMs": 1790258549014,
+                  "sigOut": {
+                    "for": {
+                      "blocks": [
+                        {
+                          "__pegArray": [
+                            "10:02",
+                            "10:02"
+                          ]
+                        }
+                      ],
+                      "code": "1000"
+                    },
+                    "at": "2026-09-24T14:02:29.014Z",
+                    "w": 400,
+                    "h": 160,
+                    "strokes": [
+                      {
+                        "__pegArray": [
+                          10,
+                          10,
+                          120,
+                          80,
+                          240,
+                          20
+                        ]
+                      }
+                    ]
+                  }
+                }
+              },
+              "inLocal": "10:02",
+              "inAt": "2026-09-24T14:02:25.762Z",
+              "outLocal": "10:02",
+              "outAt": "2026-09-24T14:02:29.014Z",
+              "_rev": 2,
+              "_op": "native-operation-003",
+              "_writer": "native-test-tablet",
+              "_event": "worker_out",
+              "_capturedMs": 1790258549014,
+              "_clientMs": 1790258549450,
+              "_offset": -240,
+              "_deviceId": "native-device-00000000000000000000001",
+              "_captureMode": "online",
+              "updatedAt": "2026-09-24T14:02:29.014Z",
+              "segmentCount": 1,
+              "_serverAt": {
+                "__serverTimestamp": true
+              }
+            },
+            "byUid": "native-test-tablet",
+            "event": "worker_out",
+            "createdAt": {
+              "__serverTimestamp": true
+            }
+          }
+        },
+        {
+          "kind": "set",
+          "path": "state/check-hourly",
+          "data": {
+            "recordId": "2026-09-24__check-hourly",
+            "date": "2026-09-24",
+            "open": false,
+            "revision": 2,
+            "op": "native-operation-003"
+          }
+        },
+        {
+          "kind": "set",
+          "path": "receipts/native-operation-003",
+          "data": {
+            "op": "native-operation-003",
+            "uid": "native-test-tablet",
+            "deviceId": "native-device-00000000000000000000001",
+            "recordId": "2026-09-24__check-hourly",
+            "capturedMs": 1790258549014,
+            "revision": 2,
+            "receivedAt": {
+              "__serverTimestamp": true
+            }
+          }
+        }
+      ],
+      "before": {
+        "workerId": "check-hourly",
+        "name": "CHECK Hourly",
+        "agency": "PEG",
+        "job": "CHECK-19",
+        "jobName": "Oyster LAUNCH CHECK",
+        "date": "2026-09-24",
+        "noHours": false,
+        "code": null,
+        "note": "SYNTHETIC v19 server-rule verification; not real attendance",
+        "tz": "-04:00",
+        "source": "kiosk",
+        "approved": false,
+        "segments": {
+          "s0": {
+            "in": "10:02",
+            "inAt": "2026-09-24T14:02:25.762Z",
+            "inMs": 1790258545762,
+            "out": null,
+            "outAt": null,
+            "sigIn": {
+              "at": "2026-09-24T14:02:25.762Z",
+              "w": 400,
+              "h": 160,
+              "strokes": [
+                {
+                  "__pegArray": [
+                    10,
+                    10,
+                    120,
+                    80,
+                    240,
+                    20
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        "inLocal": "10:02",
+        "inAt": "2026-09-24T14:02:25.762Z",
+        "outLocal": null,
+        "outAt": null,
+        "_rev": 1,
+        "_op": "native-operation-001",
+        "_writer": "native-test-tablet",
+        "_event": "worker_in",
+        "_capturedMs": 1790258545762,
+        "_clientMs": 1790258546252,
+        "_offset": -240,
+        "_deviceId": "native-device-00000000000000000000001",
+        "_captureMode": "online",
+        "updatedAt": "2026-09-24T14:02:25.762Z",
+        "segmentCount": 1,
+        "_serverAt": {
+          "__timestampMillis": 1790258546385
+        }
+      }
+    },
+    {
+      "name": "salary-arrival",
+      "expected": "allow",
+      "sourceObserved": "confirmed",
+      "workerId": "check-salary",
+      "readPaths": [
+        "receipts/native-operation-004",
+        "punches/2026-09-24__check-salary",
+        "roster/check-salary",
+        "state/check-salary"
+      ],
+      "writes": [
+        {
+          "kind": "set",
+          "path": "punches/2026-09-24__check-salary",
+          "data": {
+            "workerId": "check-salary",
+            "name": "CHECK Salary",
+            "agency": "PEG",
+            "job": "CHECK-19",
+            "jobName": "Oyster LAUNCH CHECK",
+            "date": "2026-09-24",
+            "noHours": true,
+            "code": null,
+            "note": "SYNTHETIC v19 server-rule verification; not real attendance",
+            "tz": "-04:00",
+            "source": "kiosk",
+            "approved": false,
+            "segments": {
+              "s0": {
+                "in": "10:02",
+                "inAt": "2026-09-24T14:02:29.640Z",
+                "inMs": 1790258549640,
+                "out": null,
+                "outAt": null,
+                "sigIn": {
+                  "at": "2026-09-24T14:02:29.640Z",
+                  "w": 400,
+                  "h": 160,
+                  "strokes": [
+                    {
+                      "__pegArray": [
+                        10,
+                        10,
+                        120,
+                        80,
+                        240,
+                        20
+                      ]
+                    }
+                  ]
+                }
+              }
+            },
+            "inLocal": "10:02",
+            "inAt": "2026-09-24T14:02:29.640Z",
+            "outLocal": null,
+            "outAt": null,
+            "_rev": 1,
+            "_op": "native-operation-004",
+            "_writer": "native-test-tablet",
+            "_event": "worker_in",
+            "_capturedMs": 1790258549640,
+            "_clientMs": 1790258549965,
+            "_offset": -240,
+            "_deviceId": "native-device-00000000000000000000001",
+            "_captureMode": "online",
+            "updatedAt": "2026-09-24T14:02:29.640Z",
+            "segmentCount": 1,
+            "_serverAt": {
+              "__serverTimestamp": true
+            }
+          }
+        },
+        {
+          "kind": "set",
+          "path": "audit/native-operation-004",
+          "data": {
+            "recordId": "2026-09-24__check-salary",
+            "date": "2026-09-24",
+            "before": null,
+            "after": {
+              "workerId": "check-salary",
+              "name": "CHECK Salary",
+              "agency": "PEG",
+              "job": "CHECK-19",
+              "jobName": "Oyster LAUNCH CHECK",
+              "date": "2026-09-24",
+              "noHours": true,
+              "code": null,
+              "note": "SYNTHETIC v19 server-rule verification; not real attendance",
+              "tz": "-04:00",
+              "source": "kiosk",
+              "approved": false,
+              "segments": {
+                "s0": {
+                  "in": "10:02",
+                  "inAt": "2026-09-24T14:02:29.640Z",
+                  "inMs": 1790258549640,
+                  "out": null,
+                  "outAt": null,
+                  "sigIn": {
+                    "at": "2026-09-24T14:02:29.640Z",
+                    "w": 400,
+                    "h": 160,
+                    "strokes": [
+                      {
+                        "__pegArray": [
+                          10,
+                          10,
+                          120,
+                          80,
+                          240,
+                          20
+                        ]
+                      }
+                    ]
+                  }
+                }
+              },
+              "inLocal": "10:02",
+              "inAt": "2026-09-24T14:02:29.640Z",
+              "outLocal": null,
+              "outAt": null,
+              "_rev": 1,
+              "_op": "native-operation-004",
+              "_writer": "native-test-tablet",
+              "_event": "worker_in",
+              "_capturedMs": 1790258549640,
+              "_clientMs": 1790258549965,
+              "_offset": -240,
+              "_deviceId": "native-device-00000000000000000000001",
+              "_captureMode": "online",
+              "updatedAt": "2026-09-24T14:02:29.640Z",
+              "segmentCount": 1,
+              "_serverAt": {
+                "__serverTimestamp": true
+              }
+            },
+            "byUid": "native-test-tablet",
+            "event": "worker_in",
+            "createdAt": {
+              "__serverTimestamp": true
+            }
+          }
+        },
+        {
+          "kind": "set",
+          "path": "state/check-salary",
+          "data": {
+            "recordId": "2026-09-24__check-salary",
+            "date": "2026-09-24",
+            "open": true,
+            "revision": 1,
+            "op": "native-operation-004"
+          }
+        },
+        {
+          "kind": "set",
+          "path": "receipts/native-operation-004",
+          "data": {
+            "op": "native-operation-004",
+            "uid": "native-test-tablet",
+            "deviceId": "native-device-00000000000000000000001",
+            "recordId": "2026-09-24__check-salary",
+            "capturedMs": 1790258549640,
+            "revision": 1,
+            "receivedAt": {
+              "__serverTimestamp": true
+            }
+          }
+        }
+      ],
+      "before": null
+    },
+    {
+      "name": "salary-departure",
+      "expected": "allow",
+      "sourceObserved": "rejected",
+      "workerId": "check-salary",
+      "readPaths": [
+        "receipts/native-operation-005",
+        "punches/2026-09-24__check-salary",
+        "roster/check-salary",
+        "state/check-salary"
+      ],
+      "writes": [
+        {
+          "kind": "set",
+          "path": "punches/2026-09-24__check-salary",
+          "data": {
+            "workerId": "check-salary",
+            "name": "CHECK Salary",
+            "agency": "PEG",
+            "job": "CHECK-19",
+            "jobName": "Oyster LAUNCH CHECK",
+            "date": "2026-09-24",
+            "noHours": true,
+            "code": null,
+            "note": "SYNTHETIC v19 server-rule verification; not real attendance",
+            "tz": "-04:00",
+            "source": "kiosk",
+            "approved": false,
+            "segments": {
+              "s0": {
+                "in": "10:02",
+                "inAt": "2026-09-24T14:02:29.640Z",
+                "inMs": 1790258549640,
+                "out": "10:02",
+                "outAt": "2026-09-24T14:02:30.190Z",
+                "sigIn": {
+                  "at": "2026-09-24T14:02:29.640Z",
+                  "w": 400,
+                  "h": 160,
+                  "strokes": [
+                    {
+                      "__pegArray": [
+                        10,
+                        10,
+                        120,
+                        80,
+                        240,
+                        20
+                      ]
+                    }
+                  ]
+                },
+                "outMs": 1790258550190,
+                "sigOut": {
+                  "for": {
+                    "blocks": [
+                      {
+                        "__pegArray": [
+                          "10:02",
+                          "10:02"
+                        ]
+                      }
+                    ],
+                    "code": null
+                  },
+                  "at": "2026-09-24T14:02:30.190Z",
+                  "w": 400,
+                  "h": 160,
+                  "strokes": [
+                    {
+                      "__pegArray": [
+                        10,
+                        10,
+                        120,
+                        80,
+                        240,
+                        20
+                      ]
+                    }
+                  ]
+                }
+              }
+            },
+            "inLocal": "10:02",
+            "inAt": "2026-09-24T14:02:29.640Z",
+            "outLocal": "10:02",
+            "outAt": "2026-09-24T14:02:30.190Z",
+            "_rev": 2,
+            "_op": "native-operation-005",
+            "_writer": "native-test-tablet",
+            "_event": "worker_out",
+            "_capturedMs": 1790258550190,
+            "_clientMs": 1790258550481,
+            "_offset": -240,
+            "_deviceId": "native-device-00000000000000000000001",
+            "_captureMode": "online",
+            "updatedAt": "2026-09-24T14:02:30.190Z",
+            "segmentCount": 1,
+            "_serverAt": {
+              "__serverTimestamp": true
+            }
+          }
+        },
+        {
+          "kind": "set",
+          "path": "audit/native-operation-005",
+          "data": {
+            "recordId": "2026-09-24__check-salary",
+            "date": "2026-09-24",
+            "before": {
+              "workerId": "check-salary",
+              "name": "CHECK Salary",
+              "agency": "PEG",
+              "job": "CHECK-19",
+              "jobName": "Oyster LAUNCH CHECK",
+              "date": "2026-09-24",
+              "noHours": true,
+              "code": null,
+              "note": "SYNTHETIC v19 server-rule verification; not real attendance",
+              "tz": "-04:00",
+              "source": "kiosk",
+              "approved": false,
+              "segments": {
+                "s0": {
+                  "in": "10:02",
+                  "inAt": "2026-09-24T14:02:29.640Z",
+                  "inMs": 1790258549640,
+                  "out": null,
+                  "outAt": null,
+                  "sigIn": {
+                    "at": "2026-09-24T14:02:29.640Z",
+                    "w": 400,
+                    "h": 160,
+                    "strokes": [
+                      {
+                        "__pegArray": [
+                          10,
+                          10,
+                          120,
+                          80,
+                          240,
+                          20
+                        ]
+                      }
+                    ]
+                  }
+                }
+              },
+              "inLocal": "10:02",
+              "inAt": "2026-09-24T14:02:29.640Z",
+              "outLocal": null,
+              "outAt": null,
+              "_rev": 1,
+              "_op": "native-operation-004",
+              "_writer": "native-test-tablet",
+              "_event": "worker_in",
+              "_capturedMs": 1790258549640,
+              "_clientMs": 1790258549965,
+              "_offset": -240,
+              "_deviceId": "native-device-00000000000000000000001",
+              "_captureMode": "online",
+              "updatedAt": "2026-09-24T14:02:29.640Z",
+              "segmentCount": 1,
+              "_serverAt": {
+                "__timestampMillis": 1790258550088
+              }
+            },
+            "after": {
+              "workerId": "check-salary",
+              "name": "CHECK Salary",
+              "agency": "PEG",
+              "job": "CHECK-19",
+              "jobName": "Oyster LAUNCH CHECK",
+              "date": "2026-09-24",
+              "noHours": true,
+              "code": null,
+              "note": "SYNTHETIC v19 server-rule verification; not real attendance",
+              "tz": "-04:00",
+              "source": "kiosk",
+              "approved": false,
+              "segments": {
+                "s0": {
+                  "in": "10:02",
+                  "inAt": "2026-09-24T14:02:29.640Z",
+                  "inMs": 1790258549640,
+                  "out": "10:02",
+                  "outAt": "2026-09-24T14:02:30.190Z",
+                  "sigIn": {
+                    "at": "2026-09-24T14:02:29.640Z",
+                    "w": 400,
+                    "h": 160,
+                    "strokes": [
+                      {
+                        "__pegArray": [
+                          10,
+                          10,
+                          120,
+                          80,
+                          240,
+                          20
+                        ]
+                      }
+                    ]
+                  },
+                  "outMs": 1790258550190,
+                  "sigOut": {
+                    "for": {
+                      "blocks": [
+                        {
+                          "__pegArray": [
+                            "10:02",
+                            "10:02"
+                          ]
+                        }
+                      ],
+                      "code": null
+                    },
+                    "at": "2026-09-24T14:02:30.190Z",
+                    "w": 400,
+                    "h": 160,
+                    "strokes": [
+                      {
+                        "__pegArray": [
+                          10,
+                          10,
+                          120,
+                          80,
+                          240,
+                          20
+                        ]
+                      }
+                    ]
+                  }
+                }
+              },
+              "inLocal": "10:02",
+              "inAt": "2026-09-24T14:02:29.640Z",
+              "outLocal": "10:02",
+              "outAt": "2026-09-24T14:02:30.190Z",
+              "_rev": 2,
+              "_op": "native-operation-005",
+              "_writer": "native-test-tablet",
+              "_event": "worker_out",
+              "_capturedMs": 1790258550190,
+              "_clientMs": 1790258550481,
+              "_offset": -240,
+              "_deviceId": "native-device-00000000000000000000001",
+              "_captureMode": "online",
+              "updatedAt": "2026-09-24T14:02:30.190Z",
+              "segmentCount": 1,
+              "_serverAt": {
+                "__serverTimestamp": true
+              }
+            },
+            "byUid": "native-test-tablet",
+            "event": "worker_out",
+            "createdAt": {
+              "__serverTimestamp": true
+            }
+          }
+        },
+        {
+          "kind": "set",
+          "path": "state/check-salary",
+          "data": {
+            "recordId": "2026-09-24__check-salary",
+            "date": "2026-09-24",
+            "open": false,
+            "revision": 2,
+            "op": "native-operation-005"
+          }
+        },
+        {
+          "kind": "set",
+          "path": "receipts/native-operation-005",
+          "data": {
+            "op": "native-operation-005",
+            "uid": "native-test-tablet",
+            "deviceId": "native-device-00000000000000000000001",
+            "recordId": "2026-09-24__check-salary",
+            "capturedMs": 1790258550190,
+            "revision": 2,
+            "receivedAt": {
+              "__serverTimestamp": true
+            }
+          }
+        }
+      ],
+      "before": {
+        "workerId": "check-salary",
+        "name": "CHECK Salary",
+        "agency": "PEG",
+        "job": "CHECK-19",
+        "jobName": "Oyster LAUNCH CHECK",
+        "date": "2026-09-24",
+        "noHours": true,
+        "code": null,
+        "note": "SYNTHETIC v19 server-rule verification; not real attendance",
+        "tz": "-04:00",
+        "source": "kiosk",
+        "approved": false,
+        "segments": {
+          "s0": {
+            "in": "10:02",
+            "inAt": "2026-09-24T14:02:29.640Z",
+            "inMs": 1790258549640,
+            "out": null,
+            "outAt": null,
+            "sigIn": {
+              "at": "2026-09-24T14:02:29.640Z",
+              "w": 400,
+              "h": 160,
+              "strokes": [
+                {
+                  "__pegArray": [
+                    10,
+                    10,
+                    120,
+                    80,
+                    240,
+                    20
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        "inLocal": "10:02",
+        "inAt": "2026-09-24T14:02:29.640Z",
+        "outLocal": null,
+        "outAt": null,
+        "_rev": 1,
+        "_op": "native-operation-004",
+        "_writer": "native-test-tablet",
+        "_event": "worker_in",
+        "_capturedMs": 1790258549640,
+        "_clientMs": 1790258549965,
+        "_offset": -240,
+        "_deviceId": "native-device-00000000000000000000001",
+        "_captureMode": "online",
+        "updatedAt": "2026-09-24T14:02:29.640Z",
+        "segmentCount": 1,
+        "_serverAt": {
+          "__timestampMillis": 1790258550088
+        }
+      }
+    },
+    {
+      "name": "hourly-blank-signature",
+      "expected": "deny",
+      "sourceObserved": "rejected",
+      "workerId": "check-hourly",
+      "readPaths": [
+        "receipts/native-operation-002",
+        "punches/2026-09-24__check-hourly",
+        "roster/check-hourly",
+        "state/check-hourly",
+        "codes/1000"
+      ],
+      "writes": [
+        {
+          "kind": "set",
+          "path": "punches/2026-09-24__check-hourly",
+          "data": {
+            "workerId": "check-hourly",
+            "name": "CHECK Hourly",
+            "agency": "PEG",
+            "job": "CHECK-19",
+            "jobName": "Oyster LAUNCH CHECK",
+            "date": "2026-09-24",
+            "noHours": false,
+            "code": "1000",
+            "note": "SYNTHETIC v19 server-rule verification; not real attendance",
+            "tz": "-04:00",
+            "source": "kiosk",
+            "approved": false,
+            "segments": {
+              "s0": {
+                "in": "10:02",
+                "inAt": "2026-09-24T14:02:25.762Z",
+                "inMs": 1790258545762,
+                "out": "10:02",
+                "outAt": "2026-09-24T14:02:28.342Z",
+                "sigIn": {
+                  "at": "2026-09-24T14:02:25.762Z",
+                  "w": 400,
+                  "h": 160,
+                  "strokes": [
+                    {
+                      "__pegArray": [
+                        10,
+                        10,
+                        120,
+                        80,
+                        240,
+                        20
+                      ]
+                    }
+                  ]
+                },
+                "outMs": 1790258548342,
+                "sigOut": {
+                  "for": {
+                    "blocks": [
+                      {
+                        "__pegArray": [
+                          "10:02",
+                          "10:02"
+                        ]
+                      }
+                    ],
+                    "code": "1000"
+                  },
+                  "at": "2026-09-24T14:02:28.342Z",
+                  "w": 400,
+                  "h": 160,
+                  "strokes": []
+                }
+              }
+            },
+            "inLocal": "10:02",
+            "inAt": "2026-09-24T14:02:25.762Z",
+            "outLocal": "10:02",
+            "outAt": "2026-09-24T14:02:28.342Z",
+            "_rev": 2,
+            "_op": "native-operation-002",
+            "_writer": "native-test-tablet",
+            "_event": "worker_out",
+            "_capturedMs": 1790258548342,
+            "_clientMs": 1790258548811,
+            "_offset": -240,
+            "_deviceId": "native-device-00000000000000000000001",
+            "_captureMode": "online",
+            "updatedAt": "2026-09-24T14:02:28.342Z",
+            "segmentCount": 1,
+            "_serverAt": {
+              "__serverTimestamp": true
+            }
+          }
+        },
+        {
+          "kind": "set",
+          "path": "audit/native-operation-002",
+          "data": {
+            "recordId": "2026-09-24__check-hourly",
+            "date": "2026-09-24",
+            "before": {
+              "workerId": "check-hourly",
+              "name": "CHECK Hourly",
+              "agency": "PEG",
+              "job": "CHECK-19",
+              "jobName": "Oyster LAUNCH CHECK",
+              "date": "2026-09-24",
+              "noHours": false,
+              "code": null,
+              "note": "SYNTHETIC v19 server-rule verification; not real attendance",
+              "tz": "-04:00",
+              "source": "kiosk",
+              "approved": false,
+              "segments": {
+                "s0": {
+                  "in": "10:02",
+                  "inAt": "2026-09-24T14:02:25.762Z",
+                  "inMs": 1790258545762,
+                  "out": null,
+                  "outAt": null,
+                  "sigIn": {
+                    "at": "2026-09-24T14:02:25.762Z",
+                    "w": 400,
+                    "h": 160,
+                    "strokes": [
+                      {
+                        "__pegArray": [
+                          10,
+                          10,
+                          120,
+                          80,
+                          240,
+                          20
+                        ]
+                      }
+                    ]
+                  }
+                }
+              },
+              "inLocal": "10:02",
+              "inAt": "2026-09-24T14:02:25.762Z",
+              "outLocal": null,
+              "outAt": null,
+              "_rev": 1,
+              "_op": "native-operation-001",
+              "_writer": "native-test-tablet",
+              "_event": "worker_in",
+              "_capturedMs": 1790258545762,
+              "_clientMs": 1790258546252,
+              "_offset": -240,
+              "_deviceId": "native-device-00000000000000000000001",
+              "_captureMode": "online",
+              "updatedAt": "2026-09-24T14:02:25.762Z",
+              "segmentCount": 1,
+              "_serverAt": {
+                "__timestampMillis": 1790258546385
+              }
+            },
+            "after": {
+              "workerId": "check-hourly",
+              "name": "CHECK Hourly",
+              "agency": "PEG",
+              "job": "CHECK-19",
+              "jobName": "Oyster LAUNCH CHECK",
+              "date": "2026-09-24",
+              "noHours": false,
+              "code": "1000",
+              "note": "SYNTHETIC v19 server-rule verification; not real attendance",
+              "tz": "-04:00",
+              "source": "kiosk",
+              "approved": false,
+              "segments": {
+                "s0": {
+                  "in": "10:02",
+                  "inAt": "2026-09-24T14:02:25.762Z",
+                  "inMs": 1790258545762,
+                  "out": "10:02",
+                  "outAt": "2026-09-24T14:02:28.342Z",
+                  "sigIn": {
+                    "at": "2026-09-24T14:02:25.762Z",
+                    "w": 400,
+                    "h": 160,
+                    "strokes": [
+                      {
+                        "__pegArray": [
+                          10,
+                          10,
+                          120,
+                          80,
+                          240,
+                          20
+                        ]
+                      }
+                    ]
+                  },
+                  "outMs": 1790258548342,
+                  "sigOut": {
+                    "for": {
+                      "blocks": [
+                        {
+                          "__pegArray": [
+                            "10:02",
+                            "10:02"
+                          ]
+                        }
+                      ],
+                      "code": "1000"
+                    },
+                    "at": "2026-09-24T14:02:28.342Z",
+                    "w": 400,
+                    "h": 160,
+                    "strokes": []
+                  }
+                }
+              },
+              "inLocal": "10:02",
+              "inAt": "2026-09-24T14:02:25.762Z",
+              "outLocal": "10:02",
+              "outAt": "2026-09-24T14:02:28.342Z",
+              "_rev": 2,
+              "_op": "native-operation-002",
+              "_writer": "native-test-tablet",
+              "_event": "worker_out",
+              "_capturedMs": 1790258548342,
+              "_clientMs": 1790258548811,
+              "_offset": -240,
+              "_deviceId": "native-device-00000000000000000000001",
+              "_captureMode": "online",
+              "updatedAt": "2026-09-24T14:02:28.342Z",
+              "segmentCount": 1,
+              "_serverAt": {
+                "__serverTimestamp": true
+              }
+            },
+            "byUid": "native-test-tablet",
+            "event": "worker_out",
+            "createdAt": {
+              "__serverTimestamp": true
+            }
+          }
+        },
+        {
+          "kind": "set",
+          "path": "state/check-hourly",
+          "data": {
+            "recordId": "2026-09-24__check-hourly",
+            "date": "2026-09-24",
+            "open": false,
+            "revision": 2,
+            "op": "native-operation-002"
+          }
+        },
+        {
+          "kind": "set",
+          "path": "receipts/native-operation-002",
+          "data": {
+            "op": "native-operation-002",
+            "uid": "native-test-tablet",
+            "deviceId": "native-device-00000000000000000000001",
+            "recordId": "2026-09-24__check-hourly",
+            "capturedMs": 1790258548342,
+            "revision": 2,
+            "receivedAt": {
+              "__serverTimestamp": true
+            }
+          }
+        }
+      ],
+      "before": {
+        "workerId": "check-hourly",
+        "name": "CHECK Hourly",
+        "agency": "PEG",
+        "job": "CHECK-19",
+        "jobName": "Oyster LAUNCH CHECK",
+        "date": "2026-09-24",
+        "noHours": false,
+        "code": null,
+        "note": "SYNTHETIC v19 server-rule verification; not real attendance",
+        "tz": "-04:00",
+        "source": "kiosk",
+        "approved": false,
+        "segments": {
+          "s0": {
+            "in": "10:02",
+            "inAt": "2026-09-24T14:02:25.762Z",
+            "inMs": 1790258545762,
+            "out": null,
+            "outAt": null,
+            "sigIn": {
+              "at": "2026-09-24T14:02:25.762Z",
+              "w": 400,
+              "h": 160,
+              "strokes": [
+                {
+                  "__pegArray": [
+                    10,
+                    10,
+                    120,
+                    80,
+                    240,
+                    20
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        "inLocal": "10:02",
+        "inAt": "2026-09-24T14:02:25.762Z",
+        "outLocal": null,
+        "outAt": null,
+        "_rev": 1,
+        "_op": "native-operation-001",
+        "_writer": "native-test-tablet",
+        "_event": "worker_in",
+        "_capturedMs": 1790258545762,
+        "_clientMs": 1790258546252,
+        "_offset": -240,
+        "_deviceId": "native-device-00000000000000000000001",
+        "_captureMode": "online",
+        "updatedAt": "2026-09-24T14:02:25.762Z",
+        "segmentCount": 1,
+        "_serverAt": {
+          "__timestampMillis": 1790258546385
+        }
+      }
+    }
+  ]
+}

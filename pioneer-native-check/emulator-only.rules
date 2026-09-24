@@ -1,0 +1,490 @@
+rules_version = '2';
+// EMULATOR ONLY: fictional UIDs; do NOT publish this file to Firebase.
+// The v19 Patch 2 validators are unchanged. This package has no deploy command.
+// EMULATOR COPY of v19.0-rc1 evaluation-efficiency patch 2 (2026-09-24). Includes timestamp patch 1.
+// Equivalent v19 checks with less repeated work; no new access grants; v18 scope unchanged.
+// Only prepared clients use delayed captures. Client capture time is NOT a trusted server time.
+// Real attendance uses attendanceSites/oyster-25-013; v18 test records are never migrated.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isManagement() { return request.auth != null && request.auth.uid == 'native-test-manager'; }
+    function isTablet() { return request.auth != null && request.auth.uid == 'native-test-tablet'; }
+    function approvedAccount() { return isManagement() || isTablet(); }
+
+    // Keep the earlier harmless connection test working.
+    match /connectionChecks/{accountId} {
+      allow read: if approvedAccount();
+      allow create, update: if approvedAccount() && accountId == request.auth.uid
+        && request.resource.data.keys().hasOnly(['senderUid','role','message','updatedAt'])
+        && request.resource.data.senderUid == request.auth.uid
+        && request.resource.data.role == (isManagement() ? 'management' : 'kiosk')
+        && request.resource.data.message is string
+        && request.resource.data.message.size() > 0 && request.resource.data.message.size() <= 120
+        && request.resource.data.updatedAt == request.time;
+    }
+
+    // ONLY the explicitly named v17 testing area gains tablet attendance access.
+    match /attendanceTests/v17 {
+      function pad(n) { return n < 10 ? '0' + string(n) : string(n); }
+      function localTime(ms, offset) {
+        let x = timestamp.value(ms + offset * 60000);
+        return pad(x.hours()) + ':' + pad(x.minutes());
+      }
+      function localDate(ms, offset) {
+        let x = timestamp.value(ms + offset * 60000);
+        return string(x.year()) + '-' + pad(x.month()) + '-' + pad(x.day());
+      }
+      function capturedMs(r) { return r.get('_capturedMs', r._clientMs); }
+      function delayedMetadata(r) {
+        return !r.keys().hasAny(['_capturedMs']) || (
+          r._capturedMs is int
+          && r._capturedMs >= request.time.toMillis() - 604800000
+          && r._capturedMs <= request.time.toMillis() + 120000
+          && r._capturedMs <= r._clientMs + 120000
+          && r._deviceId is string && r._deviceId.size() >= 10 && r._deviceId.size() <= 100
+          && r._captureMode in ['online','offline']
+        );
+      }
+      function receiptMatches(id, r) {
+        let a = getAfter(/databases/$(database)/documents/attendanceTests/v17/receipts/$(r._op)).data;
+        return a.op == r._op && a.uid == request.auth.uid && a.recordId == id
+          && a.capturedMs == capturedMs(r) && a.revision == r._rev
+          && a.deviceId == r._deviceId && a.receivedAt == request.time;
+      }
+      function receiptRequired(id, r) {
+        return !r.keys().hasAny(['_capturedMs']) || receiptMatches(id,r);
+      }
+      function metadata(r) {
+        return r._rev is int && r._rev > 0 && r._writer == request.auth.uid
+          && r._op is string && r._op.size() >= 10 && r._op.size() <= 100
+          && r._clientMs is int
+          && r._clientMs >= request.time.toMillis() - 120000
+          && r._clientMs <= request.time.toMillis() + 120000
+          && r._offset in [-300, -240]
+          && r._serverAt == request.time && delayedMetadata(r);
+      }
+      function signature(s) {
+        return s is map && s.keys().hasAll(['w','h','strokes','at'])
+          && s.w == 400 && s.h == 160 && s.at is string
+          && s.strokes is list && s.strokes.size() > 0 && s.strokes.size() <= 300;
+      }
+      function headMatches(id, r) {
+        let h = getAfter(/databases/$(database)/documents/attendanceTests/v17/state/$(r.workerId)).data;
+        return h.recordId == id && h.date == r.date && h.revision == r._rev && h.op == r._op
+          && h.open == (r.segmentCount > 0 && r.outLocal == null && !r.get('voided',false));
+      }
+      function auditMatches(id, r) {
+        let a = getAfter(/databases/$(database)/documents/attendanceTests/v17/audit/$(r._op)).data;
+        return a.recordId == id && a.after == r && a.byUid == request.auth.uid && a.event == r._event;
+      }
+      function noOtherOpen(r, id) {
+        let p = /databases/$(database)/documents/attendanceTests/v17/state/$(r.workerId);
+        return !exists(p) || !get(p).data.open || get(p).data.recordId == id;
+      }
+      function activeWorker(r) {
+        let w = get(/databases/$(database)/documents/attendanceTests/v17/roster/$(r.workerId)).data;
+        return w.active != false && r.noHours == w.noHours;
+      }
+      function identity(r) {
+        let w = get(/databases/$(database)/documents/attendanceTests/v17/roster/$(r.workerId)).data;
+        let j = get(/databases/$(database)/documents/attendanceTests/v17/config/job).data;
+        return activeWorker(r) && r.name == w.name && r.agency == w.agency && r.job == j.code && r.jobName == j.name;
+      }
+      function summaries(r) {
+        let first = r.segments.s0;
+        let last = r.segments['s'+string(r.segmentCount-1)];
+        return r.segmentCount > 0 && r.segmentCount <= 40 && r.segments.size() == r.segmentCount
+          && r.inLocal == first['in'] && r.inAt == first.inAt
+          && r.outLocal == last.out && r.outAt == last.outAt;
+      }
+      function newIn(s, r) {
+        return s.keys().hasOnly(['in','inAt','inMs','out','outAt','sigIn'])
+          && s.inMs == capturedMs(r) && s['in'] == localTime(s.inMs,r._offset)
+          && s.inAt is string && s.out == null && s.outAt == null
+          && signature(s.sigIn) && s.sigIn.at == s.inAt;
+      }
+      function newOut(s, old, r) {
+        return s.diff(old).affectedKeys().hasOnly(['out','outAt','outMs','sigOut'])
+          && s.outMs == capturedMs(r) && s.outMs >= old.get('inMs',0)
+          && s.out == localTime(s.outMs,r._offset) && s.outAt is string
+          && signature(s.sigOut) && s.sigOut.at == s.outAt
+          && s.sigOut.get('for',{}).get('code',null) == r.code;
+      }
+      function validCode(r) {
+        return r.noHours ? r.code == null : r.code is string
+          && exists(/databases/$(database)/documents/attendanceTests/v17/codes/$(r.code));
+      }
+      function freshCreate(id, r) {
+        return r.keys().hasOnly(['workerId','name','agency','job','jobName','date','noHours','code','note','tz','source','approved','inLocal','inAt','outLocal','outAt','segments','segmentCount','_rev','_writer','_op','_event','_clientMs','_capturedMs','_deviceId','_captureMode','_offset','updatedAt','_serverAt'])
+          && id == r.date+'__'+r.workerId && r.date == localDate(capturedMs(r),r._offset)
+          && r._event == 'worker_in' && r._rev == 1 && r.source == 'kiosk'
+          && r.segmentCount == 1 && r.code == null && r.approved == false
+          && r.note is string && r.note.size() <= 2000
+          && metadata(r) && identity(r) && summaries(r) && newIn(r.segments.s0,r)
+          && noOtherOpen(r,id) && headMatches(id,r) && auditMatches(id,r) && receiptRequired(id,r);
+      }
+      function punchUpdate(id, r, old) {
+        let n = old.segmentCount;
+        let lastKey = 's'+string(n-1);
+        let nextKey = 's'+string(n);
+        return metadata(r) && r._rev == old._rev+1
+          && r.diff(old).affectedKeys().hasOnly(['segments','segmentCount','inLocal','inAt','outLocal','outAt','code','note','approved','approvedBy','approvedAt','approvalException','reviewRequired','sentAt','voided','updatedAt','_rev','_writer','_op','_event','_clientMs','_capturedMs','_deviceId','_captureMode','_offset','_serverAt'])
+          && (!old.get('voided',false) || (old.segmentCount == 0 && old._event == 'undo'))
+          && !r.get('voided',false) && r.approved == false
+          && !r.keys().hasAny(['approvedBy','approvedAt','approvalException','sentAt'])
+          && (old.get('approved',false) ? r.reviewRequired == true : r.get('reviewRequired',false) == old.get('reviewRequired',false))
+          && r.note is string && r.note.size() <= 2000
+          && r.date == localDate(capturedMs(r),r._offset) && activeWorker(r) && summaries(r)
+          && (
+            (r._event == 'worker_in' && (n == 0 || old.outLocal != null)
+              && r.segmentCount == n+1 && r.code == old.code
+              && r.segments.diff(old.segments).affectedKeys().hasOnly([nextKey])
+              && newIn(r.segments[nextKey],r) && (n == 0 || capturedMs(r) >= old.segments[lastKey].get('outMs',0)) && noOtherOpen(r,id))
+            || (r._event == 'worker_out' && n > 0 && old.outLocal == null
+              && r.segmentCount == n && validCode(r)
+              && r.segments.diff(old.segments).affectedKeys().hasOnly([lastKey])
+              && newOut(r.segments[lastKey],old.segments[lastKey],r))
+          ) && headMatches(id,r) && auditMatches(id,r) && receiptRequired(id,r);
+      }
+      function undoUpdate(id, r, old) {
+        let a = get(/databases/$(database)/documents/attendanceTests/v17/audit/$(old._op)).data;
+        let previous = a.before;
+        return metadata(r) && r._rev == old._rev+1 && r._event == 'undo'
+          && old._writer == request.auth.uid && old._event in ['worker_in','worker_out']
+          && (r.keys().hasAny(['_capturedMs'])
+            ? capturedMs(r) >= capturedMs(old) && capturedMs(r) <= capturedMs(old) + 120000
+            : old._serverAt >= request.time - duration.value(120,'s'))
+          && a.after == old
+          && (
+            (previous != null && r.diff(previous).affectedKeys().hasOnly(['_rev','_writer','_op','_event','_clientMs','_capturedMs','_deviceId','_captureMode','_offset','_serverAt','updatedAt','approved','approvedBy','approvedAt','approvalException','sentAt','reviewRequired'])
+              && r.approved == false && !r.keys().hasAny(['approvedBy','approvedAt','approvalException','sentAt'])
+              && (previous.get('approved',false) ? r.reviewRequired == true : r.get('reviewRequired',false) == previous.get('reviewRequired',false)))
+            || (previous == null && r.diff(old).affectedKeys().hasOnly(['segments','segmentCount','inLocal','inAt','outLocal','outAt','code','note','voided','approved','_rev','_writer','_op','_event','_clientMs','_capturedMs','_deviceId','_captureMode','_offset','_serverAt','updatedAt'])
+              && r.segmentCount == 0 && r.segments.size() == 0 && r.voided == true
+              && r.inLocal == null && r.inAt == null && r.outLocal == null && r.outAt == null
+              && r.code == null && r.note == '' && r.approved == false)
+          ) && headMatches(id,r) && auditMatches(id,r) && receiptRequired(id,r);
+      }
+      // Minimal immutable receipts make retries idempotent even after a lost network response.
+      match /receipts/{op} {
+        allow read: if approvedAccount();
+        allow create: if isTablet()
+          && request.resource.data.keys().hasOnly(['op','uid','deviceId','recordId','capturedMs','revision','receivedAt'])
+          && request.resource.data.uid == request.auth.uid && request.resource.data.op == op
+          && request.resource.data.receivedAt == request.time
+          && getAfter(/databases/$(database)/documents/attendanceTests/v17/punches/$(request.resource.data.recordId)).data._op == op
+          && receiptMatches(request.resource.data.recordId,getAfter(/databases/$(database)/documents/attendanceTests/v17/punches/$(request.resource.data.recordId)).data);
+        // No kiosk updates or deletes. Management access below is intentionally retained.
+      }
+      // A conflict is evidence for management, NOT accepted attendance. No canonical time changes here.
+      match /syncIssues/{op} {
+        allow read: if approvedAccount();
+        allow create: if isTablet()
+          && request.resource.data.keys().hasOnly(['uid','deviceId','recordId','op','status','reason','payload','receivedAt'])
+          && request.resource.data.uid == request.auth.uid && request.resource.data.op == op
+          && request.resource.data.status == 'pending'
+          && request.resource.data.reason is string && request.resource.data.reason.size() <= 200
+          && request.resource.data.deviceId is string && request.resource.data.deviceId.size() <= 100
+          && request.resource.data.recordId is string && request.resource.data.recordId.size() <= 150
+          && request.resource.data.payload is map
+          && request.resource.data.payload.uid == request.auth.uid
+          && request.resource.data.payload.op == op
+          && request.resource.data.payload.recordId == request.resource.data.recordId
+          && request.resource.data.payload.mode in ['in','out','undo']
+          && request.resource.data.receivedAt == request.time;
+        // Only management may resolve. Kiosk cannot erase the captured evidence.
+      }
+      match /roster/{id} { allow read: if approvedAccount(); }
+      match /codes/{id} { allow read: if approvedAccount(); }
+      match /config/{id} { allow read: if approvedAccount() && id in ['job','setup']; }
+      match /punches/{id} {
+        allow read: if approvedAccount();
+        allow create: if isTablet() && freshCreate(id,request.resource.data);
+        allow update: if isTablet() && (punchUpdate(id,request.resource.data,resource.data) || undoUpdate(id,request.resource.data,resource.data));
+        // NO tablet deletes, manual time corrections, approvals, or rewrites of old blocks.
+      }
+      match /state/{workerId} {
+        allow read: if approvedAccount();
+        allow create, update: if isTablet()
+          && request.resource.data.keys().hasOnly(['recordId','date','open','revision','op'])
+          && getAfter(/databases/$(database)/documents/attendanceTests/v17/punches/$(request.resource.data.recordId)).data.workerId == workerId
+          && getAfter(/databases/$(database)/documents/attendanceTests/v17/punches/$(request.resource.data.recordId)).data._writer == request.auth.uid
+          && getAfter(/databases/$(database)/documents/attendanceTests/v17/punches/$(request.resource.data.recordId)).data._serverAt == request.time
+          && headMatches(request.resource.data.recordId,getAfter(/databases/$(database)/documents/attendanceTests/v17/punches/$(request.resource.data.recordId)).data);
+      }
+      match /audit/{op} {
+        // Original actions and before/after snapshots remain private to management.
+        // Rules can get() audit data internally without granting the tablet audit read access.
+        allow create: if isTablet()
+          && request.resource.data.keys().hasOnly(['recordId','before','after','byUid','event','createdAt'])
+          && request.resource.data.byUid == request.auth.uid
+          && request.resource.data.createdAt == request.time
+          && request.resource.data.after == getAfter(/databases/$(database)/documents/attendanceTests/v17/punches/$(request.resource.data.recordId)).data
+          && request.resource.data.after._op == op
+          && request.resource.data.after._writer == request.auth.uid
+          && request.resource.data.after._serverAt == request.time
+          && request.resource.data.event == request.resource.data.after._event
+          && (exists(/databases/$(database)/documents/attendanceTests/v17/punches/$(request.resource.data.recordId))
+            ? request.resource.data.before == get(/databases/$(database)/documents/attendanceTests/v17/punches/$(request.resource.data.recordId)).data
+            : request.resource.data.before == null);
+      }
+    }
+    // Live and launch-check areas share these validators; v18 stays isolated above.
+    match /attendanceSites/{siteId} {
+      function siteAllowed() { return siteId in ['oyster-25-013','launch-check-v19']; }
+      function siteEnabled() {
+        let setup = get(/databases/$(database)/documents/attendanceSites/$(siteId)/config/setup).data;
+        return setup.enabled == true && setup.schema == 19 && setup.site == siteId;
+      }
+      function liveTablet() {
+        return isTablet() && siteAllowed() && siteEnabled();
+      }
+      function siteReader() { return approvedAccount() && siteAllowed(); }
+      function isoMillis(ms) {
+        let x = timestamp.value(ms);
+        let n = ms % 1000;
+        // Derive the 00-59 seconds component from epoch milliseconds explicitly.
+        let secondOfMinute = int((ms % 60000) / 1000);
+        return string(x.year()) + '-' + pad(x.month()) + '-' + pad(x.day()) + 'T'
+          + pad(x.hours()) + ':' + pad(x.minutes()) + ':' + pad(secondOfMinute) + '.'
+          + (n < 10 ? '00' + string(n) : (n < 100 ? '0' + string(n) : string(n))) + 'Z';
+      }
+      function pad(n) { return n < 10 ? '0' + string(n) : string(n); }
+      function localTime(ms, offset) {
+        let x = timestamp.value(ms + offset * 60000);
+        return pad(x.hours()) + ':' + pad(x.minutes());
+      }
+      function localDate(ms, offset) {
+        let x = timestamp.value(ms + offset * 60000);
+        return string(x.year()) + '-' + pad(x.month()) + '-' + pad(x.day());
+      }
+      function capturedMs(r) { return r.get('_capturedMs', r._clientMs); }
+      function delayedMetadata(r) {
+        return !r.keys().hasAny(['_capturedMs']) || (
+          r._capturedMs is int
+          && r._capturedMs >= request.time.toMillis() - 604800000
+          && r._capturedMs <= request.time.toMillis() + 120000
+          && r._capturedMs <= r._clientMs + 120000
+          && r._deviceId is string && r._deviceId.size() >= 10 && r._deviceId.size() <= 100
+          && r._captureMode in ['online','offline']
+        );
+      }
+      function receiptDataMatches(id, r, a) {
+        return a.op == r._op && a.uid == request.auth.uid && a.recordId == id
+          && a.capturedMs == capturedMs(r) && a.revision == r._rev
+          && a.deviceId == r._deviceId && a.receivedAt == request.time;
+      }
+      function receiptMatches(id, r) {
+        let a = getAfter(/databases/$(database)/documents/attendanceSites/$(siteId)/receipts/$(r._op)).data;
+        return receiptDataMatches(id, r, a);
+      }
+      function receiptRequired(id, r) {
+        // metadata() requires _capturedMs on every v19 tablet attendance write.
+        return receiptMatches(id,r);
+      }
+      function metadata(r) {
+        let captured = r._capturedMs;
+        let uploaded = r._clientMs;
+        let received = request.time.toMillis();
+        return r.keys().hasAll(['_capturedMs','_deviceId','_captureMode'])
+          && r._rev is int && r._rev > 0 && r._writer == request.auth.uid
+          && r._op is string && r._op.size() >= 10 && r._op.size() <= 100
+          && uploaded is int && uploaded >= received - 120000 && uploaded <= received + 120000
+          && r._offset in [-300, -240] && r._serverAt == request.time
+          && captured is int && captured >= received - 604800000 && captured <= received + 120000
+          && captured <= uploaded + 120000
+          && r._deviceId is string && r._deviceId.size() >= 10 && r._deviceId.size() <= 100
+          && r._captureMode in ['online','offline'] && r.updatedAt == isoMillis(captured);
+      }
+      function signature(s) {
+        return s is map && s.keys().hasAll(['w','h','strokes','at'])
+          && s.w == 400 && s.h == 160 && s.at is string
+          && s.strokes is list && s.strokes.size() > 0 && s.strokes.size() <= 300;
+      }
+      function headDataMatches(id, r, h) {
+        return h.recordId == id && h.date == r.date && h.revision == r._rev && h.op == r._op
+          && h.open == (r.segmentCount > 0 && r.outLocal == null && !r.get('voided',false));
+      }
+      function headMatches(id, r) {
+        let h = getAfter(/databases/$(database)/documents/attendanceSites/$(siteId)/state/$(r.workerId)).data;
+        return headDataMatches(id, r, h);
+      }
+      function auditMatches(id, r) {
+        let a = getAfter(/databases/$(database)/documents/attendanceSites/$(siteId)/audit/$(r._op)).data;
+        return a.recordId == id && a.date == r.date && a.after == r && a.byUid == request.auth.uid && a.event == r._event;
+      }
+      function noOtherOpen(r, id) {
+        let p = /databases/$(database)/documents/attendanceSites/$(siteId)/state/$(r.workerId);
+        let found = exists(p);
+        let h = found ? get(p).data : {};
+        return !found || (h.date <= r.date && (!h.open || h.recordId == id));
+      }
+      function activeWorker(r) {
+        let w = get(/databases/$(database)/documents/attendanceSites/$(siteId)/roster/$(r.workerId)).data;
+        return w.active != false && r.noHours == w.noHours;
+      }
+      function identity(r) {
+        let w = get(/databases/$(database)/documents/attendanceSites/$(siteId)/roster/$(r.workerId)).data;
+        let j = get(/databases/$(database)/documents/attendanceSites/$(siteId)/config/job).data;
+        return w.active != false && r.noHours == w.noHours
+          && r.name == w.name && r.agency == w.agency && r.job == j.code && r.jobName == j.name;
+      }
+      function summaries(r) {
+        let first = r.segments.s0;
+        let last = r.segments['s'+string(r.segmentCount-1)];
+        return r.segmentCount > 0 && r.segmentCount <= 40 && r.segments.size() == r.segmentCount
+          && r.inLocal == first['in'] && r.inAt == first.inAt
+          && r.outLocal == last.out && r.outAt == last.outAt;
+      }
+      function newIn(s, r) {
+        return s.keys().hasOnly(['in','inAt','inMs','out','outAt','sigIn'])
+          && s.inMs == r._capturedMs && s['in'] == localTime(s.inMs,r._offset)
+          // metadata() already binds updatedAt to capturedMs; inMs is equal above.
+          && s.inAt == r.updatedAt && s.out == null && s.outAt == null
+          && signature(s.sigIn) && s.sigIn.at == s.inAt;
+      }
+      function newOut(s, old, r) {
+        return s.diff(old).affectedKeys().hasOnly(['out','outAt','outMs','sigOut'])
+          && s.outMs == r._capturedMs && s.outMs >= old.get('inMs',0)
+          // metadata() already binds updatedAt to capturedMs; outMs is equal above.
+          && s.out == localTime(s.outMs,r._offset) && s.outAt == r.updatedAt
+          && signature(s.sigOut) && s.sigOut.at == s.outAt
+          && s.sigOut.get('for',{}).get('code',null) == r.code;
+      }
+      function validCode(r) {
+        return r.noHours ? r.code == null : r.code is string
+          && exists(/databases/$(database)/documents/attendanceSites/$(siteId)/codes/$(r.code));
+      }
+      function freshCreate(id, r) {
+        return r.keys().hasOnly(['workerId','name','agency','job','jobName','date','noHours','code','note','tz','source','approved','inLocal','inAt','outLocal','outAt','segments','segmentCount','_rev','_writer','_op','_event','_clientMs','_capturedMs','_deviceId','_captureMode','_offset','updatedAt','_serverAt'])
+          && id == r.date+'__'+r.workerId && r.date == localDate(r._capturedMs,r._offset)
+          && r._event == 'worker_in' && r._rev == 1 && r.source == 'kiosk'
+          && r.segmentCount == 1 && r.code == null && r.approved == false
+          && r.note is string && r.note.size() <= 2000
+          && metadata(r) && identity(r) && summaries(r) && newIn(r.segments.s0,r)
+          && noOtherOpen(r,id) && headMatches(id,r) && auditMatches(id,r) && receiptRequired(id,r);
+      }
+      function punchUpdate(id, r, old) {
+        let n = old.segmentCount;
+        let lastKey = 's'+string(n-1);
+        let nextKey = 's'+string(n);
+        return metadata(r) && r._rev == old._rev+1
+          && r.diff(old).affectedKeys().hasOnly(['segments','segmentCount','inLocal','inAt','outLocal','outAt','code','note','approved','approvedBy','approvedAt','approvalException','reviewRequired','sentAt','voided','updatedAt','_rev','_writer','_op','_event','_clientMs','_capturedMs','_deviceId','_captureMode','_offset','_serverAt'])
+          && (!old.get('voided',false) || (old.segmentCount == 0 && old._event == 'undo'))
+          && !r.get('voided',false) && r.approved == false
+          && !r.keys().hasAny(['approvedBy','approvedAt','approvalException','sentAt'])
+          && (old.get('approved',false) ? r.reviewRequired == true : r.get('reviewRequired',false) == old.get('reviewRequired',false))
+          && r.note is string && r.note.size() <= 2000
+          && r.date == localDate(r._capturedMs,r._offset) && activeWorker(r) && summaries(r)
+          && (
+            (r._event == 'worker_in' && (n == 0 || old.outLocal != null)
+              && r.segmentCount == n+1 && r.code == old.code
+              && r.segments.diff(old.segments).affectedKeys().hasOnly([nextKey])
+              && newIn(r.segments[nextKey],r) && (n == 0 || r._capturedMs >= old.segments[lastKey].get('outMs',0)) && noOtherOpen(r,id))
+            || (r._event == 'worker_out' && n > 0 && old.outLocal == null
+              && r.segmentCount == n && validCode(r)
+              && r.segments.diff(old.segments).affectedKeys().hasOnly([lastKey])
+              && newOut(r.segments[lastKey],old.segments[lastKey],r))
+          ) && headMatches(id,r) && auditMatches(id,r) && receiptRequired(id,r);
+      }
+      function undoUpdate(id, r, old) {
+        let a = get(/databases/$(database)/documents/attendanceSites/$(siteId)/audit/$(old._op)).data;
+        let previous = a.before;
+        return metadata(r) && r._rev == old._rev+1 && r._event == 'undo'
+          && old._writer == request.auth.uid && old._event in ['worker_in','worker_out']
+          && (r.keys().hasAny(['_capturedMs'])
+            ? capturedMs(r) >= capturedMs(old) && capturedMs(r) <= capturedMs(old) + 120000
+            : old._serverAt >= request.time - duration.value(120,'s'))
+          && a.after == old
+          && (
+            (previous != null && r.diff(previous).affectedKeys().hasOnly(['_rev','_writer','_op','_event','_clientMs','_capturedMs','_deviceId','_captureMode','_offset','_serverAt','updatedAt','approved','approvedBy','approvedAt','approvalException','sentAt','reviewRequired'])
+              && r.approved == false && !r.keys().hasAny(['approvedBy','approvedAt','approvalException','sentAt'])
+              && (previous.get('approved',false) ? r.reviewRequired == true : r.get('reviewRequired',false) == previous.get('reviewRequired',false)))
+            || (previous == null && r.diff(old).affectedKeys().hasOnly(['segments','segmentCount','inLocal','inAt','outLocal','outAt','code','note','voided','approved','_rev','_writer','_op','_event','_clientMs','_capturedMs','_deviceId','_captureMode','_offset','_serverAt','updatedAt'])
+              && r.segmentCount == 0 && r.segments.size() == 0 && r.voided == true
+              && r.inLocal == null && r.inAt == null && r.outLocal == null && r.outAt == null
+              && r.code == null && r.note == '' && r.approved == false)
+          ) && headMatches(id,r) && auditMatches(id,r) && receiptRequired(id,r);
+      }
+      // Read the linked punch once. request.resource is this receipt's after-image.
+      function receiptCreate(op, a) {
+        let r = getAfter(/databases/$(database)/documents/attendanceSites/$(siteId)/punches/$(a.recordId)).data;
+        return a.keys().hasOnly(['op','uid','deviceId','recordId','capturedMs','revision','receivedAt'])
+          && a.uid == request.auth.uid && a.op == op && a.receivedAt == request.time
+          && r._op == op && receiptDataMatches(a.recordId, r, a);
+      }
+      // Minimal immutable receipts make retries idempotent even after a lost network response.
+      match /receipts/{op} {
+        allow read: if siteReader();
+        allow create: if liveTablet() && receiptCreate(op, request.resource.data);
+        // No kiosk updates or deletes. Management access below is intentionally retained.
+      }
+      // A conflict is evidence for management, NOT accepted attendance. No canonical time changes here.
+      match /syncIssues/{op} {
+        allow read: if siteReader();
+        allow create: if isTablet() && siteAllowed()
+          && request.resource.data.keys().hasOnly(['uid','deviceId','recordId','op','status','date','reason','payload','receivedAt'])
+          && request.resource.data.uid == request.auth.uid && request.resource.data.op == op
+          && request.resource.data.status == 'pending'
+          && request.resource.data.reason is string && request.resource.data.reason.size() <= 200
+          && request.resource.data.deviceId is string && request.resource.data.deviceId.size() <= 100
+          && request.resource.data.recordId is string && request.resource.data.recordId.size() <= 150
+          && request.resource.data.payload is map
+          && request.resource.data.payload.uid == request.auth.uid
+          && request.resource.data.payload.op == op
+          && request.resource.data.payload.recordId == request.resource.data.recordId
+          && request.resource.data.date == request.resource.data.payload.date
+          && request.resource.data.date is string
+          && request.resource.data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+          && request.resource.data.payload.capturedMs is int
+          && request.resource.data.payload.capturedIso == isoMillis(request.resource.data.payload.capturedMs)
+          && request.resource.data.payload.mode in ['in','out','undo']
+          && request.resource.data.receivedAt == request.time;
+        // Only management may resolve. Kiosk cannot erase the captured evidence.
+      }
+      match /roster/{id} { allow read: if siteReader(); }
+      match /codes/{id} { allow read: if siteReader(); }
+      match /config/{id} { allow read: if siteReader() && id in ['job','setup']; }
+      match /punches/{id} {
+        allow read: if siteReader();
+        allow create: if liveTablet() && freshCreate(id,request.resource.data);
+        // The operation families are disjoint; do not evaluate both expensive validators.
+        allow update: if liveTablet() && (request.resource.data._event == 'undo'
+          ? undoUpdate(id,request.resource.data,resource.data)
+          : punchUpdate(id,request.resource.data,resource.data));
+        // NO tablet deletes, manual time corrections, approvals, or rewrites of old blocks.
+      }
+      // Read the linked punch once. request.resource is this state document's after-image.
+      function stateWrite(workerId, h) {
+        let r = getAfter(/databases/$(database)/documents/attendanceSites/$(siteId)/punches/$(h.recordId)).data;
+        return h.keys().hasOnly(['recordId','date','open','revision','op'])
+          && r.workerId == workerId && r._writer == request.auth.uid && r._serverAt == request.time
+          && headDataMatches(h.recordId, r, h);
+      }
+      match /state/{workerId} {
+        allow read: if siteReader();
+        allow create, update: if liveTablet() && stateWrite(workerId, request.resource.data);
+      }
+      match /audit/{op} {
+        // Original actions and before/after snapshots remain private to management.
+        // Rules can get() audit data internally without granting the tablet audit read access.
+        allow create: if liveTablet()
+          && request.resource.data.keys().hasOnly(['recordId','date','before','after','byUid','event','createdAt'])
+          && request.resource.data.byUid == request.auth.uid
+          && request.resource.data.createdAt == request.time
+          && request.resource.data.after == getAfter(/databases/$(database)/documents/attendanceSites/$(siteId)/punches/$(request.resource.data.recordId)).data
+          && request.resource.data.after._op == op
+          && request.resource.data.after._writer == request.auth.uid
+          && request.resource.data.after._serverAt == request.time
+          && request.resource.data.event == request.resource.data.after._event
+          && request.resource.data.date == request.resource.data.after.date
+          && (exists(/databases/$(database)/documents/attendanceSites/$(siteId)/punches/$(request.resource.data.recordId))
+            ? request.resource.data.before == get(/databases/$(database)/documents/attendanceSites/$(siteId)/punches/$(request.resource.data.recordId)).data
+            : request.resource.data.before == null);
+      }
+    }
+    // Retain Isaac's already-authorized management access. No public access anywhere.
+    // Other supervisors are NOT authorized merely by being added to the in-app PIN list.
+    match /{document=**} { allow read, write: if isManagement(); }
+  }
+}
