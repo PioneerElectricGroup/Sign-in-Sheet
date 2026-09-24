@@ -2,7 +2,7 @@
   "kind": "synthetic-pioneer-native-fixtures",
   "sourceReportStartedAt": "2026-09-24T14:02:24.590Z",
   "sourceReportSha256": "c61c245bce3103614a8fd6a67a0ac19c087ce783d0846e99c2a071f702b44e22",
-  "sourceRulesSha256": "049858671bdd76d30162ae91e842e0270b89b97dfcb63e11a008021cca0658df",
+  "sourceRulesSha256": "4169d164ad3839aa609e61aa5329175d1d3e6309edb5e490eb80fe1a36ab6169",
   "anchorMs": 1790258545762,
   "originalDate": "2026-09-24",
   "originalLocalTime": "10:02",
@@ -1417,5 +1417,8 @@
       }
     }
   ],
-  "sourceRulesRevision": "v19-PATCH3-CANDIDATE-2026-09-24"
+  "sourceRulesRevision": "PATCH 4 CANDIDATE — NOT NATIVE-VERIFIED; NOT FOR FIREBASE PUBLICATION",
+  "patch3SourceRulesSha256": "049858671bdd76d30162ae91e842e0270b89b97dfcb63e11a008021cca0658df",
+  "patch3EmulatorRulesSha256": "6a79ca638b52d7b3488083a9ec102fae3f2ce8739bf350fedaa3226503096b1b",
+  "sourceRulesSha256Meaning": "Exact emulator-only.rules in this package; fictional IDs. No production-ID rules generated."
 }

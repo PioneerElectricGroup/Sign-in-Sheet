@@ -1,40 +1,25 @@
-# Pioneer v19 — verify the Patch 3 correction in the existing native workflow
+# Pioneer v19 — Patch 4 native candidate
 
-The downloaded logs identify the 1,000-expression evaluation limit as the native failure on both signed departures. This package tests a targeted expression-budget correction. It is NOT a Firebase deployment package.
+**Emulator only. Not production rules. No attendance activation.**
 
-## Upload once to the existing diagnostic folder
+This replaces the existing `pioneer-native-check` test folder. Keep the already-installed `.github/workflows/pioneer-native-rule-check.yml` unchanged. Keep the published Evaluation Patch 2 rules, Diagnostic 2 webpage, service worker and tablet preparation unchanged.
 
-1. Extract this ZIP on your computer.
-2. In GitHub, click Code, then open the existing **pioneer-native-check** folder.
-3. Choose Add file > Upload files. In the extracted ZIP, open **UPLOAD_TO_GITHUB/pioneer-native-check** and select **all eight files inside it**. Upload the files, not another containing folder.
-4. The destination must be **pioneer-native-check/<filename>**, never live/, the repository root, or pioneer-native-check/pioneer-native-check/.
-5. Commit directly to main. The existing .github workflow and pinned package dependencies do not change.
+## Run the new candidate
 
-## Run the NEW commit
+1. Upload all files from this folder into the repository's existing `pioneer-native-check` folder. Add the new files and replace the existing ones. Do not create a nested `pioneer-native-check/pioneer-native-check` folder.
+2. Commit to `main` with message `Patch 4 native candidate`.
+3. Open **Actions → Pioneer native rule diagnosis → Run workflow → main**. Start a new run; do not rerun the old commit.
 
-Go to Actions > Pioneer native rule diagnosis > Run workflow. Choose main and click Run workflow.
-Do not click Re-run all jobs on the previous run: that would retest the old commit.
+The summary must identify **PATCH 4 CANDIDATE**. Required native result: **101/101 full-rule expectations**, **0 native budget failures**, **0 incomplete evidence**, and **Native acceptance gate: PASS**. The 17 isolated helper/collection diagnostics are not additional security passes. Send the new run summary for review. Only if that new run fails, download its log archive from **diagnose → gear beside Search logs → Download log archive**.
 
-The summary must identify PATCH 3 CANDIDATE. The target is **40 / 40 full-rule cases matching intended behavior**, including allowed hourly and salaried departures and rejected forbidden operations.
-The 17 isolated helper/collection rows remain forensic diagnostics; do not count them as additional security passes.
+Do not paste `emulator-only.rules` into Firebase. Its accounts are deliberately fictional. Passing this native suite is not permission to activate real attendance; production-ID reconciliation and validation-page/device checks still follow.
 
-This updated runner returns a failed status if any of the full-rule cases has an unexpected outcome. A passing isolated native test is still not live activation or a complete security audit.
+## What changed
 
-Send the summary screenshot. If any full-rule case fails or the job errors, download the completed job log archive (gear beside Search logs) and attach the ZIP.
+Only two v19 rule helper bodies changed: `auditMatches` and `receiptRequired`. They require a newly created audit/receipt in the same atomic save and bind it to the punch ID. The original full audit and receipt creation validators still enforce their complete field and snapshot relationships. The repeated field comparisons no longer run a second time inside the punch validator. All other rule predicates, including the entire v18 area, remain unchanged. Candidate comments also identify Patch 4.
 
-## Leave these alone
+The suite retains all original 40 expected outcomes, adds 61 regressions, rejects budget-error denials as passing security tests, and limits duplicate log/coverage output. SDK/CLI versions, workflow, UI, one-code-per-day behavior, signatures, account roles and free/manual-CSV approach are not changed.
 
-Do NOT paste emulator-only.rules into Firebase: it deliberately contains fictional account IDs.
-Keep the currently published Patch 2 rules, the Diagnostic 2 web page, the service worker, and the iPad setup unchanged. Do not edit/delete CHECK worker records or clear Safari data. Real attendance remains disabled.
+## Verification status at delivery
 
-## Technical changes
-
-- Candidate rules use one arrival/departure dispatch instead of evaluating the larger combined operation expression tree.
-- Two-digit and millisecond padding use fixed string slices. Positive calendar/time component values retain identical output.
-- No rules granting public access, approvals, old-block edits, or deletions are added.
-- The source fixtures remain fictional. Their SHA metadata now identifies the Patch 3 candidate.
-- Native regression coverage adds repeated periods, up to 40 blocks, approval invalidation, Undo and deliberately invalid departures.
-- Log collection prints full coverage for unexpected full-rule outcomes only. The original collector printed all passing coverage too, producing approximately 147 MB of log text. No paid artifacts or caches are used.
-- Package tests verify the fixture and formatting changes locally; native correctness and evaluation margin remain to be verified by the GitHub run.
-
-No website, published rules, or attendance data were modified by creating this package.
+JavaScript syntax, source integrity, fixture consistency and test-harness checks passed locally. **Google's native emulator has NOT executed this candidate here.** Dependency installation failed because this environment could not resolve/reach `registry.npmjs.org` (`EAI_AGAIN`). Native verification must come from the new GitHub workflow run, not from these local source checks.

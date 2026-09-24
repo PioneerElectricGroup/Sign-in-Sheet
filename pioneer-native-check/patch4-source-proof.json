@@ -1,0 +1,18 @@
+{
+  "kind": "patch4-source-integrity-NOT-native-validation",
+  "patch3RulesSha256": "6a79ca638b52d7b3488083a9ec102fae3f2ce8739bf350fedaa3226503096b1b",
+  "patch4RulesSha256": "4169d164ad3839aa609e61aa5329175d1d3e6309edb5e490eb80fe1a36ab6169",
+  "changedFunctions": {
+    "receiptRequired": {
+      "before": "      function receiptRequired(id, r) {\n        // metadata() requires _capturedMs on every v19 tablet attendance write.\n        return receiptMatches(id,r);\n      }",
+      "after": "      function receiptRequired(id, r) {\n        let p = /databases/$(database)/documents/attendanceSites/$(siteId)/receipts/$(r._op);\n        // PATCH 4: require a NEW receipt in this same atomic write. A missing\n        // getAfter document fails closed; an existing receipt cannot be reused.\n        // receiptCreate() still checks EVERY original receipt field against the\n        // linked punch after-image, including UID, operation, capture, revision,\n        // device and server time. Validate them there, not twice on re-entry.\n        return !exists(p) && getAfter(p).data.recordId == id;\n      }"
+    },
+    "auditMatches": {
+      "before": "      function auditMatches(id, r) {\n        let a = getAfter(/databases/$(database)/documents/attendanceSites/$(siteId)/audit/$(r._op)).data;\n        return a.recordId == id && a.date == r.date && a.after == r && a.byUid == request.auth.uid && a.event == r._event;\n      }",
+      "after": "      function auditMatches(id, r) {\n        let p = /databases/$(database)/documents/attendanceSites/$(siteId)/audit/$(r._op);\n        // PATCH 4: the immutable audit must be CREATED in this same request.\n        // Its unchanged create rule validates the exact before/after snapshots,\n        // date, event, author, operation and server time against THIS punch.\n        // recordId binds the required audit to this document, not another one.\n        return !exists(p) && getAfter(p).data.recordId == id;\n      }"
+    }
+  },
+  "addedComment": "    // PATCH 4 CANDIDATE: fresh atomic audit/receipt links; native run required.\n    // Full validators remain in their original document create rules.\n",
+  "headerBefore": "// v19 PATCH 3 CANDIDATE: expression-budget correction; native verification required.\n// v19.0-rc1 Patch 3 candidate, based on Patch 2 and its timestamp correction.\n// Equivalent v19 checks with less repeated work; no new access grants; v18 scope unchanged.",
+  "headerAfter": "// v19 PATCH 4 CANDIDATE: fresh atomic audit/receipt links; native verification required.\n// Based on the exact Patch 3 source tested in native run #2 (35/40).\n// Full document validators retained; no new access grants; v18 scope unchanged."
+}

@@ -73,3 +73,6 @@ console.log(JSON.stringify(result,null,2));
 
 // Source/fixture checks for the expression-budget candidate; still not native execution.
 await import('./patch3-selftest.mjs');
+
+// Patch 4 package/source checks; still not native-engine validation.
+await import('./patch4-selftest.mjs');
