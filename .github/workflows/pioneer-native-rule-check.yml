@@ -1,0 +1,65 @@
+name: Pioneer native rule diagnosis
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    # Free-use guard: do not consume private-repository runner minutes.
+    if: github.event.repository.private == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: pioneer-native-check
+    env:
+      CI: 'true'
+      GCLOUD_PROJECT: demo-pioneer-v19
+      GOOGLE_CLOUD_PROJECT: demo-pioneer-v19
+      FIREBASE_TOKEN: ''
+      GOOGLE_APPLICATION_CREDENTIALS: ''
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Check the isolated test package
+        run: |
+          mkdir -p results
+          node --check run.mjs
+          node --check support.mjs
+          node selftest.mjs 2>&1 | tee results/package-selftest.log
+      - name: Install official Firebase test tools
+        run: |
+          set -o pipefail
+          npm install --no-audit --no-fund 2>&1 | tee results/install.log
+          npm ls --depth=0 > results/dependency-versions.txt
+          cp package-lock.json results/package-lock.json
+          node --version > results/node-version.txt
+          java -version 2> results/java-version.txt
+      - name: Run Google's local Firestore emulator (no real Firebase project)
+        run: |
+          set -o pipefail
+          npx --no-install firebase --non-interactive --debug emulators:exec --only firestore --project demo-pioneer-v19 --config firebase.json "node run.mjs" 2>&1 | tee results/emulator-console.log
+      - name: Collect emulator logs even if diagnosis fails
+        if: always()
+        run: |
+          mkdir -p results
+          for file in firestore-debug.log firebase-debug.log; do
+            if [ -f "$file" ]; then cp "$file" results/; fi
+          done
+          if [ ! -f results/native-report.json ]; then
+            printf '%s\n' 'Native tests did not finish. Send this archive including install/emulator logs. No production deployment was attempted.' > results/NOT_FINISHED.txt
+          fi
+      - name: Print full diagnostic evidence into the downloadable job logs
+        if: always()
+        run: node collect.mjs
