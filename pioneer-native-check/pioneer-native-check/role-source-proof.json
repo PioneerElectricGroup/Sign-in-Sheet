@@ -1,0 +1,24 @@
+{
+  "kind": "role-cutover-source-integrity-NOT-native-validation",
+  "basePatch4RulesSha256": "4169d164ad3839aa609e61aa5329175d1d3e6309edb5e490eb80fe1a36ab6169",
+  "candidateRulesSha256": "421ee4af21a86a4cb6ee3962bad1327a06fcf0676f36691aeeaa5624facd3a83",
+  "addedComment": "// ROLE CUTOVER CANDIDATE: three fictional managers; separate fictional field kiosk.\n",
+  "roleBefore": "    function isManagement() { return request.auth != null && request.auth.uid == 'native-test-manager'; }\n    function isTablet() { return request.auth != null && request.auth.uid == 'native-test-tablet'; }",
+  "roleAfter": "    function isManagement() { return request.auth != null && request.auth.uid in ['native-test-manager-isaac','native-test-manager-jake','native-test-manager-eric']; }\n    function isTablet() { return request.auth != null && request.auth.uid == 'native-test-field-kiosk'; }",
+  "fictionalRoles": {
+    "fieldKiosk": "native-test-field-kiosk",
+    "managers": [
+      "native-test-manager-isaac",
+      "native-test-manager-jake",
+      "native-test-manager-eric"
+    ]
+  },
+  "productionRoles": {
+    "fieldKiosk": "x0rz86ZAguRMYdrEznbH1eMq1lG3",
+    "managers": [
+      "d3GUR1ht0DQSss1mS5t9jOgChfq2",
+      "hnLcbI2FI1eeQhhmxjxXnVpgwpG2",
+      "XfYuiG6r22V3Hxr7vobDD0Q8G5j1"
+    ]
+  }
+}

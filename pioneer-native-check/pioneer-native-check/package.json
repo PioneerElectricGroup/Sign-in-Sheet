@@ -1,0 +1,17 @@
+{
+  "name": "pioneer-native-rule-diagnostic",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "selftest": "node selftest.mjs",
+    "diagnose": "node run.mjs"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.0",
+    "firebase": "12.19.0",
+    "firebase-tools": "15.30.2"
+  }
+}
