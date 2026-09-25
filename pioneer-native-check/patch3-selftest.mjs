@@ -27,7 +27,7 @@ for(const c of cases)test(c.name+': fixture consistency and safe paths',()=>{
   const segs=Object.values(p.segments);for(let i=0;i<segs.length;i++){const s=segs[i];assert.equal(s.inAt,new Date(s.inMs).toISOString());if(s.out){assert.equal(s.outAt,new Date(s.outMs).toISOString());assert.ok(s.outMs>=s.inMs);}if(i)assert.ok(s.inMs>=segs[i-1].outMs);}
  }
 });
-test('candidate remains restricted to the demo fixture accounts',()=>{assert.deepEqual([...new Set([...rules.matchAll(/request\.auth\.uid == '([^']+)'/g)].map(m=>m[1]))].sort(),['native-test-manager','native-test-tablet']);});
+test('candidate remains restricted to the four fictional role accounts',()=>{for(const uid of ['native-test-field-kiosk','native-test-manager-isaac','native-test-manager-jake','native-test-manager-eric'])assert.ok(rules.includes(uid));for(const uid of ['d3GUR1ht0DQSss1mS5t9jOgChfq2','hnLcbI2FI1eeQhhmxjxXnVpgwpG2','x0rz86ZAguRMYdrEznbH1eMq1lG3','XfYuiG6r22V3Hxr7vobDD0Q8G5j1'])assert.ok(!rules.includes(uid));});
 test('candidate operation dispatch is explicit and still uses all linked validators',()=>{assert.ok(scoped.includes("r._event == 'worker_out'\n            ? closeDeparture(r,old)"));assert.ok(scoped.includes('&& headMatches(id,r) && auditMatches(id,r) && receiptRequired(id,r)'));});
 test('no HTML or service-worker implementation in this patch module',()=>assert.ok(!fs.readFileSync('patch3-cases.mjs','utf8').includes('firebase.initializeApp')));
 const summary={kind:'patch3-package-checks-NOT-native-rules',passed:tests.length,failed:0,nativeFirestoreExecuted:false,candidateRulesSha256:crypto.createHash('sha256').update(rules).digest('hex'),tests};

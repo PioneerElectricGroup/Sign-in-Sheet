@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import {PROJECT,HOST,PORT,ROOT,TABLET,MANAGER,clone,assertIsolation,docPath,rebaseFixture,convertValues,isolateRules,helperChecks} from './support.mjs';
+import {PROJECT,HOST,PORT,ROOT,TABLET,MANAGER,MANAGER_JAKE,MANAGER_ERIC,clone,assertIsolation,docPath,rebaseFixture,convertValues,isolateRules,helperChecks} from './support.mjs';
 assertIsolation();
 const {makeExtraCases} = await import('./patch3-cases.mjs');
 const {makePatch4Cases,adjustRebasedCase} = await import('./patch4-cases.mjs');
@@ -116,8 +116,8 @@ const byName=name=>{const c=fixture.cases.find(c=>c.name===name);if(!c)throw Err
 const fullPhaseLogStart=logPosition();
 const watchdog=setTimeout(()=>{report.fatal='Diagnostic exceeded 15 minutes';save();process.exit(2);},15*60000);
 try{
-  // Preserve the five supplied transaction shapes and all 40 original full-rule
-  // expectations. Apply the Patch 4 candidate; do not rerun the old candidate.
+  // Preserve every accepted Patch 4 expectation, then add role-cutover cases.
+  // Apply this new candidate; do not rerun the old commit.
   for(const c of fixture.cases)await oneCase(c.name,baseline,c,c.expected);
   const h=byName('hourly-departure');
   const recordId=c=>`${c.day}__${c.workerId}`;
@@ -136,6 +136,24 @@ try{
     ['other-uid-roster','deny',(_db,_c,env)=>getDoc(ref(env.authenticatedContext('native-unapproved-person').firestore(),'roster/check-hourly'))],
   ];
   for(const [name,expected,fn] of negatives)await oneCase(name,baseline,h,expected,'full-rules',fn);
+
+// Role-cutover regressions: the field account remains kiosk-only, while both
+// named management identities can perform office operations. All are fictional.
+const hWithProbe=clone(h);hWithProbe.seedOverrides={'roster/__permission_probe':{name:'CHECK REMOVE',agency:'PEG',active:true,noHours:false,job:'CHECK-19',_rev:1}};
+const roleCases=[
+  ['field-kiosk-read-roster','allow',(db)=>getDoc(ref(db,'roster/check-hourly')),h],
+  ['isaac-manager-read-private-pin','allow',(_db,_c,env)=>getDoc(ref(env.authenticatedContext(MANAGER).firestore(),'config/security')),h],
+  ['jake-manager-read-private-pin','allow',(_db,_c,env)=>getDoc(ref(env.authenticatedContext(MANAGER_JAKE).firestore(),'config/security')),h],
+  ['isaac-manager-add-crew','allow',(_db,_c,env)=>setDoc(ref(env.authenticatedContext(MANAGER).firestore(),'roster/__permission_probe'),{name:'ISAAC CHECK',agency:'PEG',active:true,noHours:false,job:'CHECK-19',_rev:1}),h],
+  ['jake-manager-add-crew','allow',(_db,_c,env)=>setDoc(ref(env.authenticatedContext(MANAGER_JAKE).firestore(),'roster/__permission_probe'),{name:'JAKE CHECK',agency:'PEG',active:true,noHours:false,job:'CHECK-19',_rev:1}),h],
+  ['jake-manager-remove-crew','allow',(_db,_c,env)=>deleteDoc(ref(env.authenticatedContext(MANAGER_JAKE).firestore(),'roster/__permission_probe')),hWithProbe],
+  ['jake-manager-approve-record','allow',(_db,c,env)=>updateDoc(ref(env.authenticatedContext(MANAGER_JAKE).firestore(),`punches/${recordId(c)}`),{approved:true,approvedBy:'jake@pioneerelectricgrp.com'}),h],
+  ['eric-manager-read-private-pin','allow',(_db,_c,env)=>getDoc(ref(env.authenticatedContext(MANAGER_ERIC).firestore(),'config/security')),h],
+  ['eric-manager-add-crew','allow',(_db,_c,env)=>setDoc(ref(env.authenticatedContext(MANAGER_ERIC).firestore(),'roster/__permission_probe'),{name:'ERIC CHECK',agency:'PEG',active:true,noHours:false,job:'CHECK-19',_rev:1}),h],
+  ['eric-manager-remove-crew','allow',(_db,_c,env)=>deleteDoc(ref(env.authenticatedContext(MANAGER_ERIC).firestore(),'roster/__permission_probe')),hWithProbe],
+  ['eric-manager-approve-record','allow',(_db,c,env)=>updateDoc(ref(env.authenticatedContext(MANAGER_ERIC).firestore(),`punches/${recordId(c)}`),{approved:true,approvedBy:'eric-owner@pioneerelectricgrp.com'}),h],
+];
+for(const [name,expected,fn,c] of roleCases)await oneCase(name,baseline,c,expected,'full-rules',fn);
   // Original Patch 3 acceptance cases retain all expected allow/deny outcomes.
   for(const c of makeExtraCases(fixture))await oneCase(c.name,baseline,c,c.expected,'full-rules');
   for(const c of makePatch4Cases(fixture))await oneCase(c.name,baseline,c,c.expected,'full-rules');
@@ -163,10 +181,10 @@ finally{
   report.fullRules.nativeBudgetFailures=full.filter(c=>c.nativeBudget?.budgetError).length;
   report.fullRules.incompleteNativeEvidence=full.filter(c=>!c.nativeBudget?.complete).length;
   report.harnessErrors=report.cases.filter(c=>c.observed==='harness-error'||c.observed==='error').length;
-  report.nativeAcceptancePassed=!report.fatal&&!report.harnessErrors&&full.length===101&&report.fullRules.mismatchedOrError===0&&report.fullRulePhaseBudget?.complete===true&&report.fullRulePhaseBudget?.budgetError===false;
+  report.nativeAcceptancePassed=!report.fatal&&!report.harnessErrors&&full.length===112&&report.fullRules.mismatchedOrError===0&&report.fullRulePhaseBudget?.complete===true&&report.fullRulePhaseBudget?.budgetError===false;
   save();
   const summary=['# Pioneer native rules diagnostic','',
-    '**PATCH 4 CANDIDATE — EMULATOR ONLY. No deployment or activation. Budget-error denials do NOT pass.**','',
+    '**ROLE CUTOVER CANDIDATE — PATCH 4 LOGIC, EMULATOR ONLY. No deployment. Budget-error denials do NOT pass.**','',
     '| Case | Scope | Intended | Observed | Native budget | Matched |','|---|---|---|---|---|---|',
     ...report.cases.map(c=>`| ${c.label} | ${c.scope} | ${c.expected} | ${c.observed} | ${c.nativeBudget?.budgetError?'LIMIT ERROR':c.nativeBudget?.complete?'No limit error':'Unverified'} | ${c.matchesIntended===true?'PASS':c.scope==='full-rules'?'FAIL':'diagnostic only'} |`),
     '',`Full-rule cases matching intended behavior: ${report.fullRules.matchedIntended}/${full.length}.`,

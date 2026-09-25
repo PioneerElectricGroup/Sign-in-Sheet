@@ -3,8 +3,11 @@ export const PROJECT = 'demo-pioneer-v19';
 export const HOST = '127.0.0.1';
 export const PORT = 8080;
 export const ROOT = 'attendanceSites/launch-check-v19';
-export const TABLET = 'native-test-tablet';
-export const MANAGER = 'native-test-manager';
+export const TABLET = 'native-test-field-kiosk';
+export const MANAGER = 'native-test-manager-isaac';
+export const MANAGER_JAKE = 'native-test-manager-jake';
+export const MANAGER_ERIC = 'native-test-manager-eric';
+export const MANAGERS = [MANAGER,MANAGER_JAKE,MANAGER_ERIC];
 export const clone = value => structuredClone(value);
 
 export function assertIsolation(env = process.env) {

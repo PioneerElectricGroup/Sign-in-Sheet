@@ -1,25 +1,27 @@
-# Pioneer v19 — Patch 4 native candidate
+# Pioneer v19 — Role Cutover native candidate
 
-**Emulator only. Not production rules. No attendance activation.**
+**Emulator only. Do not publish `emulator-only.rules`. Real attendance is already live; this package changes no production system by itself.**
 
-This replaces the existing `pioneer-native-check` test folder. Keep the already-installed `.github/workflows/pioneer-native-rule-check.yml` unchanged. Keep the published Evaluation Patch 2 rules, Diagnostic 2 webpage, service worker and tablet preparation unchanged.
+Goal: keep the shared kiosk restricted under a new field account while giving Isaac, Jake, and Eric full management authority. The native suite uses fictional UIDs only.
 
-## Run the new candidate
+## Upload and run
 
-1. Upload all files from this folder into the repository's existing `pioneer-native-check` folder. Add the new files and replace the existing ones. Do not create a nested `pioneer-native-check/pioneer-native-check` folder.
-2. Commit to `main` with message `Patch 4 native candidate`.
-3. Open **Actions → Pioneer native rule diagnosis → Run workflow → main**. Start a new run; do not rerun the old commit.
+1. Replace the files inside the repository's existing `pioneer-native-check` folder with all files in this folder.
+2. Commit to `main` with message `Test field kiosk and three managers`.
+3. Open **Actions → Pioneer native rule diagnosis → Run workflow → main** and start a new run.
 
-The summary must identify **PATCH 4 CANDIDATE**. Required native result: **101/101 full-rule expectations**, **0 native budget failures**, **0 incomplete evidence**, and **Native acceptance gate: PASS**. The 17 isolated helper/collection diagnostics are not additional security passes. Send the new run summary for review. Only if that new run fails, download its log archive from **diagnose → gear beside Search logs → Download log archive**.
+Required summary:
 
-Do not paste `emulator-only.rules` into Firebase. Its accounts are deliberately fictional. Passing this native suite is not permission to activate real attendance; production-ID reconciliation and validation-page/device checks still follow.
+- **ROLE CUTOVER CANDIDATE — PATCH 4 LOGIC**
+- **112/112** full-rule expectations
+- **0** native budget failures
+- **0** incomplete native evidence
+- **Native acceptance gate: PASS**
 
-## What changed
+The original 101 accepted Patch 4 cases are retained. Eleven role regressions prove: the field account can read/punch as the kiosk; the field account remains denied office operations; Isaac, Jake, and Eric can read the office configuration and perform the tested crew/approval actions; unauthorized users remain denied.
 
-Only two v19 rule helper bodies changed: `auditMatches` and `receiptRequired`. They require a newly created audit/receipt in the same atomic save and bind it to the punch ID. The original full audit and receipt creation validators still enforce their complete field and snapshot relationships. The repeated field comparisons no longer run a second time inside the punch validator. All other rule predicates, including the entire v18 area, remain unchanged. Candidate comments also identify Patch 4.
+Do not paste emulator rules into Firebase. After the native PASS, use the separately packaged production rules and strict HTML role patcher.
 
-The suite retains all original 40 expected outcomes, adds 61 regressions, rejects budget-error denials as passing security tests, and limits duplicate log/coverage output. SDK/CLI versions, workflow, UI, one-code-per-day behavior, signatures, account roles and free/manual-CSV approach are not changed.
+## Future superintendent accounts
 
-## Verification status at delivery
-
-JavaScript syntax, source integrity, fixture consistency and test-harness checks passed locally. **Google's native emulator has NOT executed this candidate here.** Dependency installation failed because this environment could not resolve/reach `registry.npmjs.org` (`EAI_AGAIN`). Native verification must come from the new GitHub workflow run, not from these local source checks.
+Creating a Firebase Authentication user does **not** grant board access by itself. Each new superintendent UID must be added to the approved management allowlist in both the tested rules and the live webpage, then revalidated before publication. This deliberate step prevents an accidentally created user from receiving management authority.

@@ -5,12 +5,14 @@ import {makePatch4Cases,adjustRebasedCase} from './patch4-cases.mjs';
 import {rebaseFixture,docPath,clone,convertValues} from './support.mjs';
 import {prepareTransactionWrites} from './prepare-transaction.mjs';
 import {logPosition,readBudgetEvidence,acceptanceMatches} from './budget-evidence.mjs';
-const f=JSON.parse(fs.readFileSync('fixtures.json','utf8')),rules=fs.readFileSync('emulator-only.rules','utf8'),proof=JSON.parse(fs.readFileSync('patch4-source-proof.json','utf8'));
+const f=JSON.parse(fs.readFileSync('fixtures.json','utf8')),rules=fs.readFileSync('emulator-only.rules','utf8'),proof=JSON.parse(fs.readFileSync('patch4-source-proof.json','utf8')),roleProof=JSON.parse(fs.readFileSync('role-source-proof.json','utf8'));
+const patch4Rules=rules.replace(roleProof.addedComment,'').replace(roleProof.roleAfter,roleProof.roleBefore);
 const hash=s=>crypto.createHash('sha256').update(s).digest('hex'),tests=[];
 function test(name,fn){fn();tests.push({name,result:'pass'});}
-test('Exact Patch 4 source matches manifest and report fixture hash',()=>{assert.equal(hash(rules),proof.patch4RulesSha256);assert.equal(hash(rules),f.sourceRulesSha256);});
+test('Exact role candidate source matches fixture and role proof',()=>{assert.equal(hash(rules),roleProof.candidateRulesSha256);assert.equal(hash(rules),f.sourceRulesSha256);});
+test('Normalizing only the role block recovers exact accepted Patch 4 source',()=>assert.equal(hash(patch4Rules),proof.patch4RulesSha256));
 test('Only the two documented v19 helper bodies and candidate comments differ from Patch 3',()=>{
- let original=rules.replace(proof.addedComment,'').replace(proof.headerAfter,proof.headerBefore);
+ let original=patch4Rules.replace(proof.addedComment,'').replace(proof.headerAfter,proof.headerBefore);
  for(const {before,after} of Object.values(proof.changedFunctions)){assert.equal(original.split(after).length,2);original=original.replace(after,before);}
  assert.equal(hash(original),proof.patch3RulesSha256);
 });
@@ -68,4 +70,4 @@ try{
  test('Oversized native evidence fails closed instead of pretending complete',()=>{const e=readBudgetEvidence({file,exists:true,size:0},10);assert.equal(e.complete,false);});
  test('Missing native emulator log fails closed',()=>assert.equal(readBudgetEvidence({file:path.join(temp,'missing'),exists:false,size:0}).complete,false));
 }finally{fs.rmSync(temp,{recursive:true,force:true});}
-console.log(JSON.stringify({kind:'patch4-package-source-fixture-checks-NOT-native',nativeFirestoreExecuted:false,passed:tests.length,failed:0,fullRuleCasesPrepared:101,tests},null,2));
+console.log(JSON.stringify({kind:'patch4-package-source-fixture-checks-NOT-native',nativeFirestoreExecuted:false,passed:tests.length,failed:0,fullRuleCasesPreparedBeforeRoleCases:101,tests},null,2));

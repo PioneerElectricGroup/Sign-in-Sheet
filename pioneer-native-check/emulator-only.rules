@@ -1,5 +1,6 @@
 rules_version = '2';
 // EMULATOR ONLY. Fictional accounts. DO NOT PUBLISH THIS FILE TO FIREBASE.
+// ROLE CUTOVER CANDIDATE: three fictional managers; separate fictional field kiosk.
 // v19 PATCH 4 CANDIDATE: fresh atomic audit/receipt links; native verification required.
 // Based on the exact Patch 3 source tested in native run #2 (35/40).
 // Full document validators retained; no new access grants; v18 scope unchanged.
@@ -7,8 +8,8 @@ rules_version = '2';
 // Real attendance uses attendanceSites/oyster-25-013; v18 test records are never migrated.
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isManagement() { return request.auth != null && request.auth.uid == 'native-test-manager'; }
-    function isTablet() { return request.auth != null && request.auth.uid == 'native-test-tablet'; }
+    function isManagement() { return request.auth != null && request.auth.uid in ['native-test-manager-isaac','native-test-manager-jake','native-test-manager-eric']; }
+    function isTablet() { return request.auth != null && request.auth.uid == 'native-test-field-kiosk'; }
     function approvedAccount() { return isManagement() || isTablet(); }
 
     // Keep the earlier harmless connection test working.

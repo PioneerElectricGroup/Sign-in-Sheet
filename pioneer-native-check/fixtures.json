@@ -2,7 +2,7 @@
   "kind": "synthetic-pioneer-native-fixtures",
   "sourceReportStartedAt": "2026-09-24T14:02:24.590Z",
   "sourceReportSha256": "c61c245bce3103614a8fd6a67a0ac19c087ce783d0846e99c2a071f702b44e22",
-  "sourceRulesSha256": "4169d164ad3839aa609e61aa5329175d1d3e6309edb5e490eb80fe1a36ab6169",
+  "sourceRulesSha256": "421ee4af21a86a4cb6ee3962bad1327a06fcf0676f36691aeeaa5624facd3a83",
   "anchorMs": 1790258545762,
   "originalDate": "2026-09-24",
   "originalLocalTime": "10:02",
@@ -105,7 +105,7 @@
             "outAt": null,
             "_rev": 1,
             "_op": "native-operation-001",
-            "_writer": "native-test-tablet",
+            "_writer": "native-test-field-kiosk",
             "_event": "worker_in",
             "_capturedMs": 1790258545762,
             "_clientMs": 1790258546252,
@@ -171,7 +171,7 @@
               "outAt": null,
               "_rev": 1,
               "_op": "native-operation-001",
-              "_writer": "native-test-tablet",
+              "_writer": "native-test-field-kiosk",
               "_event": "worker_in",
               "_capturedMs": 1790258545762,
               "_clientMs": 1790258546252,
@@ -184,7 +184,7 @@
                 "__serverTimestamp": true
               }
             },
-            "byUid": "native-test-tablet",
+            "byUid": "native-test-field-kiosk",
             "event": "worker_in",
             "createdAt": {
               "__serverTimestamp": true
@@ -207,7 +207,7 @@
           "path": "receipts/native-operation-001",
           "data": {
             "op": "native-operation-001",
-            "uid": "native-test-tablet",
+            "uid": "native-test-field-kiosk",
             "deviceId": "native-device-00000000000000000000001",
             "recordId": "2026-09-24__check-hourly",
             "capturedMs": 1790258545762,
@@ -310,7 +310,7 @@
             "outAt": "2026-09-24T14:02:29.014Z",
             "_rev": 2,
             "_op": "native-operation-003",
-            "_writer": "native-test-tablet",
+            "_writer": "native-test-field-kiosk",
             "_event": "worker_out",
             "_capturedMs": 1790258549014,
             "_clientMs": 1790258549450,
@@ -375,7 +375,7 @@
               "outAt": null,
               "_rev": 1,
               "_op": "native-operation-001",
-              "_writer": "native-test-tablet",
+              "_writer": "native-test-field-kiosk",
               "_event": "worker_in",
               "_capturedMs": 1790258545762,
               "_clientMs": 1790258546252,
@@ -462,7 +462,7 @@
               "outAt": "2026-09-24T14:02:29.014Z",
               "_rev": 2,
               "_op": "native-operation-003",
-              "_writer": "native-test-tablet",
+              "_writer": "native-test-field-kiosk",
               "_event": "worker_out",
               "_capturedMs": 1790258549014,
               "_clientMs": 1790258549450,
@@ -475,7 +475,7 @@
                 "__serverTimestamp": true
               }
             },
-            "byUid": "native-test-tablet",
+            "byUid": "native-test-field-kiosk",
             "event": "worker_out",
             "createdAt": {
               "__serverTimestamp": true
@@ -498,7 +498,7 @@
           "path": "receipts/native-operation-003",
           "data": {
             "op": "native-operation-003",
-            "uid": "native-test-tablet",
+            "uid": "native-test-field-kiosk",
             "deviceId": "native-device-00000000000000000000001",
             "recordId": "2026-09-24__check-hourly",
             "capturedMs": 1790258549014,
@@ -554,7 +554,7 @@
         "outAt": null,
         "_rev": 1,
         "_op": "native-operation-001",
-        "_writer": "native-test-tablet",
+        "_writer": "native-test-field-kiosk",
         "_event": "worker_in",
         "_capturedMs": 1790258545762,
         "_clientMs": 1790258546252,
@@ -628,7 +628,7 @@
             "outAt": null,
             "_rev": 1,
             "_op": "native-operation-004",
-            "_writer": "native-test-tablet",
+            "_writer": "native-test-field-kiosk",
             "_event": "worker_in",
             "_capturedMs": 1790258549640,
             "_clientMs": 1790258549965,
@@ -694,7 +694,7 @@
               "outAt": null,
               "_rev": 1,
               "_op": "native-operation-004",
-              "_writer": "native-test-tablet",
+              "_writer": "native-test-field-kiosk",
               "_event": "worker_in",
               "_capturedMs": 1790258549640,
               "_clientMs": 1790258549965,
@@ -707,7 +707,7 @@
                 "__serverTimestamp": true
               }
             },
-            "byUid": "native-test-tablet",
+            "byUid": "native-test-field-kiosk",
             "event": "worker_in",
             "createdAt": {
               "__serverTimestamp": true
@@ -730,7 +730,7 @@
           "path": "receipts/native-operation-004",
           "data": {
             "op": "native-operation-004",
-            "uid": "native-test-tablet",
+            "uid": "native-test-field-kiosk",
             "deviceId": "native-device-00000000000000000000001",
             "recordId": "2026-09-24__check-salary",
             "capturedMs": 1790258549640,
@@ -832,7 +832,7 @@
             "outAt": "2026-09-24T14:02:30.190Z",
             "_rev": 2,
             "_op": "native-operation-005",
-            "_writer": "native-test-tablet",
+            "_writer": "native-test-field-kiosk",
             "_event": "worker_out",
             "_capturedMs": 1790258550190,
             "_clientMs": 1790258550481,
@@ -897,7 +897,7 @@
               "outAt": null,
               "_rev": 1,
               "_op": "native-operation-004",
-              "_writer": "native-test-tablet",
+              "_writer": "native-test-field-kiosk",
               "_event": "worker_in",
               "_capturedMs": 1790258549640,
               "_clientMs": 1790258549965,
@@ -984,7 +984,7 @@
               "outAt": "2026-09-24T14:02:30.190Z",
               "_rev": 2,
               "_op": "native-operation-005",
-              "_writer": "native-test-tablet",
+              "_writer": "native-test-field-kiosk",
               "_event": "worker_out",
               "_capturedMs": 1790258550190,
               "_clientMs": 1790258550481,
@@ -997,7 +997,7 @@
                 "__serverTimestamp": true
               }
             },
-            "byUid": "native-test-tablet",
+            "byUid": "native-test-field-kiosk",
             "event": "worker_out",
             "createdAt": {
               "__serverTimestamp": true
@@ -1020,7 +1020,7 @@
           "path": "receipts/native-operation-005",
           "data": {
             "op": "native-operation-005",
-            "uid": "native-test-tablet",
+            "uid": "native-test-field-kiosk",
             "deviceId": "native-device-00000000000000000000001",
             "recordId": "2026-09-24__check-salary",
             "capturedMs": 1790258550190,
@@ -1076,7 +1076,7 @@
         "outAt": null,
         "_rev": 1,
         "_op": "native-operation-004",
-        "_writer": "native-test-tablet",
+        "_writer": "native-test-field-kiosk",
         "_event": "worker_in",
         "_capturedMs": 1790258549640,
         "_clientMs": 1790258549965,
@@ -1169,7 +1169,7 @@
             "outAt": "2026-09-24T14:02:28.342Z",
             "_rev": 2,
             "_op": "native-operation-002",
-            "_writer": "native-test-tablet",
+            "_writer": "native-test-field-kiosk",
             "_event": "worker_out",
             "_capturedMs": 1790258548342,
             "_clientMs": 1790258548811,
@@ -1234,7 +1234,7 @@
               "outAt": null,
               "_rev": 1,
               "_op": "native-operation-001",
-              "_writer": "native-test-tablet",
+              "_writer": "native-test-field-kiosk",
               "_event": "worker_in",
               "_capturedMs": 1790258545762,
               "_clientMs": 1790258546252,
@@ -1310,7 +1310,7 @@
               "outAt": "2026-09-24T14:02:28.342Z",
               "_rev": 2,
               "_op": "native-operation-002",
-              "_writer": "native-test-tablet",
+              "_writer": "native-test-field-kiosk",
               "_event": "worker_out",
               "_capturedMs": 1790258548342,
               "_clientMs": 1790258548811,
@@ -1323,7 +1323,7 @@
                 "__serverTimestamp": true
               }
             },
-            "byUid": "native-test-tablet",
+            "byUid": "native-test-field-kiosk",
             "event": "worker_out",
             "createdAt": {
               "__serverTimestamp": true
@@ -1346,7 +1346,7 @@
           "path": "receipts/native-operation-002",
           "data": {
             "op": "native-operation-002",
-            "uid": "native-test-tablet",
+            "uid": "native-test-field-kiosk",
             "deviceId": "native-device-00000000000000000000001",
             "recordId": "2026-09-24__check-hourly",
             "capturedMs": 1790258548342,
@@ -1402,7 +1402,7 @@
         "outAt": null,
         "_rev": 1,
         "_op": "native-operation-001",
-        "_writer": "native-test-tablet",
+        "_writer": "native-test-field-kiosk",
         "_event": "worker_in",
         "_capturedMs": 1790258545762,
         "_clientMs": 1790258546252,
@@ -1417,8 +1417,22 @@
       }
     }
   ],
-  "sourceRulesRevision": "PATCH 4 CANDIDATE — NOT NATIVE-VERIFIED; NOT FOR FIREBASE PUBLICATION",
+  "sourceRulesRevision": "ROLE CUTOVER CANDIDATE \u2014 PATCH 4 LOGIC; THREE MANAGERS; NATIVE VERIFICATION REQUIRED; NOT FOR FIREBASE PUBLICATION",
   "patch3SourceRulesSha256": "049858671bdd76d30162ae91e842e0270b89b97dfcb63e11a008021cca0658df",
   "patch3EmulatorRulesSha256": "6a79ca638b52d7b3488083a9ec102fae3f2ce8739bf350fedaa3226503096b1b",
-  "sourceRulesSha256Meaning": "Exact emulator-only.rules in this package; fictional IDs. No production-ID rules generated."
+  "sourceRulesSha256Meaning": "Exact emulator-only.rules in this package; fictional IDs. No production-ID rules generated.",
+  "roleModel": {
+    "fieldKiosk": "native-test-field-kiosk",
+    "management": [
+      "native-test-manager-isaac",
+      "native-test-manager-jake",
+      "native-test-manager-eric"
+    ],
+    "basePatch4RulesSha256": "4169d164ad3839aa609e61aa5329175d1d3e6309edb5e490eb80fe1a36ab6169",
+    "productionManagement": [
+      "d3GUR1ht0DQSss1mS5t9jOgChfq2",
+      "hnLcbI2FI1eeQhhmxjxXnVpgwpG2",
+      "XfYuiG6r22V3Hxr7vobDD0Q8G5j1"
+    ]
+  }
 }
