@@ -1266,7 +1266,7 @@ function pinMapOf(value){
   return map;
 }
 function pins(){return SEC?pinMapOf(SEC):null;}
-function pinAuthorized(){return !!(typeof SYNC!=="undefined"&&SYNC&&SYNC.user&&SYNC.user.uid===SYNC_MANAGER&&SYNC.role==="management");}
+function pinAuthorized(){return !!(typeof SYNC!=="undefined"&&SYNC&&SYNC.user&&syncIsManagerUid(SYNC.user.uid)&&SYNC.role==="management");}
 function pinStill(seq,epoch){return seq===PIN_STATE.seq&&epoch===SYNC.epoch&&pinAuthorized()&&!document.getElementById("pinVeil").hidden;}
 function pinSetBusy(on){PIN_STATE.busy=on;document.querySelectorAll("#pad button,#pinReset,#pinRetry").forEach(function(b){b.disabled=on;});var cancel=document.getElementById("pinCancel");if(cancel)cancel.disabled=PIN_STATE.saving;}
 function pinMsgNow(){return pinMode==="set"?(pinFirst?t("pinAgain"):pinText("Set a 4-digit office PIN","Cree un PIN de la oficina de 4 dígitos")):pinText("Enter the office PIN","Ingrese el PIN de la oficina");}
@@ -1387,7 +1387,7 @@ async function pinVerifyRecovery(e){
   var seq=PIN_STATE.seq,epoch=SYNC.epoch,user=SYNC.auth.currentUser||SYNC.user,inp=document.getElementById("pinRecoveryPassword"),err=document.getElementById("pinRecoveryError"),go=document.getElementById("pinRecoverySubmit");
   var password=inp.value;inp.value="";if(!password)return;pinSetBusy(true);go.disabled=true;err.textContent="Verifying management login… / Verificando administración…";
   try{
-    if(!navigator.onLine)throw syncFail("offline");if(user.uid!==SYNC_MANAGER||!user.email)throw syncFail("permission-denied");
+    if(!navigator.onLine)throw syncFail("offline");if(!syncIsManagerUid(user.uid)||!user.email)throw syncFail("permission-denied");
     var credential=firebase.auth.EmailAuthProvider.credential(user.email,password);password="";await user.reauthenticateWithCredential(credential);credential=null;
     if(!pinStill(seq,epoch))return;var security=await syncLoadSecurity();if(!pinStill(seq,epoch))return;
     PIN_STATE.baseRev=syncRev(security);PIN_STATE.stage="keypad";pinMode="set";pinFirst="";pinBuf="";pinSupName=user.email;document.getElementById("pinRecoveryVeil").hidden=true;
@@ -1898,7 +1898,9 @@ function exportWeek(){
    All punch and correction saves use transactions. Kiosk is denied all office/config writes.
    ===================================================================== */
 var SYNC={root:"attendanceSites/"+LIVE_SITE,user:null,role:"",auth:null,fs:null,ready:false,busy:false,epoch:0,subs:[],docs:{},records:{},flags:{},error:"",seeding:false};
-var SYNC_MANAGER="d3GUR1ht0DQSss1mS5t9jOgChfq2",SYNC_TABLET="hnLcbI2FI1eeQhhmxjxXnVpgwpG2";
+var SYNC_MANAGERS=["d3GUR1ht0DQSss1mS5t9jOgChfq2","hnLcbI2FI1eeQhhmxjxXnVpgwpG2","XfYuiG6r22V3Hxr7vobDD0Q8G5j1"],SYNC_TABLET="x0rz86ZAguRMYdrEznbH1eMq1lG3";
+function syncIsManagerUid(uid){return SYNC_MANAGERS.indexOf(uid)!==-1;}
+/* ROLE CUTOVER 20260925-3mgr-r2: Isaac, Jake and Eric management; field account kiosk. */
 var SYNC_CONFIG={apiKey:"AIzaSyDRqYBU-U1SJjKXFsvHvQk5fNhvT6HyfqQ",authDomain:"sign-in-sheet-58d6a.firebaseapp.com",projectId:"sign-in-sheet-58d6a",storageBucket:"sign-in-sheet-58d6a.firebasestorage.app",messagingSenderId:"682748387890",appId:"1:682748387890:web:8bf9bcce570d2a513e122b"};
 var VALIDATION_CREW=[{id:"test-hourly",name:"Test Hourly",agency:"PEG",trade:"Fictional hourly worker",noHours:false,sortOrder:1},{id:"test-salary",name:"Test Salary",agency:"PEG",trade:"Fictional attendance-only worker",noHours:true,sortOrder:2},{id:"test-knp",name:"Test KNP",agency:"KNP",trade:"Fictional hourly worker",noHours:false,sortOrder:3},{id:"test-abg",name:"Test ABG",agency:"ABG",trade:"Fictional hourly worker",noHours:false,sortOrder:4}];
 Object.assign(T.en,{foot:"SYNCED TEST ONLY. Eastern time. One cost code per day. Offline records stay on the prepared tablet until synced. Office screens require internet.",notOnListSub:"Find your name or ask management to add you.",noRoster:"Management: click Create test crew above. Tablet: wait for management to create it.",saveFailed:"Not saved. Check the connection/status above and try again.",offlineMsg:"Connection interrupted. Prepared tablets can save punches locally. Waiting-to-sync records are not yet confirmed by the office."});
@@ -1937,7 +1939,7 @@ function cachedPunch(id){return SYNC.records[id]?Object.assign({_id:id},cloneRec
 function paintSync(){if(!SYNC)return;var d=document.getElementById("syncDot"),t0=document.getElementById("syncTxt"),b=document.getElementById("offlineBar");if(!d)return;var ok=syncCanWrite();d.className="dot"+(!ok?" bad":SYNC.busy?" warn":"");t0.textContent=SYNC.busy?"Waiting for server… / Esperando…":ok?"Connected / Conectado":"Not ready / Sin conexión";b.hidden=!SYNC.user||ok||SYNC.busy;if(!b.hidden)document.getElementById("offlineTxt").textContent=t("offlineMsg");}
 function syncReadiness(){SYNC.ready=["roster","codes","punches","job","permissions"].every(function(k){return SYNC.flags[k]===true;});if(SYNC.role==="management")SYNC.ready=SYNC.ready&&SYNC.flags.security===true;document.getElementById("syncSetup").hidden=SYNC.role!=="management"||!!SYNC.docs["config/setup"];document.getElementById("syncSeed").disabled=!syncCanWrite()||SYNC.seeding;paintSync();syncGo();}
 function syncListen(path,key,fn,isDoc){var epoch=SYNC.epoch,ref=isDoc?syncRef(path):SYNC.fs.collection(SYNC.root+"/"+path);SYNC.subs.push(ref.onSnapshot({includeMetadataChanges:true},function(s){if(epoch!==SYNC.epoch)return;SYNC.flags[key]=!s.metadata.fromCache&&!s.metadata.hasPendingWrites;if(s.metadata.fromCache||s.metadata.hasPendingWrites){syncReadiness();return;}try{fn(s);}catch(e){SYNC.error="decode";syncNotice("Could not read the shared test data. "+syncError(e),true);}syncReadiness();},function(e){if(epoch!==SYNC.epoch)return;SYNC.flags[key]=false;SYNC.error=e.code||"read";syncNotice(syncError(e),true);syncReadiness();}));}
-function syncStart(user){++SYNC.epoch;syncClear();SYNC.user=user;SYNC.role=user?(user.uid===SYNC_MANAGER?"management":user.uid===SYNC_TABLET?"kiosk":""):"";document.getElementById("syncedBoard").hidden=!SYNC.role;document.getElementById("syncLogin").hidden=!!SYNC.role;document.body.classList.toggle("sync-locked",!SYNC.role);if(!user){paint();return;}if(!SYNC.role){SYNC.auth.signOut();document.getElementById("syncLoginMessage").textContent=syncError("unauthorized");return;}
+function syncStart(user){++SYNC.epoch;syncClear();SYNC.user=user;SYNC.role=user?(syncIsManagerUid(user.uid)?"management":user.uid===SYNC_TABLET?"kiosk":""):"";document.getElementById("syncedBoard").hidden=!SYNC.role;document.getElementById("syncLogin").hidden=!!SYNC.role;document.body.classList.toggle("sync-locked",!SYNC.role);if(!user){paint();return;}if(!SYNC.role){SYNC.auth.signOut();document.getElementById("syncLoginMessage").textContent=syncError("unauthorized");return;}
  document.getElementById("syncAccountLabel").textContent=(SYNC.role==="management"?"Management":"Jobsite tablet account")+" · "+(user.email||"");document.getElementById("syncPassword").value="";syncNotice("");
  ["roster","codes"].forEach(function(col){syncListen(col,col,function(s){var list=[];s.docs.forEach(function(doc){var r=syncDecode(doc.data());SYNC.docs[col+"/"+doc.id]=r;r[col==="codes"?"code":"id"]=doc.id;list.push(r);});Object.keys(SYNC.docs).filter(function(p){return p.startsWith(col+"/")&&!s.docs.some(function(d){return p===col+"/"+d.id;});}).forEach(function(p){delete SYNC.docs[p];});if(col==="roster"){roster=list.sort(function(a,b){return (a.sortOrder||0)-(b.sortOrder||0)||a.name.localeCompare(b.name);});}else codes=list.sort(function(a,b){return a.code.localeCompare(b.code);});paint();refreshOffice();syncGo();});});
  syncVerifyPermissions(SYNC.epoch);
@@ -2084,7 +2086,7 @@ async function offWriteSnapshot(){
 }
 async function offServiceWorker(){
   if(!('serviceWorker' in navigator)||!window.isSecureContext)throw syncFail('offline-page-unavailable');
-  var reg=await navigator.serviceWorker.register('./pioneer-live-sw-v19.js',{scope:'./',updateViaCache:'none'});
+  var reg=await navigator.serviceWorker.register('./pioneer-live-sw-v19.js?roleCutover=20260925-3mgr-r2',{scope:'./',updateViaCache:'none'});
   await Promise.race([navigator.serviceWorker.ready,new Promise(function(_,bad){setTimeout(function(){bad(syncFail('offline-page-timeout'));},30000);})]);
   var worker=reg.active||navigator.serviceWorker.controller;if(!worker)throw syncFail('offline-page-unavailable');
   await new Promise(function(ok,bad){var channel=new MessageChannel(),timer=setTimeout(function(){bad(syncFail('offline-page-timeout'));},15000);channel.port1.onmessage=function(e){clearTimeout(timer);if(e.data&&e.data.ready)ok();else bad(syncFail('offline-page-incomplete'));};worker.postMessage({type:'PIONEER_OFFLINE_CHECK'},[channel.port2]);});
@@ -2434,7 +2436,7 @@ syncReadiness=function(){
  paintSync();syncGo();if(SYNC.role==='kiosk'&&SYNC.ready)offSnapshot();livePaintGate();
 };
 syncStart=function(user){
- ++SYNC.epoch;syncClear();SYNC.user=user;SYNC.role=user?(user.uid===SYNC_MANAGER?'management':user.uid===SYNC_TABLET?'kiosk':''):'';
+ ++SYNC.epoch;syncClear();SYNC.user=user;SYNC.role=user?(syncIsManagerUid(user.uid)?'management':user.uid===SYNC_TABLET?'kiosk':''):'';
  document.getElementById('syncedBoard').hidden=!SYNC.role;document.getElementById('syncLogin').hidden=!!SYNC.role;document.body.classList.toggle('sync-locked',!SYNC.role);
  if(!user){paint();livePaintGate();return;}
  if(!SYNC.role){SYNC.auth.signOut();document.getElementById('syncLoginMessage').textContent=syncError('unauthorized');return;}
@@ -2538,7 +2540,7 @@ offPaint=function(){liveV18OffPaint();liveUpdateDiagnosticRunButton();if(SYNC.ro
 // Validate the specific worker installed for this /live/ scope, not an ancestor v18 worker.
 offServiceWorker=async function(){
  if(!('serviceWorker' in navigator)||!window.isSecureContext)throw syncFail('offline-page-unavailable');
- var reg=await navigator.serviceWorker.register('./pioneer-live-sw-v19.js',{scope:'./',updateViaCache:'none'});
+ var reg=await navigator.serviceWorker.register('./pioneer-live-sw-v19.js?roleCutover=20260925-3mgr-r2',{scope:'./',updateViaCache:'none'});
  var worker=reg.installing||reg.waiting||reg.active;
  if(!worker)throw syncFail('offline-page-unavailable');
  if(worker.state!=='activated')await new Promise(function(resolve,reject){var timer=setTimeout(function(){reject(syncFail('offline-page-timeout'));},30000);function check(){if(worker.state==='activated'){clearTimeout(timer);resolve();}else if(worker.state==='redundant'){clearTimeout(timer);reject(syncFail('offline-page-incomplete'));}}worker.addEventListener('statechange',check);check();});
